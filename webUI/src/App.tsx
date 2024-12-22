@@ -1,23 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { Client, Wallet, Payment, TransactionMetadata } from 'xrpl';
-import { currencyCode } from './const';
 import './App.css';
+
+import {currencyCode, issuerInfo, user1Info} from './const.ts';
 
 function App() {
   const serverUrl = 'wss://s.altnet.rippletest.net:51233';
   const clientRef = useRef<Client | null>(null);
 
-  const issuer = {
-    address: 'rGo4HdEE3wXToTqcEGxCAeaFYfqiRGdWSX',
-    secret: 'sEdVms9ZY4tgP6viMxJWK4q1pKjzFSm',
-  };
-
-  const userAccount = {
-    address: 'rB8KX92KiXugoNncVb6uAMkXtDTeo3BVcU',
-    secret: 'sEd7ZHXbc1xt73PgnRa4PFed9bftfyv',
-  };
-
-  const [balance, setBalance] = useState<number>(0);
+  const [userBalance, setUserBalance] = useState<number>(0);
+  const [issuerBalance, setIssuerBalance] = useState<number>(0);
   const [connecting, setConnecting] = useState<boolean>(false);
 
   useEffect(() => {
@@ -30,7 +22,7 @@ function App() {
         setConnecting(true);
         await clientRef.current.connect();
         console.log('Connected to XRPL Testnet');
-        await getBalance();
+        await fetchBalances(); // Fetch both user and issuer balances
       } catch (error) {
         console.error('Error connecting to XRPL:', error);
       } finally {
@@ -50,34 +42,54 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Function to fetch balance
-  const getBalance = async () => {
+  // Function to fetch both User and Issuer balances
+  const fetchBalances = async () => {
     if (!clientRef.current || !clientRef.current.isConnected()) {
-      console.warn('Client is not connected. Cannot fetch balance.');
+      console.warn('Client is not connected. Cannot fetch balances.');
       return;
     }
 
     try {
-      const response = await clientRef.current.request({
+      // Fetch User USD Balance
+      const userResponse = await clientRef.current.request({
         command: 'account_lines',
-        account: userAccount.address,
+        account: user1Info.address,
         ledger_index: 'validated',
       });
 
-      const lines = response.result.lines;
-      const usdcLine = lines.find(
-        (line: any) =>
-          line.currency === currencyCode && line.account === issuer.address
+      const userLines = userResponse.result.lines;
+      const userUsdLine = userLines.find(
+        (line) =>
+          line.currency === currencyCode && line.account === issuerInfo.address
       );
 
-      if (usdcLine) {
-        setBalance(parseFloat(usdcLine.balance));
-        alert('Balance updated to ' + parseFloat(usdcLine.balance));
+      if (userUsdLine) {
+        setUserBalance(parseFloat(userUsdLine.balance));
+        console.log('User Balance:', userUsdLine.balance);
       } else {
-        setBalance(0);
+        setUserBalance(0);
+        console.log('User USD Line not found. Balance set to 0.');
       }
+
+      // Fetch Issuer USD Balance (Total USD issued to all accounts)
+      const issuerResponse = await clientRef.current.request({
+        command: 'account_lines',
+        account: issuerInfo.address,
+        ledger_index: 'validated',
+      });
+
+      const issuerLines = issuerResponse.result.lines;
+      const totalIssuerUsd = issuerLines
+        .filter(
+          (line) =>
+            line.currency === currencyCode && line.account !== issuerInfo.address
+        )
+        .reduce((sum: number, line) => sum + parseFloat(line.balance), 0);
+
+      setIssuerBalance(totalIssuerUsd);
+      console.log('Issuer Balance:', totalIssuerUsd);
     } catch (error) {
-      console.error('Error fetching balance:', error);
+      console.error('Error fetching balances:', error);
     }
   };
 
@@ -91,17 +103,17 @@ function App() {
     try {
       const paymentTx: Payment = {
         TransactionType: 'Payment',
-        Account: issuer.address,
-        Destination: userAccount.address,
+        Account: issuerInfo.address,
+        Destination: user1Info.address,
         Amount: {
           currency: currencyCode,
-          issuer: issuer.address,
-          value: '100', // Amount of USDC to issue
+          issuer: issuerInfo.address,
+          value: '100', // Amount of USD to issue
         },
       };
 
       const preparedTx = await clientRef.current.autofill(paymentTx);
-      const wallet = Wallet.fromSeed(issuer.secret);
+      const wallet = Wallet.fromSeed(issuerInfo.secret);
       const signedTx = wallet.sign(preparedTx);
       const result = await clientRef.current.submitAndWait(signedTx.tx_blob);
 
@@ -110,7 +122,7 @@ function App() {
         'tesSUCCESS'
       ) {
         alert('Deposit successful');
-        await getBalance();
+        await fetchBalances();
       } else {
         console.error(
           'Deposit failed:',
@@ -126,8 +138,8 @@ function App() {
 
   // Function to handle withdrawal
   const handleWithdraw = async () => {
-    if (balance < 10) {
-      alert('Insufficient USDC balance');
+    if (userBalance < 10) {
+      alert('Insufficient USD balance');
       return;
     }
 
@@ -139,17 +151,17 @@ function App() {
     try {
       const paymentTx: Payment = {
         TransactionType: 'Payment',
-        Account: userAccount.address,
-        Destination: issuer.address,
+        Account: user1Info.address,
+        Destination: issuerInfo.address,
         Amount: {
           currency: currencyCode,
-          issuer: issuer.address,
-          value: '10', // Amount of USDC to withdraw
+          issuer: issuerInfo.address,
+          value: '10', // Amount of USD to withdraw
         },
       };
 
       const preparedTx = await clientRef.current.autofill(paymentTx);
-      const wallet = Wallet.fromSeed(userAccount.secret);
+      const wallet = Wallet.fromSeed(user1Info.secret);
       const signedTx = wallet.sign(preparedTx);
       const result = await clientRef.current.submitAndWait(signedTx.tx_blob);
 
@@ -158,7 +170,7 @@ function App() {
         'tesSUCCESS'
       ) {
         alert('Withdrawal successful');
-        await getBalance();
+        await fetchBalances();
       } else {
         console.error(
           'Withdrawal failed:',
@@ -175,14 +187,23 @@ function App() {
   return (
     <div className="App">
       <h1>XRPL Wallet</h1>
-      <p>
-        Balance: {balance} USD
-      </p>
+      <div>
+        <h2>User Account</h2>
+        <p>
+          Balance: {userBalance} USD
+        </p>
+      </div>
+      <div>
+        <h2>Issuer Account (Debug)</h2>
+        <p>
+          Total USD Issued: {issuerBalance} USD
+        </p>
+      </div>
       <button onClick={handleDeposit} disabled={connecting}>
         Deposit
       </button>
-      <button onClick={getBalance} disabled={connecting}>
-        Update Balance
+      <button onClick={fetchBalances} disabled={connecting}>
+        Update Balances
       </button>
       <button onClick={handleWithdraw} disabled={connecting}>
         Withdraw
