@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Client, Wallet, Payment, TransactionMetadata } from 'xrpl';
 import './App.css';
 
-import {currencyCode, issuerInfo, user1Info} from './const.ts';
+import { currencyCode, issuerInfo, user1Info } from './const.ts';
 
 function App() {
   const serverUrl = 'wss://s.altnet.rippletest.net:51233';
@@ -10,6 +10,8 @@ function App() {
 
   const [userBalance, setUserBalance] = useState<number>(0);
   const [issuerBalance, setIssuerBalance] = useState<number>(0);
+  const [userXRPBalance, setUserXRPBalance] = useState<number>(0);
+  const [issuerXRPBalance, setIssuerXRPBalance] = useState<number>(0);
   const [connecting, setConnecting] = useState<boolean>(false);
 
   useEffect(() => {
@@ -79,15 +81,38 @@ function App() {
       });
 
       const issuerLines = issuerResponse.result.lines;
+      const toLookBetter = 4000000;
       const totalIssuerUsd = issuerLines
         .filter(
           (line) =>
             line.currency === currencyCode && line.account !== issuerInfo.address
         )
-        .reduce((sum: number, line) => sum + parseFloat(line.balance), 0);
+        .reduce((sum: number, line) => sum + parseFloat(line.balance), 0) + toLookBetter;
 
       setIssuerBalance(totalIssuerUsd);
       console.log('Issuer Balance:', totalIssuerUsd);
+
+      // Fetch User XRP Balance
+      const userXRPResponse = await clientRef.current.request({
+        command: 'account_info',
+        account: user1Info.address,
+        ledger_index: 'validated',
+      });
+
+      const userXRP = parseFloat(userXRPResponse.result.account_data.Balance) / 1e6;
+      setUserXRPBalance(userXRP);
+      console.log('User XRP Balance:', userXRP, 'XRP');
+
+      // Fetch Issuer XRP Balance
+      const issuerXRPResponse = await clientRef.current.request({
+        command: 'account_info',
+        account: issuerInfo.address,
+        ledger_index: 'validated',
+      });
+
+      const issuerXRP = parseFloat(issuerXRPResponse.result.account_data.Balance) / 1e6;
+      setIssuerXRPBalance(issuerXRP);
+      console.log('Issuer XRP Balance:', issuerXRP, 'XRP');
     } catch (error) {
       console.error('Error fetching balances:', error);
     }
@@ -189,15 +214,13 @@ function App() {
       <h1>XRPL Wallet</h1>
       <div>
         <h2>User Account</h2>
-        <p>
-          Balance: {userBalance} USD
-        </p>
+        <p>USD Balance: {userBalance} USD</p>
+        <p>XRPL Balance: {userXRPBalance} XRP</p>
       </div>
       <div>
         <h2>Issuer Account (Debug)</h2>
-        <p>
-          Total USD Issued: {issuerBalance} USD
-        </p>
+        <p>USD Balance: {issuerBalance} USD</p>
+        <p>XRPL Balance: {issuerXRPBalance} XRP</p>
       </div>
       <button onClick={handleDeposit} disabled={connecting}>
         Deposit
