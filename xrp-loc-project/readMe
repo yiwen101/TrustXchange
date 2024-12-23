@@ -1,5 +1,0 @@
-npm install -g ganache-cli
-ganache-cli 
-
-truffle compile
-truffle migrate --network development
