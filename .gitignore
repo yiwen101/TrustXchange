@@ -2,3 +2,4 @@
 /node_modules
 .env
 /xrp-loc-project/build
+/xrp-loc-project/node_modules
