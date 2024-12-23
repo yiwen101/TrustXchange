@@ -1,0 +1,382 @@
+{
+  "contractName": "IAxelarExecutable",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "InvalidAddress",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "NotApprovedByGateway",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "gateway",
+      "outputs": [
+        {
+          "internalType": "contract IAxelarGateway",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "commandId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "string",
+          "name": "sourceChain",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "sourceAddress",
+          "type": "string"
+        },
+        {
+          "internalType": "bytes",
+          "name": "payload",
+          "type": "bytes"
+        }
+      ],
+      "name": "execute",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "metadata": "{\"compiler\":{\"version\":\"0.8.9+commit.e5eed63a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"InvalidAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NotApprovedByGateway\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"commandId\",\"type\":\"bytes32\"},{\"internalType\":\"string\",\"name\":\"sourceChain\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"sourceAddress\",\"type\":\"string\"},{\"internalType\":\"bytes\",\"name\":\"payload\",\"type\":\"bytes\"}],\"name\":\"execute\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"gateway\",\"outputs\":[{\"internalType\":\"contract IAxelarGateway\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"project:/contracts/interfaces/IAxelarExecutable.sol\":\"IAxelarExecutable\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"project:/contracts/interfaces/IAxelarExecutable.sol\":{\"keccak256\":\"0xf4d9b2213c063fe47873224b4068bc85770a2fa640b2296a263da540e7513401\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://0d89579c1375e9122d7fbfb586e4b63e8eaa215cd28c1193044664664b8a6859\",\"dweb:/ipfs/QmZH95NY2RZEk8BmpHQY1SXyjkn72y4iCbhHJWmHddwYDy\"]},\"project:/contracts/interfaces/IAxelarGateway.sol\":{\"keccak256\":\"0x3fdc59538c9f018a8b0ddc98878dd4acd8b5a10662105ea46f79eb523f28b68b\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://8bcb0983de68d367b61519b45b8f2e5bc12e85c1fd8bfee7f8a88d11fe0b386b\",\"dweb:/ipfs/QmeFejwtboNraju2PYTwak5wuMMrqzexkUrKzsvk2VXyqA\"]}},\"version\":1}",
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "immutableReferences": {},
+  "generatedSources": [],
+  "deployedGeneratedSources": [],
+  "sourceMap": "",
+  "deployedSourceMap": "",
+  "source": "// SPDX-License-Identifier: MIT\n\npragma solidity ^0.8.0;\n\nimport { IAxelarGateway } from './IAxelarGateway.sol';\n\ninterface IAxelarExecutable {\n    error InvalidAddress();\n    error NotApprovedByGateway();\n\n    function gateway() external view returns (IAxelarGateway);\n\n    function execute(\n        bytes32 commandId,\n        string calldata sourceChain,\n        string calldata sourceAddress,\n        bytes calldata payload\n    ) external;\n}\n",
+  "sourcePath": "/Users/softmark/Desktop/ripple/Temp/executable_sample/contracts/interfaces/IAxelarExecutable.sol",
+  "ast": {
+    "absolutePath": "project:/contracts/interfaces/IAxelarExecutable.sol",
+    "exportedSymbols": {
+      "IAxelarExecutable": [
+        202
+      ],
+      "IAxelarGateway": [
+        524
+      ]
+    },
+    "id": 203,
+    "license": "MIT",
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 178,
+        "literals": [
+          "solidity",
+          "^",
+          "0.8",
+          ".0"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "33:23:2"
+      },
+      {
+        "absolutePath": "project:/contracts/interfaces/IAxelarGateway.sol",
+        "file": "./IAxelarGateway.sol",
+        "id": 180,
+        "nameLocation": "-1:-1:-1",
+        "nodeType": "ImportDirective",
+        "scope": 203,
+        "sourceUnit": 525,
+        "src": "58:54:2",
+        "symbolAliases": [
+          {
+            "foreign": {
+              "id": 179,
+              "name": "IAxelarGateway",
+              "nodeType": "Identifier",
+              "overloadedDeclarations": [],
+              "src": "67:14:2",
+              "typeDescriptions": {}
+            },
+            "nameLocation": "-1:-1:-1"
+          }
+        ],
+        "unitAlias": ""
+      },
+      {
+        "abstract": false,
+        "baseContracts": [],
+        "canonicalName": "IAxelarExecutable",
+        "contractDependencies": [],
+        "contractKind": "interface",
+        "fullyImplemented": false,
+        "id": 202,
+        "linearizedBaseContracts": [
+          202
+        ],
+        "name": "IAxelarExecutable",
+        "nameLocation": "124:17:2",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "id": 182,
+            "name": "InvalidAddress",
+            "nameLocation": "154:14:2",
+            "nodeType": "ErrorDefinition",
+            "parameters": {
+              "id": 181,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "168:2:2"
+            },
+            "src": "148:23:2"
+          },
+          {
+            "id": 184,
+            "name": "NotApprovedByGateway",
+            "nameLocation": "182:20:2",
+            "nodeType": "ErrorDefinition",
+            "parameters": {
+              "id": 183,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "202:2:2"
+            },
+            "src": "176:29:2"
+          },
+          {
+            "functionSelector": "116191b6",
+            "id": 190,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "gateway",
+            "nameLocation": "220:7:2",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 185,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "227:2:2"
+            },
+            "returnParameters": {
+              "id": 189,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 188,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 190,
+                  "src": "253:14:2",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IAxelarGateway_$524",
+                    "typeString": "contract IAxelarGateway"
+                  },
+                  "typeName": {
+                    "id": 187,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 186,
+                      "name": "IAxelarGateway",
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 524,
+                      "src": "253:14:2"
+                    },
+                    "referencedDeclaration": 524,
+                    "src": "253:14:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IAxelarGateway_$524",
+                      "typeString": "contract IAxelarGateway"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "252:16:2"
+            },
+            "scope": 202,
+            "src": "211:58:2",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "functionSelector": "49160658",
+            "id": 201,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "execute",
+            "nameLocation": "284:7:2",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 199,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 192,
+                  "mutability": "mutable",
+                  "name": "commandId",
+                  "nameLocation": "309:9:2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 201,
+                  "src": "301:17:2",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 191,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "301:7:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 194,
+                  "mutability": "mutable",
+                  "name": "sourceChain",
+                  "nameLocation": "344:11:2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 201,
+                  "src": "328:27:2",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 193,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "328:6:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 196,
+                  "mutability": "mutable",
+                  "name": "sourceAddress",
+                  "nameLocation": "381:13:2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 201,
+                  "src": "365:29:2",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 195,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "365:6:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 198,
+                  "mutability": "mutable",
+                  "name": "payload",
+                  "nameLocation": "419:7:2",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 201,
+                  "src": "404:22:2",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 197,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "404:5:2",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "291:141:2"
+            },
+            "returnParameters": {
+              "id": 200,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "441:0:2"
+            },
+            "scope": 202,
+            "src": "275:167:2",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "scope": 203,
+        "src": "114:330:2",
+        "usedErrors": [
+          182,
+          184
+        ]
+      }
+    ],
+    "src": "33:412:2"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.8.9+commit.e5eed63a.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.4.16",
+  "updatedAt": "2024-12-23T15:29:54.829Z",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  }
+}
