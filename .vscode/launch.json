@@ -4,6 +4,25 @@
             "type": "java",
             "name": "App",
             "request": "launch",
+            "mainClass": "com.trustXchange.App",
+            "projectName": "backend"
+        },
+        {
+            "type": "java",
+            "name": "App",
+            "request": "launch",
+            "mainClass": "com.trustXchange.app.App"
+        },
+        {
+            "type": "java",
+            "name": "App",
+            "request": "launch",
+            "mainClass": "com.mycompany.app.App"
+        },
+        {
+            "type": "java",
+            "name": "App",
+            "request": "launch",
             "mainClass": "com.mycompany.app.App",
             "projectName": "trustXchange"
         },

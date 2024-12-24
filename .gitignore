@@ -3,3 +3,4 @@
 .env
 /xrp-loc-project/build
 /xrp-loc-project/node_modules
+.vscode
