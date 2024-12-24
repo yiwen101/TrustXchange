@@ -1,5 +1,4 @@
 require("@nomicfoundation/hardhat-toolbox");
-require("@nomiclabs/hardhat-etherscan");
 require('dotenv').config();
 
 module.exports = {
@@ -11,5 +10,19 @@ module.exports = {
       accounts: [process.env.PRIVATE_KEY]
     }
   },
+  etherscan: {
+    apiKey: {
+      'xrpl-evm': 'empty'
+    },
+    customChains: [
+      {
+        network: "xrpl-evm",
+        chainId: 1440002,
+        urls: {
+          apiURL: "https://explorer.xrplevm.org/api",
+          browserURL: "https://explorer.xrplevm.org"
+        }
+      }
+    ]
+  }
 };
-//0x89CfAcCEE2E5aBa00d1036AaD4Fb236bF04B2c94
