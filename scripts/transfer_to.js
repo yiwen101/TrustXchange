@@ -19,8 +19,6 @@ async function transferTokens() {
         Account: wallet.address,
         Amount: AMOUNT,
         Destination: DESTINATION_ADDRESS,
-        Fee: "12",
-        Flags: 0
     };
 
     try {
