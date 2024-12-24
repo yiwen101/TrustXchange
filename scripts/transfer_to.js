@@ -2,7 +2,7 @@ import * as xrpl from "xrpl";
 
 const XRPL_RPC_URL = "wss://s.devnet.rippletest.net:51233/";
 const DESTINATION_ADDRESS = "rfv9EskzSdWEsZsyBrujtidD2qdgiz8v7W";
-const AMOUNT = "10000000"; // 10 XRP in drops (1 XRP = 1,000,000 drops)
+const AMOUNT = "90000000"; // 10 XRP in drops (1 XRP = 1,000,000 drops)
 
 async function transferTokens() {
     const client = new xrpl.Client(XRPL_RPC_URL);
@@ -19,6 +19,13 @@ async function transferTokens() {
         Account: wallet.address,
         Amount: AMOUNT,
         Destination: DESTINATION_ADDRESS,
+        Memos: [
+            {
+                Memo: {
+                    MemoData: "68246D1C63f1182FCe9694c36bcc678494E3fd46", 
+                    MemoType: "64657374696E6174696F6E5F61646472657373", // hex("destination_address")
+                },
+            }],
     };
 
     try {

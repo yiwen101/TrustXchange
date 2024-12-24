@@ -2,6 +2,9 @@ import * as xrpl from "xrpl";
 import { ethers } from "ethers";
 
 const XRPL_RPC_URL = "wss://s.devnet.rippletest.net:51233/";
+const DESTINATION_ADDRESS = "rfv9EskzSdWEsZsyBrujtidD2qdgiz8v7W";
+const AMOUNT = "90000000";
+
 async function gmp() {
     const client = new xrpl.Client(XRPL_RPC_URL);
     await client.connect();
@@ -13,14 +16,11 @@ async function gmp() {
     const abiCoder = new ethers.utils.AbiCoder();
     const encodedPayload = abiCoder.encode(['string'], ['Hello World by Yiwen']); // Replace with your message
     const payloadHash = ethers.utils.keccak256(encodedPayload).replace(/^0x/, '');
-    //const dest1 = "rP9iHnCmJcVPtzCwYJjU1fryC2pEcVqDHv"
-    const dest2 = `rnJnBjnpTZPmUyZsW2QSenZhEwPzEuRSxz`;
-    rJgCCqJA744XDKvWyVwSma385Tww3mJZVM
     const paymentTx = {
         TransactionType: "Payment",
         Account: user.address,
-        Amount: "1000000", // 1 XRP in drops
-        Destination: dest2,
+        Amount: AMOUNT,
+        Destination: DESTINATION_ADDRESS,
         Memos: [
             {
                 Memo: {

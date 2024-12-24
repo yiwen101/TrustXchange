@@ -7,14 +7,21 @@ import org.xrpl.xrpl4j.codec.addresses.AddressCodec;
 import org.xrpl.xrpl4j.model.client.accounts.AccountTransactionsResult;
 import org.xrpl.xrpl4j.model.client.accounts.AccountTransactionsTransaction;
 import org.xrpl.xrpl4j.model.transactions.Address;
+import org.xrpl.xrpl4j.model.transactions.CurrencyAmount;
 import org.xrpl.xrpl4j.model.transactions.Hash256;
+import org.xrpl.xrpl4j.model.transactions.Memo;
+import org.xrpl.xrpl4j.model.transactions.MemoWrapper;
+import org.xrpl.xrpl4j.model.transactions.Payment;
+import org.xrpl.xrpl4j.model.transactions.Transaction;
 import org.xrpl.xrpl4j.model.transactions.TransactionMetadata;
+import org.xrpl.xrpl4j.model.transactions.TransactionType;
 import org.xrpl.xrpl4j.model.transactions.XAddress;
 import org.xrpl.xrpl4j.client.JsonRpcClientErrorException;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -64,16 +71,32 @@ public class App
         Instant endTime = Instant.now().plus(Duration.ofMinutes(15));
         
 
-        System.out.println("Starting to monitor new transactions for 5 minutes...");
+        System.out.println("Starting to monitor new transactions for 15 minutes...");
 
         while (Instant.now().isBefore(endTime)) {
             try {
                 AccountTransactionsResult newTransactions = xrplClient.accountTransactions(classicAddress);
                 newTransactions.transactions().forEach(tx -> {
-                    Hash256 txHash = tx.resultTransaction().hash();
-                    if (!seenTransactionHashes.contains(txHash)) {
-                        seenTransactionHashes.add(txHash);
-                        System.out.printf("New Transaction: %s\n", tx.resultTransaction());
+                    if(tx.validated()) {
+                        Hash256 txHash = tx.resultTransaction().hash();
+                        if (!seenTransactionHashes.contains(txHash)) {
+                            seenTransactionHashes.add(txHash);
+                            if(tx.resultTransaction().transaction().transactionType().equals(TransactionType.PAYMENT)) {
+                                Payment payment = (Payment) tx.resultTransaction().transaction();
+                                try {
+                                    Optional<GMPCallInfo> gmpCallInfo = GMPCallInfo.Of(payment);
+                                    if (gmpCallInfo.isPresent()) {
+                                        System.out.println("New GMP Call Transaction:");
+                                        System.out.println(gmpCallInfo.get());
+                                    }
+                                } catch (DestinationChainNotSupportException e) {
+                                    System.out.println("Destination chain not supported");
+                                    return;
+                                }
+                            } else {
+                                System.out.printf("New Transaction of type %s\n", tx.resultTransaction().transaction().transactionType());
+                            }
+                        }
                     }
                 });
             } catch (JsonRpcClientErrorException e) {
