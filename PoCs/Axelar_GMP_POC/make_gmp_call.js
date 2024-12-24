@@ -1,7 +1,7 @@
 import * as xrpl from "xrpl";
 import { ethers } from "ethers";
 
-const XRPL_RPC_URL = "wss://s.altnet.rippletest.net:51233";
+const XRPL_RPC_URL = "wss://s.devnet.rippletest.net:51233/";
 async function gmp() {
     const client = new xrpl.Client(XRPL_RPC_URL);
     await client.connect();
@@ -18,10 +18,7 @@ async function gmp() {
         TransactionType: "Payment",
         Account: user.address,
         Amount: "1000000", // 1 XRP in drops
-        Destination: "rfEf91bLxrTVC76vw1W3Ur8Jk4Lwujskmb",
-        SigningPubKey: "",
-        Flags: 0,
-        Fee: "30",
+        Destination: "rP9iHnCmJcVPtzCwYJjU1fryC2pEcVqDHv",
         Memos: [
             {
                 Memo: {
