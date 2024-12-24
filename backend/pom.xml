@@ -9,6 +9,11 @@
   <url>http://maven.apache.org</url>
   <dependencies>
     <dependency>
+            <groupId>org.web3j</groupId>
+            <artifactId>core</artifactId>
+            <version>4.8.7</version>
+    </dependency>
+    <dependency>
       <groupId>org.xrpl</groupId>
       <artifactId>xrpl4j-core</artifactId>
       <version>3.0.1</version>

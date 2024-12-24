@@ -6,3 +6,9 @@
 .vscode
 *.jar
 *.class
+/PoCs/Axelar_GMP_POC/artifacts
+/PoCs/Axelar_GMP_POC/ignition/deployments
+/PoCs/Axelar_GMP_POC/ignition/deployments
+/PoCs/Axelar_GMP_POC/artifacts
+/PoCs/Axelar_GMP_POC/artifacts
+/backend/target/maven-status/maven-compiler-plugin/compile
