@@ -4,11 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "b": "vite --open",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "browser": "npm run dev & wait-on http://localhost:5174 && open http://localhost:5174"
+    "browser": "./shell/browser.sh"
   },
   "dependencies": {
     "react": "^18.3.1",
