@@ -2,15 +2,14 @@ import { Box, Chip, TextField, Grid, MenuItem, Select, FormControl, InputLabel }
 import { DataGrid, GridColDef, GridRowsProp } from "@mui/x-data-grid";
 import React, { useState } from "react";
 
-function renderType (type: 'Borrow' | 'Lend') {
-    const colors: { [key: string]: 'default' | 'primary' | 'secondary' | 'error' | 'success' | 'warning' } = {
-        Borrow: 'primary',
-        Lend: 'default',
-    };
-    
-    return <Chip label={type} color={colors[type]} size="small" />;
-}
+function renderType(type: 'Borrow' | 'Lend') {
+  const colors: { [key: string]: 'default' | 'primary' | 'secondary' | 'error' | 'success' | 'warning' } = {
+    Borrow: 'primary',
+    Lend: 'default',
+  };
 
+  return <Chip label={type} color={colors[type]} size="small" />;
+}
 
 function renderStatus(status: 'Waiting' | 'Cancelled' | 'Progress' | 'Paid' | 'Defaulted') {
   const colors: { [key: string]: 'default' | 'primary' | 'secondary' | 'error' | 'success' | 'warning' } = {
@@ -19,19 +18,19 @@ function renderStatus(status: 'Waiting' | 'Cancelled' | 'Progress' | 'Paid' | 'D
     Progress: 'warning',
     Paid: 'success',
     Defaulted: 'error',
- };
+  };
 
   return <Chip label={status} color={colors[status]} size="small" />;
 }
 
 const borrowingRequestColumns: GridColDef[] = [
-    {
-        field: 'type',
-        headerName: 'Type',
-        flex: 0.5,
-        minWidth: 100,
-        renderCell: (params) => renderType(params.value as any),
-    },
+  {
+    field: 'type',
+    headerName: 'Type',
+    flex: 0.5,
+    minWidth: 100,
+    renderCell: (params) => renderType(params.value as any),
+  },
   {
     field: 'status',
     headerName: 'Status',
@@ -49,35 +48,35 @@ const borrowingRequestColumns: GridColDef[] = [
 ];
 
 const borrowingRequestRows: GridRowsProp = [
-  { id: 1, type:'borrow',borrowingAmount: 1000, duration: 30, interestRate: 5, collateral: 500, status: 'Waiting', borrower: 'Alice', lender: 'Bob', startDate: '2021-10-01' },
-  { id: 2, type:'borrow',borrowingAmount: 2000, duration: 60, interestRate: 6, collateral: 1100, status: 'Progress', borrower: 'Bob', lender: 'Alice', startDate: '2021-10-02' },
-  { id: 3, type:'borrow',borrowingAmount: 3000, duration: 90, interestRate: 7, collateral: 1500, status: 'Paid', borrower: 'Charlie', lender: 'Alice', startDate: '2021-10-03' },
-  { id: 4, type:'lend',borrowingAmount: 4000, duration: 120, interestRate: 8, collateral: 2500, status: 'Defaulted', borrower: 'David', lender: 'Bob', startDate: '2021-10-04' },
-  { id: 5, type:'lend',borrowingAmount: 5000, duration: 150, interestRate: 9, collateral: 2500, status: 'Waiting', borrower: 'Eve', lender: 'Alice', startDate: '2021-10-05' },
-  { id: 6, type:'lend',borrowingAmount: 5000, duration: 150, interestRate: 9, collateral: 2200, status: 'Cancelled', borrower: 'Eve', lender: 'Alice', startDate: '2021-10-05' },
+  { id: 1, type: 'borrow', borrowingAmount: 1000, duration: 30, interestRate: 5, collateral: 500, status: 'Waiting', borrower: 'Alice', lender: 'Bob', startDate: '2021-10-01' },
+  { id: 2, type: 'borrow', borrowingAmount: 2000, duration: 60, interestRate: 6, collateral: 1100, status: 'Progress', borrower: 'Bob', lender: 'Alice', startDate: '2021-10-02' },
+  { id: 3, type: 'borrow', borrowingAmount: 3000, duration: 90, interestRate: 7, collateral: 1500, status: 'Paid', borrower: 'Charlie', lender: 'Alice', startDate: '2021-10-03' },
+  { id: 4, type: 'lend', borrowingAmount: 4000, duration: 120, interestRate: 8, collateral: 2500, status: 'Defaulted', borrower: 'David', lender: 'Bob', startDate: '2021-10-04' },
+  { id: 5, type: 'lend', borrowingAmount: 5000, duration: 150, interestRate: 9, collateral: 2500, status: 'Waiting', borrower: 'Eve', lender: 'Alice', startDate: '2021-10-05' },
+  { id: 6, type: 'lend', borrowingAmount: 5000, duration: 150, interestRate: 9, collateral: 2200, status: 'Cancelled', borrower: 'Eve', lender: 'Alice', startDate: '2021-10-05' },
 ];
 
 const P2pTable: React.FC = () => {
-    const [requestTypeFilter, setRequestTypeFilter] = useState("borrow/lend");
-  const [statusFilter, setStatusFilter] = useState('');
-  const [durationCondition, setDurationCondition] = useState('');
+  const [requestTypeFilter, setRequestTypeFilter] = useState("borrow/lend");
+  const [statusFilter, setStatusFilter] = useState('Waiting');
+  const [durationCondition, setDurationCondition] = useState('any');
   const [durationFilter, setDurationFilter] = useState('');
-  const [interestRateCondition, setInterestRateCondition] = useState('');
+  const [interestRateCondition, setInterestRateCondition] = useState('any');
   const [interestRateFilter, setInterestRateFilter] = useState('');
-  const [collateralCondition, setCollateralCondition] = useState('');
+  const [collateralCondition, setCollateralCondition] = useState('any');
   const [collateralFilter, setCollateralFilter] = useState('');
 
   const filteredRows = borrowingRequestRows.filter((row) => {
     return (
       (requestTypeFilter === "borrow/lend" || row.type.toLowerCase().includes(requestTypeFilter.toLowerCase())) &&
-      (statusFilter === '' || row.status.toLowerCase().includes(statusFilter.toLowerCase())) &&
-      (durationCondition === '' || durationFilter === ''||(durationCondition === 'greater' && row.duration > parseInt(durationFilter)) ||
+      (statusFilter === 'any' || row.status.toLowerCase().includes(statusFilter.toLowerCase())) &&
+      (durationCondition === 'any' || durationFilter === '' || (durationCondition === 'greater' && row.duration > parseInt(durationFilter)) ||
         (durationCondition === 'less' && row.duration < parseInt(durationFilter)) ||
         (durationCondition === 'equal' && row.duration === parseInt(durationFilter))) &&
-      (interestRateCondition === '' || interestRateFilter === ''|| (interestRateCondition === 'greater' && row.interestRate > parseInt(interestRateFilter)) ||
+      (interestRateCondition === 'any' || interestRateFilter === '' || (interestRateCondition === 'greater' && row.interestRate > parseInt(interestRateFilter)) ||
         (interestRateCondition === 'less' && row.interestRate < parseInt(interestRateFilter)) ||
         (interestRateCondition === 'equal' && row.interestRate === parseInt(interestRateFilter))) &&
-      (collateralCondition === '' || collateralFilter == ''|| (collateralCondition === 'greater' && row.collateral > parseInt(collateralFilter)) ||
+      (collateralCondition === 'any' || collateralFilter === '' || (collateralCondition === 'greater' && row.collateral > parseInt(collateralFilter)) ||
         (collateralCondition === 'less' && row.collateral < parseInt(collateralFilter)) ||
         (collateralCondition === 'equal' && row.collateral === parseInt(collateralFilter)))
     );
@@ -88,18 +87,18 @@ const P2pTable: React.FC = () => {
       <Box height={'100px'} />
       <Grid container spacing={2} mb={2}>
         <Grid item xs={3}>
-            <FormControl fullWidth variant="outlined" size="small">
-                <InputLabel>Type</InputLabel>
-                <Select
-                label="Borrow/Lend"
-                value={requestTypeFilter}
-                onChange={(e) => setRequestTypeFilter(e.target.value)}
-                >
-                <MenuItem value="borrow/lend">Borrow/Lend</MenuItem>
-                <MenuItem value="borrow">Borrow</MenuItem>
-                <MenuItem value="lend">Lend</MenuItem>
-                </Select>
-            </FormControl>
+          <FormControl fullWidth variant="outlined" size="small">
+            <InputLabel>Type</InputLabel>
+            <Select
+              label="Borrow/Lend"
+              value={requestTypeFilter}
+              onChange={(e) => setRequestTypeFilter(e.target.value)}
+            >
+              <MenuItem value="borrow/lend">Borrow/Lend</MenuItem>
+              <MenuItem value="borrow">Borrow</MenuItem>
+              <MenuItem value="lend">Lend</MenuItem>
+            </Select>
+          </FormControl>
         </Grid>
         <Grid item xs={3}>
           <FormControl fullWidth variant="outlined" size="small">
@@ -109,7 +108,7 @@ const P2pTable: React.FC = () => {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
-              <MenuItem value="">All</MenuItem>
+              <MenuItem value="any">Any</MenuItem>
               <MenuItem value="Waiting">Waiting</MenuItem>
               <MenuItem value="Cancelled">Cancelled</MenuItem>
               <MenuItem value="Progress">Progress</MenuItem>
@@ -126,7 +125,7 @@ const P2pTable: React.FC = () => {
               value={durationCondition}
               onChange={(e) => setDurationCondition(e.target.value)}
             >
-              <MenuItem value="">All</MenuItem>
+              <MenuItem value="any">Any</MenuItem>
               <MenuItem value="greater">Greater than</MenuItem>
               <MenuItem value="less">Less than</MenuItem>
               <MenuItem value="equal">Equal to</MenuItem>
@@ -141,6 +140,12 @@ const P2pTable: React.FC = () => {
             fullWidth
             value={durationFilter}
             onChange={(e) => setDurationFilter(e.target.value)}
+            disabled={durationCondition === 'any'}
+            InputProps={{
+              style: {
+                backgroundColor: durationCondition === 'any' ? '#f0f0f0' : 'inherit',
+              },
+            }}
           />
         </Grid>
         <Grid item xs={3}>
@@ -151,7 +156,7 @@ const P2pTable: React.FC = () => {
               value={interestRateCondition}
               onChange={(e) => setInterestRateCondition(e.target.value)}
             >
-              <MenuItem value="">All</MenuItem>
+              <MenuItem value="any">Any</MenuItem>
               <MenuItem value="greater">Greater than</MenuItem>
               <MenuItem value="less">Less than</MenuItem>
               <MenuItem value="equal">Equal to</MenuItem>
@@ -166,6 +171,12 @@ const P2pTable: React.FC = () => {
             fullWidth
             value={interestRateFilter}
             onChange={(e) => setInterestRateFilter(e.target.value)}
+            disabled={interestRateCondition === 'any'}
+            InputProps={{
+              style: {
+          backgroundColor: interestRateCondition === 'any' ? '#f0f0f0' : 'inherit',
+              },
+            }}
           />
         </Grid>
         <Grid item xs={3}>
@@ -176,7 +187,7 @@ const P2pTable: React.FC = () => {
               value={collateralCondition}
               onChange={(e) => setCollateralCondition(e.target.value)}
             >
-              <MenuItem value="">All</MenuItem>
+              <MenuItem value="any">Any</MenuItem>
               <MenuItem value="greater">Greater than</MenuItem>
               <MenuItem value="less">Less than</MenuItem>
               <MenuItem value="equal">Equal to</MenuItem>
@@ -191,6 +202,12 @@ const P2pTable: React.FC = () => {
             fullWidth
             value={collateralFilter}
             onChange={(e) => setCollateralFilter(e.target.value)}
+            disabled={collateralCondition === 'any'}
+            InputProps={{
+              style: {
+          backgroundColor: collateralCondition === 'any' ? '#f0f0f0' : 'inherit',
+              },
+            }}
           />
         </Grid>
       </Grid>
