@@ -1,64 +1,34 @@
 // src/PoolPage.tsx
-import React, { useState } from 'react';
-import { Pie } from 'react-chartjs-2';
-import 'chart.js/auto';
+import React from 'react';
 import {
-  Tabs,
-  Tab,
   Box,
-  Typography,
-  Button,
+  Grid2,
   Paper,
   Stack,
 } from '@mui/material';
-import PoolInfo from './PollInfo';
-import UserInfo from './userInfo';
+import PoolInfo from './PoolInfo';
+import PoolActions from './PoolActions';
 
 const PoolPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState(0);
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
-  };
-
-
-
-  
 
   return (
-    <Box>
-        <Box sx={{ height: '64px' }} />
-    <Box p={3} sx={{ position: 'relative', height: '100vh', overflow: 'auto' }}>
-      {/* Fixed Tabs */}
-      <Box
-        sx={{
-          position: 'sticky',
-          top: 0,
-          backgroundColor: 'background.paper',
-          zIndex: 10,
-          borderBottom: 1,
-          borderColor: 'divider',
-        }}
-      >
-        <Tabs
-          value={activeTab}
-          onChange={handleChange}
-          indicatorColor="primary"
-          textColor="primary"
-          centered
-        >
-          <Tab label="Pool Information" />
-          <Tab label="User Details" />
-        </Tabs>
+    <Stack height={"calc(100vh-65px)"} display={'flex'} flexDirection={'column'}>
+      <Box p={3}>
+        <Grid2 container spacing={4} justifyContent="center">
+            <Grid2 >
+              <Paper elevation={3} sx={{ p: 3 }}>
+                <PoolInfo />
+              </Paper>
+            </Grid2>
+            <Grid2 >
+              <Paper elevation={3} sx={{ p: 3 }}>
+                <PoolActions />
+              </Paper>
+            </Grid2>
+        </Grid2>
       </Box>
-
-      {/* Content Paper */}
-      <Paper elevation={3} sx={{ mt: 2, p: 3 }}>
-        {activeTab === 0 && <PoolInfo />}
-        {activeTab === 1 && <UserInfo />}
-      </Paper>
-    </Box>
-    </Box>
+      </Stack>
   );
 };
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Client, Wallet, Payment, TransactionMetadata } from 'xrpl';
-import './App.css';
+import '../../App.css';
 
 import { currencyCode, issuerInfo, user1Info } from '../../const.ts';
 
@@ -210,7 +210,7 @@ function WalletPage() {
   };
 
   return (
-    <div className="App">
+    <div  style={{ height: '100%', overflow: 'hidden' }}>
       <h1>XRPL Wallet</h1>
       <div>
         <h2>User Account</h2>

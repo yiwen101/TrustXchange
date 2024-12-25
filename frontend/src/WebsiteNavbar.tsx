@@ -9,7 +9,7 @@ import CompanyName from './CompanyName'; // Adjust the import path as needed
 
 function WebsiteNavbar() {
   return (
-    <AppBar position="fixed">
+    <AppBar position={'fixed'}>
       <Toolbar>
         <CompanyName />
         <Box sx={{ flexGrow: 1 }} />
@@ -24,21 +24,45 @@ function WebsiteNavbar() {
             Pool
           </Button>
         </Box>
-        <Button 
-  variant="contained" 
-  color="secondary" 
-  size="large"
-  sx={{ 
-    borderRadius: '20px', 
-    textTransform: 'none',
-    ml: 2 
-  }}
->
-  Login
-</Button>
+        <Button
+          variant="contained"
+          color="secondary"
+          size="small"
+          sx={{
+            borderRadius: '20px',
+            textTransform: 'none',
+          }}
+        >
+          Connect Wallet
+        </Button>
       </Toolbar>
     </AppBar>
   );
 }
+
+{/* fixed tabs 
+<Box
+        sx={{
+          position: 'sticky',
+          top: 0,
+          backgroundColor: 'background.paper',
+          zIndex: 10,
+          borderBottom: 1,
+          borderColor: 'divider',
+        }}
+      >
+        <Tabs
+          value={activeTab}
+          onChange={handleChange}
+          indicatorColor="primary"
+          textColor="primary"
+          variant="fullWidth"
+          centered
+        >
+          <Tab label="Pool" />
+          <Tab label="Action" />
+        </Tabs>
+      </Box>
+  */}
 
 export default WebsiteNavbar;

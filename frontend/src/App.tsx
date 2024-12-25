@@ -1,26 +1,29 @@
-// src/App.tsx
+// App.tsx
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Wallet from './Pages/Wallet/WalletPage';
-import Home from './Pages/Home/HomePage';
+import { Box } from '@mui/material';
 import WebsiteNavbar from './WebsiteNavbar';
+import Home from './Pages/Home/HomePage';
+import Wallet from './Pages/Wallet/WalletPage';
 import PoolPage from './Pages/Pool/PoolPage';
-import './App.css';
+import Temp from './Pages/Temp';
 
-function App() {
+const App: React.FC = () => {
   return (
-    <Router>
-      <div className="App">
+      <Router>
+        <div className="App">
         <WebsiteNavbar />
-        <main className="content">
+        <Box flex="1" display="flex" flexDirection="column">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/wallet" element={<Wallet />} />
             <Route path="/pool" element={<PoolPage />} />
+            <Route path="/temp" element={<Temp />} />
           </Routes>
-        </main>
-      </div>
-    </Router>
+        </Box>
+        </div>
+      </Router>
   );
-}
+};
 
 export default App;
