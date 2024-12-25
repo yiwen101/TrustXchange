@@ -1,8 +1,9 @@
 // src/App.tsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Wallet from './WalletPage';
-import Home from './HomePage';
+import Wallet from './Pages/Wallet/WalletPage';
+import Home from './Pages/Home/HomePage';
 import WebsiteNavbar from './WebsiteNavbar';
+import PoolPage from './Pages/Pool/PoolPage';
 import './App.css';
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/wallet" element={<Wallet />} />
+            <Route path="/pool" element={<PoolPage />} />
           </Routes>
         </main>
       </div>

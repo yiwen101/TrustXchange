@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Borrowing Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+</head>
+<body>
+  <nav class="container-fluid">
+    <ul>
+      <li><strong>DeFi Wealth</strong></li>
+    </ul>
+    <ul>
+      <li><a href="#">Home</a></li>
+      <li><a href="#">Lending</a></li>
+      <li><a href="#">Wallet</a></li>
+      <li><a href="#" role="button">Dashboard</a></li>
+    </ul>
+  </nav>
+  <main class="container">
+    <div class="grid">
+      <section>
+        <hgroup>
+          <h2>Borrowing Dashboard</h2>
+          <h3>Manage your borrowing requests</h3>
+        </hgroup>
+        <!-- Borrowing Form -->
+        <form>
+          <h3>Create a Borrowing Request</h3>
+          <label for="loanAmount">Loan Amount (USD):</label>
+          <input type="number" id="loanAmount" name="loanAmount" placeholder="Enter loan amount" required>
+          
+          <label for="duration">Loan Duration (days):</label>
+          <input type="number" id="duration" name="duration" placeholder="Enter duration" required>
+          
+          <label for="payback">Payback Amount (USD):</label>
+          <input type="number" id="payback" name="payback" placeholder="Enter payback amount" required>
+          
+          <label for="collateral">Collateral Amount (XRP):</label>
+          <input type="number" id="collateral" name="collateral" placeholder="Enter collateral amount" required>
+          
+          <button type="submit" onclick="event.preventDefault()">Submit Request</button>
+        </form>
+        <!-- Active Requests -->
+        <h3>Active Borrowing Requests</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Loan Amount (USD)</th>
+              <th>Duration (days)</th>
+              <th>Payback (USD)</th>
+              <th>Collateral (XRP)</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>500</td>
+              <td>30</td>
+              <td>550</td>
+              <td>1000</td>
+              <td>Open</td>
+              <td>
+                <button onclick="event.preventDefault()">Modify</button>
+                <button onclick="event.preventDefault()">Cancel</button>
+              </td>
+            </tr>
+            <tr>
+              <td>1000</td>
+              <td>60</td>
+              <td>1100</td>
+              <td>2000</td>
+              <td>Matched</td>
+              <td>
+                <button disabled>Modify</button>
+                <button disabled>Cancel</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <!-- Search Requests -->
+        <h3>Search Borrowing Requests</h3>
+        <form>
+          <label for="searchAmount">Loan Amount:</label>
+          <input type="number" id="searchAmount" name="searchAmount" placeholder="Enter amount">
+          
+          <label for="searchDuration">Duration (days):</label>
+          <input type="number" id="searchDuration" name="searchDuration" placeholder="Enter duration">
+          
+          <label for="searchRate">Interest Rate (%):</label>
+          <input type="number" id="searchRate" name="searchRate" placeholder="Enter rate">
+          
+          <label for="searchCollateral">Collateral (XRP):</label>
+          <input type="number" id="searchCollateral" name="searchCollateral" placeholder="Enter collateral">
+          
+          <button type="submit" onclick="event.preventDefault()">Search</button>
+        </form>
+      </section>
+    </div>
+  </main>
+  <footer class="container">
+    <small><a href="#">About</a> • <a href="#">Support</a></small>
+  </footer>
+</body>
+</html>

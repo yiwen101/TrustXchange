@@ -20,6 +20,9 @@ function WebsiteNavbar() {
           <Button color="inherit" component={Link} to="/wallet">
             Wallet
           </Button>
+          <Button color="inherit" component={Link} to="/pool">
+            Pool
+          </Button>
         </Box>
         <Button 
   variant="contained" 

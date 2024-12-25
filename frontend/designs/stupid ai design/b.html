@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Borrowing Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+</head>
+<body>
+  <nav class="container-fluid">
+    <ul>
+      <li><strong>DeFi Wealth</strong></li>
+    </ul>
+    <ul>
+      <li><a href="#">Home</a></li>
+      <li><a href="#">Lending</a></li>
+      <li><a href="#">Wallet</a></li>
+      <li><a href="#" role="button">Dashboard</a></li>
+    </ul>
+  </nav>
+
+  <main class="container">
+    <div class="grid">
+      <section>
+        <hgroup>
+          <h2>Borrowing Dashboard</h2>
+          <h3>Manage and track your borrowing activity</h3>
+        </hgroup>
+
+        <!-- Borrowing Form -->
+        <form>
+          <h3>Create Borrowing Request</h3>
+          <label for="amount">Loan Amount (USD):</label>
+          <input type="number" id="amount" name="amount" placeholder="Enter amount" required>
+          <label for="duration">Loan Duration (days):</label>
+          <input type="number" id="duration" name="duration" placeholder="Enter duration" required>
+          <label for="payback">Payback Amount (USD):</label>
+          <input type="number" id="payback" name="payback" placeholder="Enter payback amount" required>
+          <label for="collateral">Collateral (XRP):</label>
+          <input type="number" id="collateral" name="collateral" placeholder="Enter collateral" required>
+          <button type="submit" onclick="event.preventDefault()">Submit</button>
+        </form>
+
+        <!-- Active Borrowing Requests -->
+        <h3>Active Requests</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Loan</th>
+              <th>Duration</th>
+              <th>Payback</th>
+              <th>Collateral</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>$500</td>
+              <td>30 days</td>
+              <td>$550</td>
+              <td>1000 XRP</td>
+              <td>Open</td>
+              <td>
+                <button>Modify</button>
+                <button>Cancel</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+
+  <footer class="container">
+    <small><a href="#">About</a> • <a href="#">Support</a></small>
+  </footer>
+</body>
+</html>
