@@ -1,9 +1,12 @@
 import * as React from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { columns, rows } from './Data';
+import { Box } from '@mui/material';
 
 export default function Temp() {
   return (
+    <Box>
+      <Box height={'100px'} />
     <DataGrid
       checkboxSelection
       rows={rows}
@@ -44,5 +47,6 @@ export default function Temp() {
         },
       }}
     />
+    </Box>
   );
 }

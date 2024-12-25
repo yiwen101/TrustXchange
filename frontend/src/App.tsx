@@ -7,6 +7,7 @@ import Home from './Pages/Home/HomePage';
 import Wallet from './Pages/Wallet/WalletPage';
 import PoolPage from './Pages/Pool/PoolPage';
 import Temp from './Pages/Temp';
+import P2pPage from './Pages/P2P/P2pPage';
 
 const App: React.FC = () => {
   return (
@@ -19,6 +20,7 @@ const App: React.FC = () => {
             <Route path="/wallet" element={<Wallet />} />
             <Route path="/pool" element={<PoolPage />} />
             <Route path="/temp" element={<Temp />} />
+            <Route path="/p2p" element={<P2pPage />} />
           </Routes>
         </Box>
         </div>
