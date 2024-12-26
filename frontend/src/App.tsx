@@ -8,22 +8,27 @@ import Wallet from './Pages/Wallet/WalletPage';
 import PoolPage from './Pages/Pool/PoolPage';
 import Temp from './Pages/Temp';
 import P2pPage from './Pages/P2P/P2pPage';
+import SwapPage from './Pages/Swap/SwapPage';
+import FuturePage from './Pages/Future/FuturePage';
 
 const App: React.FC = () => {
   return (
       <Router>
-        <div className="App">
+        <Box display="flex" flexDirection="column" height="calc(100vh - 65px)" width="100vw" maxWidth="100%">
         <WebsiteNavbar />
-        <Box flex="1" display="flex" flexDirection="column">
+        <Box height="65px" />
+        <Box flex="1" display="flex" flexDirection="column" width="100%" height = "calc(100vh - 65px)">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/wallet" element={<Wallet />} />
             <Route path="/pool" element={<PoolPage />} />
-            <Route path="/temp" element={<Temp />} />
+            <Route path="/future" element={<FuturePage />} />
+            <Route path="/trade" element={<Home />} />
             <Route path="/p2p" element={<P2pPage />} />
+            <Route path="/swap" element={<SwapPage />} />
           </Routes>
         </Box>
-        </div>
+        </Box>
       </Router>
   );
 };

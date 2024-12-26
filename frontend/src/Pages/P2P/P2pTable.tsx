@@ -1,11 +1,11 @@
-import { Box, Chip, TextField, Grid, MenuItem, Select, FormControl, InputLabel } from "@mui/material";
+import { Box, Chip, TextField, Grid, MenuItem, Select, FormControl, InputLabel, Stack, Button } from "@mui/material";
 import { DataGrid, GridColDef, GridRowsProp } from "@mui/x-data-grid";
 import React, { useState } from "react";
 
 function renderType(type: 'Borrow' | 'Lend') {
   const colors: { [key: string]: 'default' | 'primary' | 'secondary' | 'error' | 'success' | 'warning' } = {
     Borrow: 'primary',
-    Lend: 'default',
+    Lend: 'secondary',
   };
 
   return <Chip label={type} color={colors[type]} size="small" />;
@@ -22,7 +22,10 @@ function renderStatus(status: 'Waiting' | 'Cancelled' | 'Progress' | 'Paid' | 'D
 
   return <Chip label={status} color={colors[status]} size="small" />;
 }
-
+const alertSelected = (param) => {
+  alert('selected');
+  alert(param.row.interestRate);
+}
 const borrowingRequestColumns: GridColDef[] = [
   {
     field: 'type',
@@ -42,21 +45,24 @@ const borrowingRequestColumns: GridColDef[] = [
   { field: 'duration', headerName: 'Duration', flex: 1, minWidth: 100 },
   { field: 'interestRate', headerName: 'Interest Rate', flex: 1, minWidth: 100 },
   { field: 'collateral', headerName: 'Collateral', flex: 1, minWidth: 100 },
-  { field: 'borrower', headerName: 'Borrower', flex: 1, minWidth: 100 },
-  { field: 'lender', headerName: 'Lender', flex: 1, minWidth: 100 },
-  { field: 'startDate', headerName: 'Start Date', flex: 1, minWidth: 100 },
+  //{ field: 'borrower', headerName: 'Borrower', flex: 1, minWidth: 100 },
+  //{ field: 'lender', headerName: 'Lender', flex: 1, minWidth: 100 },
+  //{ field: 'startDate', headerName: 'Start Date', flex: 1, minWidth: 100 },
+  { field: 'acction', headerName: 'Action', flex: 1, minWidth: 100 , renderCell: (params) => <Button variant="contained" color="primary" onClick={()=>alertSelected(params)}>Select</Button>},
 ];
 
 const borrowingRequestRows: GridRowsProp = [
-  { id: 1, type: 'borrow', borrowingAmount: 1000, duration: 30, interestRate: 5, collateral: 500, status: 'Waiting', borrower: 'Alice', lender: 'Bob', startDate: '2021-10-01' },
-  { id: 2, type: 'borrow', borrowingAmount: 2000, duration: 60, interestRate: 6, collateral: 1100, status: 'Progress', borrower: 'Bob', lender: 'Alice', startDate: '2021-10-02' },
-  { id: 3, type: 'borrow', borrowingAmount: 3000, duration: 90, interestRate: 7, collateral: 1500, status: 'Paid', borrower: 'Charlie', lender: 'Alice', startDate: '2021-10-03' },
-  { id: 4, type: 'lend', borrowingAmount: 4000, duration: 120, interestRate: 8, collateral: 2500, status: 'Defaulted', borrower: 'David', lender: 'Bob', startDate: '2021-10-04' },
-  { id: 5, type: 'lend', borrowingAmount: 5000, duration: 150, interestRate: 9, collateral: 2500, status: 'Waiting', borrower: 'Eve', lender: 'Alice', startDate: '2021-10-05' },
-  { id: 6, type: 'lend', borrowingAmount: 5000, duration: 150, interestRate: 9, collateral: 2200, status: 'Cancelled', borrower: 'Eve', lender: 'Alice', startDate: '2021-10-05' },
+  { id: 1, type: 'Borrow', borrowingAmount: 1000, duration: 30, interestRate: 5, collateral: 500, status: 'Waiting', borrower: 'Alice', lender: '_', startDate: '2021-10-01' },
+  { id: 2, type: 'Borrow', borrowingAmount: 2000, duration: 60, interestRate: 6, collateral: 1100, status: 'Progress', borrower: 'Bob', lender: 'Alice', startDate: '2021-10-02' },
+  { id: 3, type: 'Borrow', borrowingAmount: 3000, duration: 90, interestRate: 7, collateral: 1500, status: 'Paid', borrower: 'Charlie', lender: 'Alice', startDate: '2021-10-03' },
+  { id: 4, type: 'Lend', borrowingAmount: 4000, duration: 120, interestRate: 8, collateral: 2500, status: 'Defaulted', borrower: 'David', lender: 'Bob', startDate: '2021-10-04' },
+  { id: 5, type: 'Lend', borrowingAmount: 5000, duration: 150, interestRate: 9, collateral: 2500, status: 'Waiting', borrower: '_', lender: 'Alice', startDate: '2021-10-05' },
+  { id: 6, type: 'Lend', borrowingAmount: 5000, duration: 150, interestRate: 9, collateral: 2200, status: 'Cancelled', borrower: 'Eve', lender: 'Alice', startDate: '2021-10-05' },
 ];
 
 const P2pTable: React.FC = () => {
+  const myName = 'Bob';
+  const [showOnlyMe, setShowOnlyMe] = useState('any');
   const [requestTypeFilter, setRequestTypeFilter] = useState("borrow/lend");
   const [statusFilter, setStatusFilter] = useState('Waiting');
   const [durationCondition, setDurationCondition] = useState('any');
@@ -68,6 +74,7 @@ const P2pTable: React.FC = () => {
 
   const filteredRows = borrowingRequestRows.filter((row) => {
     return (
+      (showOnlyMe === 'any' || showOnlyMe === 'true' && (row.borrower === myName || row.lender === myName) || showOnlyMe === 'false' && row.borrower !== myName && row.lender !== myName) &&
       (requestTypeFilter === "borrow/lend" || row.type.toLowerCase().includes(requestTypeFilter.toLowerCase())) &&
       (statusFilter === 'any' || row.status.toLowerCase().includes(statusFilter.toLowerCase())) &&
       (durationCondition === 'any' || durationFilter === '' || (durationCondition === 'greater' && row.duration > parseInt(durationFilter)) ||
@@ -83,10 +90,9 @@ const P2pTable: React.FC = () => {
   });
 
   return (
-    <Box>
-      <Box height={'100px'} />
-      <Grid container spacing={2} mb={2}>
-        <Grid item xs={3}>
+    <Stack display="flex" flexDirection="column"  justifyContent="flex-start" p={2}>
+      <Grid container spacing={2} mb={2} style={{marginTop: '10px'}}>
+        <Grid item xs={2}>
           <FormControl fullWidth variant="outlined" size="small">
             <InputLabel>Type</InputLabel>
             <Select
@@ -95,12 +101,12 @@ const P2pTable: React.FC = () => {
               onChange={(e) => setRequestTypeFilter(e.target.value)}
             >
               <MenuItem value="borrow/lend">Borrow/Lend</MenuItem>
-              <MenuItem value="borrow">Borrow</MenuItem>
-              <MenuItem value="lend">Lend</MenuItem>
+              <MenuItem value="Borrow">Borrow</MenuItem>
+              <MenuItem value="Lend">Lend</MenuItem>
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={3}>
+        <Grid item xs={2}>
           <FormControl fullWidth variant="outlined" size="small">
             <InputLabel>Status</InputLabel>
             <Select
@@ -114,6 +120,20 @@ const P2pTable: React.FC = () => {
               <MenuItem value="Progress">Progress</MenuItem>
               <MenuItem value="Paid">Paid</MenuItem>
               <MenuItem value="Defaulted">Defaulted</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={2}>
+          <FormControl fullWidth variant="outlined" size="small">
+            <InputLabel>Involve Me</InputLabel>
+            <Select
+              label="My Contract"
+              value={showOnlyMe}
+              onChange={(e) => setShowOnlyMe(e.target.value)}
+            >
+              <MenuItem value='any'>Any</MenuItem>
+              <MenuItem value='true'>True</MenuItem>
+              <MenuItem value='false'>False</MenuItem>
             </Select>
           </FormControl>
         </Grid>
@@ -224,7 +244,10 @@ const P2pTable: React.FC = () => {
         disableColumnResize
         density="compact"
       />
-    </Box>
+      <Button variant="contained" color="primary">
+          Submit New Lending/Borrowing Request
+      </Button>
+    </Stack>
   );
 };
 

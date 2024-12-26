@@ -23,11 +23,17 @@ function WebsiteNavbar() {
           <Button color="inherit" component={Link} to="/pool">
             Pool
           </Button>
-          <Button color="inherit" component={Link} to="/temp">
-            Temp
+          <Button color="inherit" component={Link} to="/future">
+            Future
           </Button>
           <Button color="inherit" component={Link} to="/p2p">
             P2P
+          </Button>
+          <Button color="inherit" component={Link} to="/swap">
+            Swap
+          </Button>
+          <Button color="inherit" component={Link} to="/temp">
+            Trade
           </Button>
         </Box>
         <Button
@@ -47,28 +53,7 @@ function WebsiteNavbar() {
 }
 
 {/* fixed tabs 
-<Box
-        sx={{
-          position: 'sticky',
-          top: 0,
-          backgroundColor: 'background.paper',
-          zIndex: 10,
-          borderBottom: 1,
-          borderColor: 'divider',
-        }}
-      >
-        <Tabs
-          value={activeTab}
-          onChange={handleChange}
-          indicatorColor="primary"
-          textColor="primary"
-          variant="fullWidth"
-          centered
-        >
-          <Tab label="Pool" />
-          <Tab label="Action" />
-        </Tabs>
-      </Box>
+
   */}
 
 export default WebsiteNavbar;

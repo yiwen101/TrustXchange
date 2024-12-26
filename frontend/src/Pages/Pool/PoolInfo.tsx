@@ -27,7 +27,6 @@ const PoolInfo: React.FC = () => {
 
   return (
       <Stack spacing={4} alignItems="center" justifyContent="center" maxHeight="100%">
-        <Typography variant="h6">Info</Typography>
         <Box display="flex" justifyContent="center" gap={4}>
           <Stack alignItems="center">
             <Box component="span" fontWeight="fontWeightBold" fontSize="3rem">{poolData.annualInterestRate}</Box>
