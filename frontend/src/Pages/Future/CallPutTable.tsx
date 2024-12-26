@@ -1,8 +1,7 @@
 // CallPutTable.tsx
 
-import { Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
-import React from 'react';
-import { makeStyles } from '@mui/styles';
+import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import React, { useEffect, useRef } from 'react';
 
 interface OptionData {
   type: 'Call' | 'Put';
@@ -67,45 +66,71 @@ const getOptionMocks = () => {
 const itemsInSeq = ["price", "volume", "firstBid", "firstAsk"];
 
 
+
 const CallPutTable: React.FC = () => {
   const options = getOptionMocks();
+  const currentPriceRef = useRef<HTMLTableRowElement>(null);
+  useEffect(() => {
+    currentPriceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
 
   const upperOptions = options.filter((option) => option.strikePrice < currentPrice);
   const lowerOptions = options.filter((option) => option.strikePrice >= currentPrice);
+  const CurrentPriceRow = () => (
+    <TableRow >
+      <TableCell ref={currentPriceRef} colSpan={9} align="center">
+        Current Price: {currentPrice.toFixed(2)}
+      </TableCell>
+    </TableRow>
+  );
 
   const renderRows = (opts: OptionRow[]) =>
     opts.map((option, index) => (
       <TableRow
         key={index}
       >
-        <TableCell>{option.call.firstAsk.toFixed(2)}</TableCell>
-        <TableCell>{option.call.firstBid.toFixed(2)}</TableCell>
-        <TableCell>{option.call.volume}</TableCell>
-        <TableCell>{option.call.lastPrice.toFixed(2)}</TableCell>
-        <TableCell>{option.strikePrice.toFixed(2)}</TableCell>
-        <TableCell>{option.put.lastPrice.toFixed(2)}</TableCell>
-        <TableCell>{option.put.firstBid.toFixed(2)}</TableCell>
-        <TableCell>{option.put.firstAsk.toFixed(2)}</TableCell>
-        <TableCell>{option.put.volume}</TableCell>
+        <TableCell align="center">{option.call.firstAsk.toFixed(2)}</TableCell>
+        <TableCell align="center">{option.call.firstBid.toFixed(2)}</TableCell>
+        <TableCell align="center">{option.call.volume}</TableCell>
+        <TableCell align="center">{option.call.lastPrice.toFixed(2)}</TableCell>
+        <TableCell sx={{ backgroundColor: 'darkgrey' }} align="center">{option.strikePrice.toFixed(2)}</TableCell>
+        <TableCell align="center">{option.put.lastPrice.toFixed(2)}</TableCell>
+        <TableCell align="center">{option.put.volume}</TableCell>
+        <TableCell align="center">{option.put.firstBid.toFixed(2)}</TableCell>
+        <TableCell align="center">{option.put.firstAsk.toFixed(2)}</TableCell>
       </TableRow>
     ));
+    const CallPutHeader: React.FC = () => {
+      return (
+        <Box display="flex" width="100%">
+          <Box flex={1} bgcolor="green" color="white" textAlign="center" py={1}>
+            Call
+          </Box>
+          <Box flex={1} bgcolor="red" color="white" textAlign="center" py={1}>
+            Put
+          </Box>
+        </Box>
+      );
+    };
     return (
       <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-      <TableContainer sx={{ maxHeight: 440 }}>
+        <CallPutHeader />
+      <TableContainer sx={{ maxHeight: '600px' }}>
         <Table aria-label="call put table" stickyHeader>
           <TableHead>
             <TableRow>
               {itemsInSeq.map((item, index) => (
-                <TableCell key={index}>{item}</TableCell>
+                <TableCell align="center" key={index}>{item}</TableCell>
               ))}
-              <TableCell>Strike </TableCell>
+              <TableCell align="center">Strike </TableCell>
               {itemsInSeq.reverse().map((item, index) => (
-                <TableCell key={-index}>{item}</TableCell>
+                <TableCell align="center" key={-index}>{item}</TableCell>
               ))}
             </TableRow>
           </TableHead>
           <TableBody>
             {renderRows(upperOptions)}
+            <CurrentPriceRow />
             {renderRows(lowerOptions)}
           </TableBody>
         </Table>
