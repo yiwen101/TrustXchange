@@ -84,20 +84,22 @@ const CallPutTable: React.FC = () => {
     </TableRow>
   );
 
+  const handleCellClick = (type: 'Call' | 'Put', strikePrice: number) => {
+    alert(`${type} with strike price ${strikePrice.toFixed(2)} clicked`);
+  };
+
   const renderRows = (opts: OptionRow[]) =>
     opts.map((option, index) => (
-      <TableRow
-        key={index}
-      >
-        <TableCell align="center">{option.call.firstAsk.toFixed(2)}</TableCell>
-        <TableCell align="center">{option.call.firstBid.toFixed(2)}</TableCell>
-        <TableCell align="center">{option.call.volume}</TableCell>
-        <TableCell align="center">{option.call.lastPrice.toFixed(2)}</TableCell>
+      <TableRow key={index}>
+        <TableCell align="center" onClick={() => handleCellClick('Call', option.strikePrice)}>{option.call.firstAsk.toFixed(2)}</TableCell>
+        <TableCell align="center" onClick={() => handleCellClick('Call', option.strikePrice)}>{option.call.firstBid.toFixed(2)}</TableCell>
+        <TableCell align="center" onClick={() => handleCellClick('Call', option.strikePrice)}>{option.call.volume}</TableCell>
+        <TableCell align="center" onClick={() => handleCellClick('Call', option.strikePrice)}>{option.call.lastPrice.toFixed(2)}</TableCell>
         <TableCell sx={{ backgroundColor: 'darkgrey' }} align="center">{option.strikePrice.toFixed(2)}</TableCell>
-        <TableCell align="center">{option.put.lastPrice.toFixed(2)}</TableCell>
-        <TableCell align="center">{option.put.volume}</TableCell>
-        <TableCell align="center">{option.put.firstBid.toFixed(2)}</TableCell>
-        <TableCell align="center">{option.put.firstAsk.toFixed(2)}</TableCell>
+        <TableCell align="center" onClick={() => handleCellClick('Put', option.strikePrice)}>{option.put.lastPrice.toFixed(2)}</TableCell>
+        <TableCell align="center" onClick={() => handleCellClick('Put', option.strikePrice)}>{option.put.volume}</TableCell>
+        <TableCell align="center" onClick={() => handleCellClick('Put', option.strikePrice)}>{option.put.firstBid.toFixed(2)}</TableCell>
+        <TableCell align="center" onClick={() => handleCellClick('Put', option.strikePrice)}>{option.put.firstAsk.toFixed(2)}</TableCell>
       </TableRow>
     ));
     const CallPutHeader: React.FC = () => {
