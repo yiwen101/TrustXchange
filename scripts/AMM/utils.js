@@ -184,6 +184,10 @@ export async function check_AMM_exist(client) {
         }
         const amm_info_result = await client.request(amm_info_request)
         console.log(amm_info_result)
+        const usd_amount = amm_info_result.result.amm.amount.value
+        const xrp_amount_drops = amm_info_result.result.amm.amount2
+        const xrp_amount = xrpl.dropsToXrp(xrp_amount_drops)
+        console.log(`AMM exists with ${usd_amount} USDC and ${xrp_amount} XRP.`)
     } catch(err) {
             if (err.data.error === 'actNotFound') {
             console.log(`No AMM exists yet for the pair
@@ -222,22 +226,55 @@ export async function must_enable_USDC_rippling_flag(client) {
         }
 }
 
-export async function add_to_XRP_USDC_AMM(client, wallet) {
-    const AMMDepositTx = {
-        TransactionType: "AMMDeposit",
-        Account: wallet.address,
-        Asset: {
-            "currency": USDC_currency_code,
-            "issuer": USDC_issuer.address
+export async function add_usd_to_XRP_USDC_AMM(client, wallet, usd_amount) {
+    const usd_str = usdStrOf(usd_amount)
+    console.log(`Adding ${usd_str} USDC to the AMM...`)
+    const ammdeposit = {
+        "TransactionType": "AMMDeposit",
+        "Asset": {
+          currency: USDC_currency_code,
+          issuer: USDC_issuer.address
         },
-        Asset2: {
-            "currency": "XRP"
+        "Asset2": {
+          currency: "XRP"
         },
-      };
-      const prepared = await client.autofill(AMMDepositTx);
+        "Account": wallet.address,
+        "Amount": {
+          currency: USDC_currency_code,
+          issuer: USDC_issuer.address,
+          value: usd_str
+        },
+        "Flags": 0x00080000
+      }
+      const prepared = await client.autofill(ammdeposit);
       const signed = wallet.sign(prepared);
       console.log("Submitting transaction...");
       const ammadd_result = await client.submitAndWait(signed.tx_blob);
-    }
-
+      console.log(ammadd_result)
 }
+
+export async function add_xrp_to_XRP_USDC_AMM(client, wallet, xrp_amount) {
+    const xrp_str = xrpStrOf(xrp_amount)
+    console.log(`Adding ${xrp_str} XRP to the AMM...`)
+    const ammdeposit = {
+        "TransactionType": "AMMDeposit",
+        "Asset": {
+          currency: USDC_currency_code,
+          issuer: USDC_issuer.address
+        },
+        "Asset2": {
+          currency: "XRP"
+        },
+        "Account": wallet.address,
+        "Amount": xrp_str,
+        "Flags": 0x00080000
+      }
+      const prepared = await client.autofill(ammdeposit);
+      const signed = wallet.sign(prepared);
+      console.log("Submitting transaction...");
+      const ammadd_result = await client.submitAndWait(signed.tx_blob);
+      console.log(ammadd_result)
+}
+
+const xrpStrOf = (amount) => xrpl.xrpToDrops(amount).toString();
+const usdStrOf = (amount) => amount.toString();

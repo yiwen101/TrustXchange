@@ -8,6 +8,11 @@ async function main() {
   await utils.log_xrp_balance(client,wallet);
   await utils.log_usd_balance(client,wallet);
   await utils.check_AMM_exist(client);
+  await utils.add_usd_to_XRP_USDC_AMM(client,wallet,100);
+  await utils.check_AMM_exist(client);
+  await utils.add_xrp_to_XRP_USDC_AMM(client,wallet,10);
+  await utils.check_AMM_exist(client);
+  
   //await utils.create_XRP_USDC_AMM(client,wallet);
   //const wallet = await utils.create_and_write_wallet('amm_creater.json');
    /*
