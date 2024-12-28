@@ -3,6 +3,41 @@ import * as xrpl from 'xrpl';
 import fs from 'fs';
 import BigNumber from 'bignumber.js';
 
+const ledger_close_time = (ledger) => new Date((946684800 + ledger.result.ledger.close_time)*1000)
+const ledegr_index = (ledger) => ledger.result.ledger.ledger_index
+const x_hour_before = (date,x=1) => date - (60 * 60 * 1000) * x
+const x_day_before = (date,x=1) => date - (24 * 60 * 60 * 1000) * x
+async function get_estimated_ledger(client, date, ledger = undefined) {
+    if (!ledger) {
+        ledger = await client.request({
+            command: 'ledger',
+            ledger_index: 'validated',
+            include_all_data: false
+        });
+    }
+    const index = ledegr_index(ledger)
+    const close_time = ledger_close_time(ledger)
+    
+    const time_diff = close_time - date
+    const time_diff_in_minutes = time_diff / 60000
+    const estimated_index = index - Math.floor(time_diff_in_minutes * 19.5)
+    const estimated_ledger = await client.request({
+        command: 'ledger',
+        ledger_index: estimated_index.toString(),
+        include_all_data: false
+    });
+    return estimated_ledger
+}
+
+async function get_estimated_ledger_index(client, date, ledger = undefined) {
+    const estimated_ledger = await get_estimated_ledger(client, date, ledger)
+    return ledegr_index(estimated_ledger)
+}
+
+async function get_estimated_ledger_close_time(client, date, ledger = undefined) {
+    const estimated_ledger = await get_estimated_ledger(client, date, ledger)
+    return ledger_close_time(estimated_ledger)
+}
 /**
  * Fetches the ledger index closest to the given timestamp.
  *
@@ -10,30 +45,69 @@ import BigNumber from 'bignumber.js';
  * @param {number} timestamp - The UNIX timestamp (seconds since epoch).
  * @returns {Promise<number>} - The ledger index.
  */
-async function getLedgerIndexByTimestamp(client) {
-    const max_ledgers = 10; 
+export async function getLedgerIndexByTimestamp(client) {
     const latestLedgerInfo = await client.request({
         command: 'ledger',
         ledger_index: 'validated',
         include_all_data: false
     });
-
+    const close_time = ledger_close_time(latestLedgerInfo)
+    for(let i=0;i<=24;i++) {
+        const info = await get_estimated_ledger(client, x_hour_before(close_time,i),latestLedgerInfo)
+        const estimated_ledger_time = ledger_close_time(info)
+        console.log(`Estimated ledger: ${ledegr_index(info)} with close time: ${estimated_ledger_time}`)
+    }
+    /*
     let currentLedger = latestLedgerInfo.result.ledger;
-    console.log(`Current ledger: ${currentLedger.ledger_index} with parent close time: ${currentLedger.close_time}`);
-
-    for (let i = 0; i < max_ledgers; i++) {
+    // as the number of seconds since the Ripple Epoch of 2000-01-01 00:00:00.
+    const seconds_since_epoch = currentLedger.close_time;
+    const epoch_time = new Date(946684800 * 1000).toISOString();
+    console.log(`Ripple Epoch: ${epoch_time}`);
+    const timeStamp_to_date = (seconds) => new Date((946684800 + seconds) * 1000).toISOString();
+    console.log(`Current ledger: ${currentLedger.ledger_index} with parent close time: ${timeStamp_to_date(currentLedger.close_time)}`);
+    // 1 minutes 20 ledgers
+    for (let i = 1; i <= max_ledgers; i++) {
+        const queriedLedgerIndex = currentLedger.ledger_index - i * 100;
         const prevLedgerInfo = await client.request({
             command: 'ledger',
-            ledger_index: currentLedger.index - i * 100,
+            ledger_index: queriedLedgerIndex.toString(),
             include_all_data: false
         });
-        console.log(`ledge with index ${currentLedger.index - i * 100} has close time ${prevLedgerInfo.result.ledger.close_time}`)
+        console.log(`ledge with index ${queriedLedgerIndex} has close time ${timeStamp_to_date(prevLedgerInfo.result.ledger.close_time)}`)
     }
-
-    throw new Error('Ledger traversal exceeded maximum attempts.');
+    */
 }
 
 export async function get_latest_xrp_price() {
+    const price = await gat_xrp_price_at_ledger("validated")
+    console.log(`Latest price: ${price}`)
+}
+
+export async function get_xrp_price_hour_ago(x) {
+    const date = new Date()
+    const hour_ago = x_hour_before(date,x)
+    return await gat_xrp_price_at(hour_ago)
+}
+export async function get_xrp_price_day_ago(x) {
+    return await get_xrp_price_hour_ago(24 * x)
+}
+
+export async function gat_xrp_price_at(dateTime) {
+    const client = new xrpl.Client(mainnet_url);
+    try {
+        await client.connect();
+        const ledger_index = await get_estimated_ledger_index(client,dateTime)
+        await client.disconnect();
+        const price = await gat_xrp_price_at_ledger(ledger_index)
+        const dateTimeFormatted = new Date(dateTime).toISOString()
+        console.log(`Price at ${dateTimeFormatted}: ${price}`)
+        return price
+    } catch(err) {
+              console.log(err)
+    }
+}
+
+export async function gat_xrp_price_at_ledger(ledger_index = "validated") {
     const client = new xrpl.Client(mainnet_url);
     try {
         await client.connect();
@@ -46,13 +120,12 @@ export async function get_latest_xrp_price() {
             "asset2": {
             "currency": "XRP",
             },
-            "ledger_index": "validated"
+            "ledger_index": ledger_index
         }
         const amm_info_result = await client.request(amm_info_request)
         const usd_amount = amm_info_result.result.amm.amount.value
         const xrp_amount_drops = amm_info_result.result.amm.amount2
         const xrp_amount = xrpl.dropsToXrp(xrp_amount_drops)
-        console.log(`XRP price: ${usd_amount/xrp_amount} USD/XRP`)
         return usd_amount/xrp_amount
     } catch(err) {
               console.log(err)

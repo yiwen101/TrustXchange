@@ -6,6 +6,9 @@ export const USDC_issuer = {
 };
 export const USDC_currency_code = '5553444300000000000000000000000000000000'
 export const testnet_url = 'wss://s.altnet.rippletest.net:51233'
+export const mainnet_url = 'wss://s1.ripple.com'
+export const mannnet_usd_issuer_address = 'rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De'
+export const mannnet_Bitstamp_usd_address = 'rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B'
 // 1Billon
 export const trust_line_limit = '1000000000';
 export const EXPLORER = 'https://testnet.xrpl.org'
