@@ -18,12 +18,23 @@ export const ConnectedWallet = () => {
     const id = open ? 'connected-wallet-popover' : undefined;
     return (
         <Stack>
+             <Button
+                variant="contained"
+                color="success"
+                size="small"
+                sx={{
+                borderRadius: '20px',
+                textTransform: 'none',
+                minWidth: '150px', // Ensure the width matches the ConnectedWallet component
+                }}
+            >
             <Stack direction="row" alignItems="center" spacing={0} onClick={handleMoreClick} style={{ cursor: 'pointer' }}>
                 <XrpFaucetIcon />
                 <Typography variant="body2" noWrap>
                     {address}
                 </Typography>
             </Stack>
+            </Button>
             <Popover
                 id={id}
                 open={open}

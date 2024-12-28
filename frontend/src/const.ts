@@ -15,7 +15,7 @@ export const USDC_issuer = {
     privateKey: "EDF6E99F4FB5C9124B538EB55C3F88254D220F0EA251331E18265F86491E5E6BB0",
 };
 export const USDC_currency_code = '5553444300000000000000000000000000000000'
-export const testnet_url = "wss://s.devnet.rippletest.net:51233"
+export const testnet_url = 'wss://s.altnet.rippletest.net:51233'
 export const mainnet_url = 'wss://s1.ripple.com'
 
 

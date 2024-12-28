@@ -12,31 +12,35 @@ export function load_wallet_from_file(fileName: string): Wallet|undefined {
     return wallet;
 }
 
-export async function create_and_write_wallet(client: Client, fileName: string = ''): Promise<Wallet> {
-    console.log(`is client connected: ${client.isConnected()}`);
-    console.log('Funding wallet... at line 20');
-    const {wallet, balance} = await client.fundWallet();
-    console.log(`Wallet funded. New balance: ${balance}`);
-    const account_detail = {
-        address: wallet.address,
-        secret: wallet.seed,
-        publicKey: wallet.publicKey,
-        privateKey: wallet.privateKey,
-    };
-    if (fileName) {
-        fs.writeFileSync(fileName, JSON.stringify(account_detail, null, 2));
+export async function create_wallet(): Promise<any> {
+    const client = new Client('wss://s.altnet.rippletest.net:51233');
+    try {
+        await client.connect();
+        console.log(`is client connected: ${client.isConnected()}`);
+        console.log('Funding wallet... at line 20');
+        const {wallet, balance} = await client.fundWallet();
+        console.log(`Wallet funded. New balance: ${balance}`);
+        const account_detail = {
+            address: wallet.address,
+            secret: wallet.seed,
+            publicKey: wallet.publicKey,
+            privateKey: wallet.privateKey,
+        };
+        console.log(`account_detail: ${JSON.stringify(account_detail)}`);
+        return wallet;
+    } catch (error) {
+        alert('Failed to create wallet');
+        console.error('error:', error);
+    } finally {
+        await client.disconnect();
     }
-    return wallet;
 }
 
-export async function get_funded_wallet_with_usd(client: Client, xrp_amount: number, usd_amount: number, must_create = true): Promise<Wallet> {
+export async function get_funded_wallet_with_usd(client: Client, xrp_amount: number, usd_amount: number): Promise<Wallet> {
     let wallet = undefined
-    if (!must_create) {
-        wallet = load_wallet_from_file('wallet_with_usd.json');
-    }
     if (!wallet) {
         console.log('Creating wallet...');
-        wallet = await create_and_write_wallet(client, 'wallet_with_usd.json');
+        wallet = await create_wallet();
         console.log(`Created wallet: ${wallet.address} at line 39`);
     }
     while(xrp_amount > 0) {

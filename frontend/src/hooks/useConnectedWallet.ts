@@ -1,7 +1,6 @@
 import { atom, useRecoilState, useRecoilValue } from "recoil";
 import { Client, Wallet } from 'xrpl';
-//import xrp_api from "../api/xrp";
-import * as utils from "../api/xrpJs/utils";
+import xrp_api from "../api/xrp";
 
 const connectedWalletState = atom({
     key: "CONNECTED_WALLET",
@@ -28,7 +27,8 @@ export const useConnectedWalletActions = () => {
         }
         setConnectionStatus("connecting");
         try {
-            const wallet = await utils.create_and_write_wallet(client, "fileName.json");
+            const wallet = await xrp_api.create_wallet();
+            //const wallet = await xrp_api.get_funded_wallet_with_usd(client, 1000, 1000, true);
             setConnectedWalletValue(wallet);
             setConnectionStatus("connected");
             console.log("Connected wallet:", wallet);
