@@ -12,6 +12,10 @@ async function main() {
   console.log(await utils.get_xrp_needed_for_usd(client,1,info));
   // should be 2
   console.log(await utils.get_usd_needed_for_xrp(client,1,info));
+  // should be 0.5
+  console.log(await utils.get_xrp_can_get_with_usd(client,1,info));
+  // should be 2
+  console.log(await utils.get_usd_can_get_with_xrp(client,1,info));
   /*
   await utils.add_usd_to_XRP_USDC_AMM(client,wallet,100);
   await utils.check_AMM_exist(client);

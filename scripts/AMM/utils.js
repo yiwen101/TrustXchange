@@ -2,6 +2,7 @@ import { EXPLORER,USDC_issuer,USDC_currency_code,testnet_url,trust_line_limit } 
 import * as xrpl from 'xrpl';
 import fs from 'fs';
 import BigNumber from 'bignumber.js';
+import exp from 'constants';
 
 export function load_wallet_from_file(fileName) {
     const data = fs.readFileSync(fileName);
@@ -351,24 +352,39 @@ let net = getNet()
     client.disconnect()
 */
 // utils.js
-export async function _get_amount_needed_for_token(client, token_amount, token_is_xrp, info=null) {
+export async function _get_amount_for_token(client, token_amount, token_is_xrp, is_intended_token,info=null) {
     let amm_info = info
     if (!amm_info) {
         amm_info = await check_AMM_exist(client)
     }
-    const pool_in_bn = BigNumber(token_is_xrp ? amm_info.usd_amount : amm_info.xrp_amount)
-    const pool_out_bn = BigNumber(token_is_xrp ? amm_info.xrp_amount : amm_info.usd_amount)
+    const pool_in_bn = BigNumber(token_is_xrp ? amm_info.xrp_amount : amm_info.usd_amount)
+    const pool_out_bn = BigNumber(token_is_xrp ? amm_info.usd_amount : amm_info.xrp_amount)
     const full_trading_fee = amm_info.full_trading_fee
     const asset_out_bn = BigNumber(token_amount)
-    const unrounded_amount = swapOut(asset_out_bn, pool_in_bn, pool_out_bn, full_trading_fee)
+    const unrounded_amount = is_intended_token ? swapOut(asset_out_bn, pool_in_bn, pool_out_bn, full_trading_fee) : swapIn(asset_out_bn, pool_in_bn, pool_out_bn, full_trading_fee)
     return unrounded_amount
 }
+
+export async function _get_amount_can_get_with_token(client, token_amount, token_is_xrp, info=null) {
+    return _get_amount_for_token(client, token_amount, token_is_xrp, false, info)
+}
+export async function _get_amount_needed_for_token(client, token_amount, token_is_xrp, info=null) {
+    return _get_amount_for_token(client, token_amount, token_is_xrp, true, info)
+}
+
 export async function get_usd_needed_for_xrp(client, xrp_amount, info=null) {
     return _get_amount_needed_for_token(client,xrp_amount, true, info)
 }
 export async function get_xrp_needed_for_usd(client, usd_amount, info=null) {
     return _get_amount_needed_for_token(client, usd_amount, false, info)
 }
+export async function get_usd_can_get_with_xrp(client, xrp_amount, info=null) {
+    return _get_amount_can_get_with_token(client, xrp_amount, true, info)
+}
+export async function get_xrp_can_get_with_usd(client, usd_amount, info=null) {
+    return _get_amount_can_get_with_token(client, usd_amount, false, info)
+}
+
 export async function swap_usdc_for_XRP(client, wallet, usd_amount, intended_xrp_amount) {
     try {
         console.log(`Swapping ${usd_amount} USDC for ${intended_xrp_amount} XRP...`)
