@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { Card, Button, IconButton, Typography, Stack} from '@mui/material';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 import { XrpIcon, UsdcIcon } from '../../icons/Icons';
-import { Line } from 'react-chartjs-2';
 import InputCard from './InputCard';
 
 const SwapPage = () => {

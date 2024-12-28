@@ -1,38 +1,53 @@
-// xrplClient.ts
-import { Client, Wallet } from 'xrpl';
+// useConnectedClient.ts
+import { useEffect, useState, useCallback } from 'react';
+import { Client } from 'xrpl';
 import { atom, useRecoilState } from 'recoil';
+import { testnet_url } from '../const';
 
-// Create a Recoil atom to store the XRPL client
-export const xrplClientState = atom<Client | null>({
+// todo, test this code?
+const xrplClientState = atom({
     key: 'XRPL_CLIENT',
-    default: null,
+    default: null as Client | null,
 });
 
-// Initialize and connect the XRPL client
-export const initializeXRPLClient = async () => {
-    const client = new Client('wss://s.altnet.rippletest.net:51233');
-    await client.connect();
-    return client;
-};
-
-// Hook to provide XRPL client globally
 export const useXRPLClient = () => {
     const [client, setClient] = useRecoilState(xrplClientState);
 
-    if (!client) {
-        initializeXRPLClient().then(setClient).catch(() => {
-            // Handle connection error
-        });
-    }
-
-    // Ensure the client is connected
-    const ensureConnected = async () => {
-        if (client && !client.isConnected()) {
-            await client.connect();
-        }
+   
+    const attemptConnect = async (_client:Client) => {
+         if (_client.isConnected()) {
+            return;
+         }
+         for (let i = 0; i < 3; i++) {
+            try {
+                await _client.connect();
+                break;
+            } catch (e) {
+                console.error('Failed to connect to XRPL. Retrying...');
+            }
+         }
+         if (!_client.isConnected()) {
+            throw new Error('Failed to connect to XRPL');
+         }
     };
 
-    return { client, ensureConnected };
-};
+    const initializeClient = async () => {
+        if (client && client.isConnected()) {
+            return;
+        }
+        if (!client) {
+            const _client = new Client(testnet_url);
+            await attemptConnect(_client)
+            setClient(_client)
+        } else {
+            await attemptConnect(client)
+        } 
+    };
 
-export default useXRPLClient;
+    const get_connected_client = async () => {
+        await initializeClient();
+        return client as Client;
+    };
+
+    return { initializeClient, get_connected_client };
+};

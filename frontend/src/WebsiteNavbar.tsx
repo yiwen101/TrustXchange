@@ -6,10 +6,15 @@ import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import { Link } from 'react-router-dom';
 import CompanyName from './CompanyName'; // Adjust the import path as needed
+import { useConnectedWalletValues } from './hooks/useConnectedWallet';
+import ConnectWalletButton from './ConnectWalletButton';
+import { ConnectedWallet } from './connectedWallet';
+import ConnectingWallet from './ConnectingWallet';
 
 function WebsiteNavbar() {
+  const { connectionStatus } = useConnectedWalletValues();
   return (
-    <AppBar position={'fixed'}>
+    <AppBar position="fixed">
       <Toolbar>
         <CompanyName />
         <Box sx={{ flexGrow: 1 }} />
@@ -36,24 +41,12 @@ function WebsiteNavbar() {
             Trade
           </Button>
         </Box>
-        <Button
-          variant="contained"
-          color="secondary"
-          size="small"
-          sx={{
-            borderRadius: '20px',
-            textTransform: 'none',
-          }}
-        >
-          Connect Wallet
-        </Button>
+        {connectionStatus === "disconnected" && <ConnectWalletButton />}
+        {connectionStatus === "connecting" && <ConnectingWallet />}
+        {connectionStatus === "connected" && <ConnectedWallet />}
       </Toolbar>
     </AppBar>
   );
 }
-
-{/* fixed tabs 
-
-  */}
 
 export default WebsiteNavbar;

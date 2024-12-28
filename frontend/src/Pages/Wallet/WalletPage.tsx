@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Client, Wallet, Payment, TransactionMetadata } from 'xrpl';
 import '../../App.css';
 
-import { currencyCode, issuerInfo, user1Info } from '../../const.ts';
+import { currencyCode, USDC_issuer as issuerInfo, user1Info } from '../../const.ts';
 
 function WalletPage() {
   const serverUrl = 'wss://s.altnet.rippletest.net:51233';
