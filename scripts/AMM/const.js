@@ -8,4 +8,5 @@ export const USDC_currency_code = '5553444300000000000000000000000000000000'
 export const testnet_url = 'wss://s.altnet.rippletest.net:51233'
 // 1Billon
 export const trust_line_limit = '1000000000';
+export const EXPLORER = 'https://testnet.xrpl.org'
 

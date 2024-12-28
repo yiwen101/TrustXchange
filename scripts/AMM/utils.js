@@ -1,4 +1,4 @@
-import { USDC_issuer,USDC_currency_code,testnet_url,trust_line_limit } from './const.js';
+import { EXPLORER,USDC_issuer,USDC_currency_code,testnet_url,trust_line_limit } from './const.js';
 import * as xrpl from 'xrpl';
 import fs from 'fs';
 
@@ -9,9 +9,7 @@ export function load_wallet_from_file(fileName) {
     return wallet;
 }
 
-export async function create_and_write_wallet(fileName) {
-    const client = new xrpl.Client(testnet_url);
-  await client.connect();
+export async function create_and_write_wallet(client,fileName) {
   const wallet = xrpl.Wallet.generate();
   console.log(`Generated wallet address: ${wallet.address}`);
   // Create a new wallet
@@ -23,30 +21,27 @@ export async function create_and_write_wallet(fileName) {
     privateKey: wallet.privateKey,
   }
   fs.writeFileSync(fileName, JSON.stringify(account_detail),null,2);
-  await client.disconnect();
   return wallet;
 }
 
-export async function fund_wallet(wallet, amountStr = '1000') {
-    const client = new xrpl.Client(testnet_url);
+export async function fund_wallet(client,wallet, amountStr = '1000') {
+    //const client = new xrpl.Client(testnet_url);
     try {
         // Connect to the Testnet
-        await client.connect();
+        //await client.connect();
         console.log(`Funding wallet: ${wallet.address} with ${amountStr} XRP`);
         const { _wallet, balance } = await client.fundWallet(wallet, {amount: amountStr});
         console.log(`Wallet funded. New balance: ${balance}`);
     } catch (error) {
         console.error('error:', error);
-    } finally {
-        await client.disconnect();
-    }
+    } 
 }
 
-export async function establish_usdc_trust_line(wallet) {
-    const client = new xrpl.Client(testnet_url);
+export async function establish_usdc_trust_line(client,wallet) {
+    //const client = new xrpl.Client(testnet_url);
     try {
         // Connect to the Testnet
-        await client.connect();
+        //await client.connect();
         
         const trustSetTx = {
             TransactionType: 'TrustSet',
@@ -68,16 +63,14 @@ export async function establish_usdc_trust_line(wallet) {
             }
     } catch (error) {
         console.error('error:', error);
-    } finally {
-        await client.disconnect();
     }
 }
 
-export async function send_usd_to(wallet, amountStr = '1000') {
-    const client = new xrpl.Client(testnet_url);
+export async function send_usd_to(client,wallet, amountStr = '1000') {
+    //const client = new xrpl.Client(testnet_url);
     try {
         // Connect to the Testnet
-        await client.connect();
+       // await client.connect();
         
         const issuerWallet = xrpl.Wallet.fromSeed(USDC_issuer.secret);
 
@@ -104,29 +97,27 @@ export async function send_usd_to(wallet, amountStr = '1000') {
         }
     } catch (error) {
         console.error('error:', error);
-    } finally {
-        await client.disconnect();
-    }
+    } 
 }
 
-export async function log_xrp_balance(wallet){
-    const client = new xrpl.Client(testnet_url);
+export async function log_xrp_balance(client,wallet){
+    //const client = new xrpl.Client(testnet_url);
     try {
         // Connect to the Testnet
-        await client.connect();
+        //await client.connect();
         const xrpBalance = await client.getXrpBalance(wallet.address);
         console.log('XRP balance of ${wallet.address}:', xrpBalance);
     } catch (error) {
         console.error('error:', error);
     } finally {
-        await client.disconnect();
+        //await client.disconnect();
     }
 }
 
-export async function log_usd_balance(wallet) {
-    const client = new xrpl.Client(testnet_url);
+export async function log_usd_balance(client, wallet) {
+    //const client = new xrpl.Client(testnet_url);
     try {
-        await client.connect();
+        //await client.connect();
         const accountInfo = await client.request({
             command: 'account_lines',
             account: wallet.address
@@ -143,7 +134,110 @@ export async function log_usd_balance(wallet) {
             }
     } catch (error) {
         console.error('error:', error);
-    } finally {
-        await client.disconnect();
     }
+}
+  // AMM created: https://testnet.xrpl.org/transactions/D7E42B4B9AA2B409144326299DC47B6B55029B257F7BB916D68CEC42B89370FD
+export async function create_XRP_USDC_AMM(client, wallet) {
+    const ss = await client.request({"command": "server_state"})
+    const amm_fee_drops = ss.result.state.validated_ledger.reserve_inc.toString()
+    // Define AMM parameters
+     // Create AMM ---------------------------------------------------------------
+  // This example assumes that 15 TST ≈ 100 FOO in value.
+  const paymentTx = {
+    "TransactionType": "AMMCreate",
+    "Account": wallet.address,
+    "Amount": {
+      currency: USDC_currency_code,
+      issuer: USDC_issuer.address,
+      value: "15"
+    },
+    "Amount2": "100000000",
+    "TradingFee": 500, // 0.5%
+    "Fee": amm_fee_drops,
+  };
+    const prepared = await client.autofill(paymentTx);
+    const signed = wallet.sign(prepared);
+    console.log("Submitting transaction...");
+    const ammcreate_result = await client.submitAndWait(signed.tx_blob);
+  // Use fail_hard so you don't waste the tx cost if you mess up
+  if (ammcreate_result.result.meta.TransactionResult == "tesSUCCESS") {
+    console.log(`AMM created: ${EXPLORER}/transactions/${ammcreate_result.result.hash}`)
+  } else {
+    throw `Error sending transaction: ${ammcreate_result}`
+  }
+  
+}
+
+  
+export async function check_AMM_exist(client) {
+    try {
+        const amm_info_request = {
+            "command": "amm_info",
+            "asset": {
+            "currency": USDC_currency_code,
+            "issuer": USDC_issuer.address
+            },
+            "asset2": {
+            "currency": "XRP",
+            },
+            "ledger_index": "validated"
+        }
+        const amm_info_result = await client.request(amm_info_request)
+        console.log(amm_info_result)
+    } catch(err) {
+            if (err.data.error === 'actNotFound') {
+            console.log(`No AMM exists yet for the pair
+                        ${USDC_currency_code}.${USDC_issuer.address} / XRP.`)
+            } else {
+            throw(err)
+            }
+    }
+
+}
+
+export async function must_enable_USDC_rippling_flag(client) {
+        const issuerAddress = USDC_issuer.address;
+    
+        try {
+                const setFlagTx = {
+                    TransactionType: "AccountSet",
+                    Account: issuerAddress,
+                    SetFlag: xrpl.AccountSetAsfFlags.asfDefaultRipple,
+                };
+    
+                const USDC_issuer_wallet = xrpl.Wallet.fromSeed(USDC_issuer.secret);
+                const prepared = await client.autofill(setFlagTx);
+                const signed = USDC_issuer_wallet.sign(prepared);
+                const result = await client.submitAndWait(signed.tx_blob);
+                console.log("Transaction Result:", result);
+    
+                if (result.result.meta.TransactionResult === "tesSUCCESS") {
+                    console.log("Default Ripple flag enabled successfully.");
+                } else {
+                    console.error("Failed to enable Default Ripple flag:", result.result.meta.TransactionResult);
+                }
+    
+        } catch (error) {
+            console.error("Error enabling Default Ripple flag:", error);
+        }
+}
+
+export async function add_to_XRP_USDC_AMM(client, wallet) {
+    const AMMDepositTx = {
+        TransactionType: "AMMDeposit",
+        Account: wallet.address,
+        Asset: {
+            "currency": USDC_currency_code,
+            "issuer": USDC_issuer.address
+        },
+        Asset2: {
+            "currency": "XRP"
+        },
+      };
+      const prepared = await client.autofill(AMMDepositTx);
+      const signed = wallet.sign(prepared);
+      console.log("Submitting transaction...");
+      const ammadd_result = await client.submitAndWait(signed.tx_blob);
+    }
+
 }
