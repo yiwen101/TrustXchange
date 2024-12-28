@@ -1,13 +1,12 @@
-import { Client, LedgerResponse } from 'xrpl';
-import { mainnet_url} from '../../const';
-import { get_amm_info } from './amm_transection';
+import { AMMInfoRequest, AMMInfoResponse, Client, dropsToXrp, IssuedCurrencyAmount, LedgerResponse } from 'xrpl';
+import { mainnet_url, mannnet_Bitstamp_usd_address} from '../../const';
 
 const ledger_close_time = (ledger: LedgerResponse): Date => new Date((946684800 + ledger.result.ledger.close_time) * 1000);
 const ledger_index = (ledger: LedgerResponse): number => ledger.result.ledger.ledger_index;
-const x_hour_before = (date: Date, x: number = 1): number => date.getTime() - (60 * 60 * 1000) * x;
+const x_hour_before = (date: Date, x: number = 1): number => date - (60 * 60 * 1000) * x
 
 async function get_estimated_ledger(date: Date, ledger: LedgerResponse | undefined = undefined): Promise<LedgerResponse> {
-    const client = new Client('wss://s.altnet.rippletest.net:51233');
+    const client = new Client(mainnet_url);
     try {
       await client.connect();
       if (!ledger) {
@@ -59,7 +58,7 @@ export async function get_latest_xrp_price(): Promise<number> {
 export async function get_xrp_price_hour_ago(x: number): Promise<number> {
     const date = new Date();
     const hour_ago = x_hour_before(date, x);
-    return await get_xrp_price_at(new Date(hour_ago));
+    return await get_xrp_price_at(new Date(hour_ago))
 }
 
 export async function get_xrp_price_day_ago(x: number): Promise<number> {
@@ -67,22 +66,50 @@ export async function get_xrp_price_day_ago(x: number): Promise<number> {
 }
 
 export async function get_xrp_price_at(dateTime: Date): Promise<number> {
-    const client = new Client('wss://s.altnet.rippletest.net:51233');
+    const client = new Client(mainnet_url);
     await client.connect();
     const ledger_index = await get_estimated_ledger_index(dateTime);
     await client.disconnect();
     const price = await get_xrp_price_at_ledger(ledger_index);
-    const dateTimeFormatted = dateTime.toISOString();
+    const dateTimeFormatted = new Date(dateTime).toISOString();
     console.log(`Price at ${dateTimeFormatted}: ${price}`);
-    return price;
+    return price!;
 }
 
 export async function get_xrp_price_at_ledger(ledger_index:number|"validated" = "validated") {
+    /*
+    const info = await get_amm_info(true, ledger_index)
+    return info.usd_amount/ info.xrp_amount;
+    */
+    console.log(`mainnet url ${mainnet_url}`)
+    console.log(`mannnet_Bitstamp_usd_address ${mannnet_Bitstamp_usd_address}`)
     const client = new Client(mainnet_url);
     try {
-        const info = await get_amm_info(true, ledger_index)
-        return info.usd_amount/ info.xrp_amount;
-    }  finally {
+        await client.connect();
+        const amm_info_request = {
+            command: "amm_info",
+            asset: {
+                currency: "XRP",
+                },
+            asset2: {
+                currency: 'USD',
+                issuer: mannnet_Bitstamp_usd_address
+                },
+            ledger_index: ledger_index
+        }
+        console.log("line100")
+        console.log(`ledger_index`,ledger_index)
+        const amm_info_result = await client.request(amm_info_request as AMMInfoRequest) as AMMInfoResponse
+        console.log("line102",ledger_index,amm_info_result)
+        const usd_amount = amm_info_result.result.amm.amount2.value
+        const xrp_amount_drops = amm_info_result.result.amm.amount as string
+        const xrp_amount = dropsToXrp(xrp_amount_drops)
+        const res = usd_amount/xrp_amount
+        console.log(`res is ${res}`)
+        return usd_amount/xrp_amount
+    } catch(err) {
+              console.log(err)
+    } finally {
         await client.disconnect();
     }
 }

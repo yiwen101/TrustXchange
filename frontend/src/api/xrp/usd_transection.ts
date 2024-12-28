@@ -5,14 +5,14 @@ import { logResponse } from './common';
 declare const USDC_currency_code: string;
 declare const USDC_issuer: { address: string; secret: string };
 declare const trust_line_limit: string;
-const SERVER_URL = 'wss://s.altnet.rippletest.net:51233';
+const testnet_url = 'wss://s.altnet.rippletest.net:51233';
 
 /**
  * Logs the USD balance for the given wallet.
  * @param wallet - The wallet whose USD balance is to be logged.
  */
 export async function log_usd_balance(wallet: Wallet): Promise<void> {
-    const client = new Client(SERVER_URL);
+    const client = new Client(testnet_url);
     try {
         await client.connect();
         const accountInfo: AccountLinesResponse = await client.request({
@@ -44,7 +44,7 @@ export async function log_usd_balance(wallet: Wallet): Promise<void> {
  * @param amountStr - The amount of USDC to send as a string. Defaults to '1000'.
  */
 export async function send_usd_to(wallet: Wallet, amountStr: string = '1000'): Promise<void> {
-    const client = new Client(SERVER_URL);
+    const client = new Client(testnet_url);
     try {
         await client.connect();
         const issuerWallet: Wallet = Wallet.fromSeed(USDC_issuer.secret);
@@ -85,7 +85,7 @@ export async function send_usd_to(wallet: Wallet, amountStr: string = '1000'): P
  * @param wallet - The wallet for which to establish the trust line.
  */
 export async function establish_usdc_trust_line(wallet: Wallet): Promise<void> {
-    const client = new Client(SERVER_URL);
+    const client = new Client(testnet_url);
     try {
         await client.connect();
         const trustSetTx: {

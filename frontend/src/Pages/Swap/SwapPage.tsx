@@ -1,23 +1,25 @@
 // SwapPage.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, Button, IconButton, Typography, Stack} from '@mui/material';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 import { XrpIcon, UsdcIcon } from '../../icons/Icons';
 import InputCard from './InputCard';
+import xrp_api from '../../api/xrp';
+import { AMMInfo } from '../../api/xrp/amm_transection';
+import { useXrpPriceState } from '../../hooks/usePriceState';
 
 const SwapPage = () => {
   const [usdValueInput, setUsdValueInput] = useState('');
   const [xrpValueInput, setXrpValueInput] = useState('');
   const [isXrpToUsd, setIsXrpToUsd] = useState(true);
-  const [marketData] = useState({
-    price: '1.25',
-    change: '+2.5%',
-    trend: [1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.25],
-  });
-
+  const { xrpPrice, xrpPriceYesterday,ammInfo } = useXrpPriceState();
+  
   const handleSwitch = () => {
     setIsXrpToUsd(!isXrpToUsd);
   };
+  const current_price_2dp = xrpPrice ? xrpPrice.toFixed(2) : '0.00'
+  const price_diff = xrpPrice && xrpPriceYesterday ? xrpPrice - xrpPriceYesterday : 0
+  const price_diff_2dp = price_diff.toFixed(2)
 
   return (
     <Card style={{ padding: '20px', width: '250px', margin: 'auto' }}>
@@ -31,9 +33,9 @@ const SwapPage = () => {
         <SwapVertIcon />
       </IconButton>
       {isXrpToUsd ? (
-        <InputCard icon={<UsdcIcon />} value={usdValueInput} onChange={setUsdValueInput} />
+        <InputCard icon={<UsdcIcon />} value={usdValueInput} disabled />
       ) : (
-        <InputCard icon={<XrpIcon />} value={xrpValueInput} onChange={setXrpValueInput} />
+        <InputCard icon={<XrpIcon />} value={xrpValueInput} disabled />
       )}
       <Button variant="contained" color="primary" style={{ marginTop: '20px', width: '100%' }}>
         Connect Wallet / Pay
@@ -41,33 +43,17 @@ const SwapPage = () => {
 
       <Typography variant="h5" style={{ marginTop: '40px' }}>Market Condition</Typography>
       <Card style={{ padding: '10px', marginTop: '10px' }}>
+        {xrpPrice && xrpPriceYesterday && (
         <Stack direction="row" alignItems="center" justifyContent="space-between">
             <XrpIcon />
-            <Typography variant="h6">${marketData.price}</Typography>
+            <Typography variant="h6">{current_price_2dp}</Typography>
             <Typography
               variant="body2"
-              style={{ color: marketData.change.startsWith('+') ? 'green' : 'red' }}
+              style={{ color: price_diff>0 ? 'green' : 'red' }}
             >
-              {marketData.change} since yesterday
+              {price_diff_2dp} since yesterday
             </Typography>
-          {/* Chart 
-          <div style={{ width: '100px' }}>
-            <Line
-              data={{
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                datasets: [
-                  {
-                    data: marketData.trend,
-                    borderColor: 'blue',
-                    fill: false,
-                  },
-                ],
-              }}
-              options={{ responsive: true, maintainAspectRatio: false }}
-            />
-          </div>
-          */}
-        </Stack>
+        </Stack>)}
       </Card>
     </Card>
   );

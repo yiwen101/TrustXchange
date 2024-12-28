@@ -3,14 +3,9 @@ import BigNumber from 'bignumber.js';
 import { logResponse, usdStrOf, xrpStrOf } from './common';
 import { fund_wallet } from './wallet';
 import { get_latest_xrp_price } from './xrp_price';
-import { mannnet_Bitstamp_usd_address, mainnet_url, testnet_url } from '../../const';
+import {  USDC_issuer,USDC_currency_code,mannnet_Bitstamp_usd_address, mainnet_url, testnet_url } from '../../const';
 
-const SERVER_URL = testnet_url || 'wss://s.altnet.rippletest.net:51233';
-
-const USDC_currency_code = 'USDC';
-const USDC_issuer = { address: 'r...', secret: 's...' }; // Replace with actual issuer details
-
-interface AMMInfo {
+export interface AMMInfo {
     usd_amount: number;
     xrp_amount: number;
     full_trading_fee: number;
@@ -23,7 +18,7 @@ interface AMMInfo {
  * @param intended_xrp_amount - The intended amount of XRP to receive.
  */
 export async function swap_usdc_for_XRP(wallet: Wallet, usd_amount: number, intended_xrp_amount: number): Promise<void> {
-    const client = new Client(SERVER_URL);
+    const client = new Client(testnet_url);
     try {
         await client.connect();
         console.log(`Swapping ${usd_amount} USDC for ${intended_xrp_amount} XRP...`);
@@ -61,7 +56,7 @@ export async function swap_usdc_for_XRP(wallet: Wallet, usd_amount: number, inte
  * @returns The calculated amount as a BigNumber.
  */
 async function _get_amount_for_token(token_amount: number, token_is_xrp: boolean, is_intended_token: boolean, info: AMMInfo | null = null): Promise<BigNumber> {
-    const client = new Client(SERVER_URL);
+    const client = new Client(testnet_url);
     try {
         await client.connect();
         let amm_info = info;
@@ -152,7 +147,7 @@ export async function get_xrp_can_get_with_usd(usd_amount: number, info: AMMInfo
  * @param wallet - The wallet creating the AMM.
  */
 export async function create_XRP_USDC_AMM(wallet: Wallet): Promise<void> {
-    const client = new Client(SERVER_URL);
+    const client = new Client(testnet_url);
     try {
         await client.connect();
         const ss = await client.request({ "command": "server_state" });
@@ -194,7 +189,7 @@ export async function create_XRP_USDC_AMM(wallet: Wallet): Promise<void> {
  * @returns AMM information.
  */
 export async function get_amm_info(mainnet: boolean = false, ledger_index: number | "validated" = "validated"): Promise<AMMInfo> {
-    const client = new Client(mainnet ? mainnet_url : SERVER_URL);
+    const client = new Client(mainnet ? mainnet_url : testnet_url)
     try {
         await client.connect();
         const amm_info_request: AMMInfoRequest = {
@@ -222,7 +217,7 @@ export async function get_amm_info(mainnet: boolean = false, ledger_index: numbe
             full_trading_fee: full_trading_fee,
         };
     } catch (error) {
-        console.error('Error in get_amm_info:', error);
+        console.error('Error in get_amm_info in line 220:', error);
         throw error;
     } finally {
         await client.disconnect();
@@ -233,7 +228,7 @@ export async function get_amm_info(mainnet: boolean = false, ledger_index: numbe
  * Enables the Default Ripple flag for the USDC issuer.
  */
 export async function must_enable_USDC_rippling_flag(): Promise<void> {
-    const client = new Client(SERVER_URL);
+    const client = new Client(testnet_url);
     try {
         await client.connect();
         const issuerAddress = USDC_issuer.address;
@@ -262,7 +257,7 @@ export async function must_enable_USDC_rippling_flag(): Promise<void> {
  * @param usd_amount - The amount of USD to add.
  */
 export async function add_usd_to_XRP_USDC_AMM(wallet: Wallet, usd_amount: number): Promise<void> {
-    const client = new Client(SERVER_URL);
+    const client = new Client(testnet_url);
     try {
         await client.connect();
         const usd_str = usdStrOf(usd_amount);
@@ -303,7 +298,7 @@ export async function add_usd_to_XRP_USDC_AMM(wallet: Wallet, usd_amount: number
  * @param xrp_amount - The amount of XRP to add.
  */
 export async function add_xrp_to_XRP_USDC_AMM(wallet: Wallet, xrp_amount: number): Promise<void> {
-    const client = new Client(SERVER_URL);
+    const client = new Client(testnet_url);
     try {
         await client.connect();
         const xrp_str = xrpStrOf(xrp_amount);
@@ -339,7 +334,7 @@ export async function add_xrp_to_XRP_USDC_AMM(wallet: Wallet, xrp_amount: number
  * Tops up the AMM with necessary funds.
  */
 export async function top_up_amm(): Promise<void> {
-    const client = new Client(SERVER_URL);
+    const client = new Client(testnet_url);
     try {
         await client.connect();
         const generation_result = await client.fundWallet();

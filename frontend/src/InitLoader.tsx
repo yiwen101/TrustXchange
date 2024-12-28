@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Box } from '@mui/material';
 import WebsiteNavbar from './WebsiteNavbar';
@@ -8,11 +8,15 @@ import PoolPage from './Pages/Pool/PoolPage';
 import P2pPage from './Pages/P2P/P2pPage';
 import SwapPage from './Pages/Swap/SwapPage';
 import FuturePage from './Pages/Future/FuturePage';
-import { useXRPLClient } from './hooks/useConnectedClient';
-const ClientLoader = () => {
-    const {initializeClient}= useXRPLClient();
+import { useXrpPriceState } from './hooks/usePriceState';
+const InitLoader = () => {
+    const { init } = useXrpPriceState(); 
+    const _init = useCallback(() => {
+      init(); 
+    }, []);
+
     useEffect(() => {
-        initializeClient();
+      _init();
     }, []);
     return (
         <Box display="flex" flexDirection="column" height="calc(100vh - 65px)" width="100vw" maxWidth="100%">
@@ -32,4 +36,4 @@ const ClientLoader = () => {
         </Box>
     )
 }
-export default ClientLoader;
+export default InitLoader;

@@ -8,6 +8,8 @@ async function main() {
   await utils.top_up_amm(client);
   const latestest_xrp_price = await utils.get_latest_xrp_price();
   */
+ const x = await utils.gat_xrp_price_at_ledger()
+ console.log(`x is ${x}`)
  await utils.get_latest_xrp_price();
  for(let i=1;i<=10;i++){
   await utils.get_xrp_price_hour_ago(24*i)

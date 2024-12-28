@@ -6,17 +6,19 @@ import { Card, TextField, Stack } from '@mui/material';
 interface InputCardProps {
   icon: JSX.Element;
   value: string;
-  onChange: (value: string) => void;
+  onChange?: (value: string) => void;
+  disabled?: boolean;
 }
 
-const InputCard: React.FC<InputCardProps> = React.memo(({ icon, value, onChange }) => (
+const InputCard: React.FC<InputCardProps> = React.memo(({ icon, value, onChange = undefined, disabled = false }) => (
   <Card style={{ padding: '10px', marginTop: '2px' }}>
     <Stack direction="row" alignItems="center">
       {icon}
       <TextField
         label="Amount"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => onChange && onChange(e.target.value)}
+        disabled={disabled}
         style={{ marginLeft: '10px', flex: 1 }}
       />
     </Stack>
