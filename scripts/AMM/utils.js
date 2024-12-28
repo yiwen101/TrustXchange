@@ -38,45 +38,6 @@ async function get_estimated_ledger_close_time(client, date, ledger = undefined)
     const estimated_ledger = await get_estimated_ledger(client, date, ledger)
     return ledger_close_time(estimated_ledger)
 }
-/**
- * Fetches the ledger index closest to the given timestamp.
- *
- * @param {xrpl.Client} client - The connected XRPL client.
- * @param {number} timestamp - The UNIX timestamp (seconds since epoch).
- * @returns {Promise<number>} - The ledger index.
- */
-export async function getLedgerIndexByTimestamp(client) {
-    const latestLedgerInfo = await client.request({
-        command: 'ledger',
-        ledger_index: 'validated',
-        include_all_data: false
-    });
-    const close_time = ledger_close_time(latestLedgerInfo)
-    for(let i=0;i<=24;i++) {
-        const info = await get_estimated_ledger(client, x_hour_before(close_time,i),latestLedgerInfo)
-        const estimated_ledger_time = ledger_close_time(info)
-        console.log(`Estimated ledger: ${ledegr_index(info)} with close time: ${estimated_ledger_time}`)
-    }
-    /*
-    let currentLedger = latestLedgerInfo.result.ledger;
-    // as the number of seconds since the Ripple Epoch of 2000-01-01 00:00:00.
-    const seconds_since_epoch = currentLedger.close_time;
-    const epoch_time = new Date(946684800 * 1000).toISOString();
-    console.log(`Ripple Epoch: ${epoch_time}`);
-    const timeStamp_to_date = (seconds) => new Date((946684800 + seconds) * 1000).toISOString();
-    console.log(`Current ledger: ${currentLedger.ledger_index} with parent close time: ${timeStamp_to_date(currentLedger.close_time)}`);
-    // 1 minutes 20 ledgers
-    for (let i = 1; i <= max_ledgers; i++) {
-        const queriedLedgerIndex = currentLedger.ledger_index - i * 100;
-        const prevLedgerInfo = await client.request({
-            command: 'ledger',
-            ledger_index: queriedLedgerIndex.toString(),
-            include_all_data: false
-        });
-        console.log(`ledge with index ${queriedLedgerIndex} has close time ${timeStamp_to_date(prevLedgerInfo.result.ledger.close_time)}`)
-    }
-    */
-}
 
 export async function get_latest_xrp_price() {
     const price = await gat_xrp_price_at_ledger("validated")
@@ -437,77 +398,7 @@ export async function add_xrp_to_XRP_USDC_AMM(client, wallet, xrp_amount) {
       const ammadd_result = await client.submitAndWait(signed.tx_blob);
       console.log(ammadd_result)
 }
-/*
-let net = getNet()
 
-    const client = new xrpl.Client(net)
-    results = `\n\nConnecting to ${getNet()} ...`
-    standbyResultField.value = results
-
-    await client.connect()
-    results += '\n\nConnected.'
-    standbyResultField.value = results
-
-    try {
-
-        const standby_wallet = xrpl.Wallet.fromSeed(standbySeedField.value)
-
-        const takerPaysCurrency = standbyTakerPaysCurrencyField.value
-        const takerPaysIssuer = standbyTakerPaysIssuerField.value
-        const takerPaysAmount = standbyTakerPaysAmountField.value
-
-        const takerGetsCurrency = standbyTakerGetsCurrencyField.value
-        const takerGetsIssuer = standbyTakerGetsIssuerField.value
-        const takerGetsAmount = standbyTakerGetsAmountField.value
-
-        let takerPays = null
-        let takerGets = null
-
-        if ( takerPaysCurrency == 'XRP' ) {
-            takerPays = xrpl.xrpToDrops(takerPaysAmount)
-        } else {
-            takerPays = {
-                "currency": takerPaysCurrency,
-                "issuer": takerPaysIssuer,
-                "value": takerPaysAmount
-            }
-        }
-
-        if ( takerGetsCurrency == 'XRP' ) {
-            takerGets = xrpl.xrpToDrops(takerGetsAmount)
-        } else {
-            takerGets = {
-                "currency": takerGetsCurrency,
-                "issuer": takerGetsIssuer,
-                "value": takerGetsAmount
-            }
-        }
-
-        results += '\n\nSwapping tokens ...'
-        standbyResultField.value = results
-
-        const offer_result = await client.submitAndWait({
-            "TransactionType": "OfferCreate",
-            "Account": standby_wallet.address,
-            "TakerPays": takerPays,
-            "TakerGets": takerGets
-        }, {autofill: true, wallet: standby_wallet})
-        
-        if (offer_result.result.meta.TransactionResult == "tesSUCCESS") {
-            results += `\n\nTransaction succeeded.`
-            checkAMM()
-        } else {
-            results += `\n\nError sending transaction: ${JSON.stringify(offer_result.result.meta.TransactionResult, null, 2)}`
-        }        
-    } catch (error) {
-        results += `\n\n${error.message}`
-    }
-
-    standbyResultField.value = results
-
-    client.disconnect()
-*/
-// utils.js
 export async function _get_amount_for_token(client, token_amount, token_is_xrp, is_intended_token,info=null) {
     let amm_info = info
     if (!amm_info) {
@@ -614,7 +505,6 @@ function feeMult(tFee) {
     return BigNumber(1).minus( feeDecimal(tFee) )
 }
 
-// ai generated, to test
 /**
  * Implement the AMM SwapIn formula.
  * @param asset_in_bn BigNumber - The amount of the input asset to swap into the AMM.
