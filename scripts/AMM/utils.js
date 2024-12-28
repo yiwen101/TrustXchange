@@ -185,7 +185,6 @@ export async function check_AMM_exist(client) {
             "ledger_index": "validated"
         }
         const amm_info_result = await client.request(amm_info_request)
-        console.log(amm_info_result)
         const usd_amount = amm_info_result.result.amm.amount.value
         const xrp_amount_drops = amm_info_result.result.amm.amount2
         const xrp_amount = xrpl.dropsToXrp(xrp_amount_drops)
@@ -357,8 +356,9 @@ export async function _get_amount_for_token(client, token_amount, token_is_xrp, 
     if (!amm_info) {
         amm_info = await check_AMM_exist(client)
     }
-    const pool_in_bn = BigNumber(token_is_xrp ? amm_info.xrp_amount : amm_info.usd_amount)
-    const pool_out_bn = BigNumber(token_is_xrp ? amm_info.usd_amount : amm_info.xrp_amount)
+    const swap_for_xrp = token_is_xrp == is_intended_token
+    const pool_in_bn = BigNumber(swap_for_xrp ? amm_info.usd_amount: amm_info.xrp_amount)
+    const pool_out_bn = BigNumber(swap_for_xrp ? amm_info.xrp_amount: amm_info.usd_amount)
     const full_trading_fee = amm_info.full_trading_fee
     const asset_out_bn = BigNumber(token_amount)
     const unrounded_amount = is_intended_token ? swapOut(asset_out_bn, pool_in_bn, pool_out_bn, full_trading_fee) : swapIn(asset_out_bn, pool_in_bn, pool_out_bn, full_trading_fee)
@@ -371,7 +371,6 @@ export async function _get_amount_can_get_with_token(client, token_amount, token
 export async function _get_amount_needed_for_token(client, token_amount, token_is_xrp, info=null) {
     return _get_amount_for_token(client, token_amount, token_is_xrp, true, info)
 }
-
 export async function get_usd_needed_for_xrp(client, xrp_amount, info=null) {
     return _get_amount_needed_for_token(client,xrp_amount, true, info)
 }
@@ -387,31 +386,31 @@ export async function get_xrp_can_get_with_usd(client, usd_amount, info=null) {
 
 export async function swap_usdc_for_XRP(client, wallet, usd_amount, intended_xrp_amount) {
     try {
-        console.log(`Swapping ${usd_amount} USDC for ${intended_xrp_amount} XRP...`)
-        /*
-        const amount_str = usdStrOf(usd_amount)
-       
-        const takerPays = {
+        console.log(`Swapping ${usd_amount} USDC for ${intended_xrp_amount} XRP...`)    
+        const takerGets = {
             currency: USDC_currency_code,
             issuer: USDC_issuer.address,
-            value: amount_str
+            value: usdStrOf(usd_amount),
         };
 
-        const takerGets = xrpStrOf(intended_xrp_amount)
+        const takerPays = xrpStrOf(intended_xrp_amount)
 
         const offer_result = await client.submitAndWait({
             TransactionType: "OfferCreate",
             Account: wallet.address,
             TakerPays: takerPays,
-            TakerGets: takerGets
+            TakerGets: takerGets,
+            Flags: 0x00020000 // immediate or cancel, https://xrpl.org/docs/references/protocol/transactions/types/ammdeposit
         }, { autofill: true, wallet: wallet });
         
         if (offer_result.result.meta.TransactionResult === "tesSUCCESS") {
-            results += `\n\nTransaction succeeded.`;
-        } else {
-            results += `\n\nError sending transaction: ${offer_result.result.meta.TransactionResult}`;
+            console.log('Transaction succeeded.');
+        } else if (offer_result.result.meta.TransactionResult === "tecKILLED") {
+            console.log('Transaction killed.');
+        }else {
+            console.error('Error sending transaction:', offer_result.result.meta.TransactionResult);
+            console.log(`result: ${JSON.stringify(offer_result.result, null, 2)}`);
         }
-            */
     } catch (error) {
         console.error('error:', error);
     }

@@ -1,6 +1,6 @@
 import * as utils from './utils.js';
 import * as xrpl from 'xrpl';
-import { USDC_issuer,USDC_currency_code,testnet_url,trust_line_limit } from './const.js';
+import { testnet_url} from './const.js';
 async function main() {
   const client = new xrpl.Client(testnet_url);
   await client.connect();
@@ -8,14 +8,18 @@ async function main() {
   await utils.log_xrp_balance(client,wallet);
   await utils.log_usd_balance(client,wallet);
   const info = await utils.check_AMM_exist(client);
-  // should be 0.5
-  console.log(await utils.get_xrp_needed_for_usd(client,1,info));
-  // should be 2
-  console.log(await utils.get_usd_needed_for_xrp(client,1,info));
-  // should be 0.5
-  console.log(await utils.get_xrp_can_get_with_usd(client,1,info));
-  // should be 2
-  console.log(await utils.get_usd_can_get_with_xrp(client,1,info));
+  const amount_can_get_with_10_usd = await utils.get_xrp_can_get_with_usd(client,10,info);
+  const amount_needed_for_10_usd = await utils.get_xrp_needed_for_usd(client,10,info);
+  const amount_can_get_with_10_xrp = await utils.get_usd_can_get_with_xrp(client,10,info);
+  const amount_needed_for_10_xrp = await utils.get_usd_needed_for_xrp(client,10,info);
+  console.log(`can get ${amount_can_get_with_10_usd} XRP with 10 USD`);
+  console.log(`can get ${amount_can_get_with_10_xrp} USD with 10 XRP`);
+  console.log(`need ${amount_needed_for_10_usd} XRP for 10 USD`);
+  console.log(`need ${amount_needed_for_10_xrp} USD for 10 XRP`);
+  await utils.swap_usdc_for_XRP(client,wallet,20,10);
+  await utils.log_xrp_balance(client,wallet);
+  await utils.log_usd_balance(client,wallet);
+  await utils.check_AMM_exist(client);
   /*
   await utils.add_usd_to_XRP_USDC_AMM(client,wallet,100);
   await utils.check_AMM_exist(client);
