@@ -5,14 +5,16 @@ import { logResponse } from './common';
 declare const USDC_currency_code: string;
 declare const USDC_issuer: { address: string; secret: string };
 declare const trust_line_limit: string;
+const SERVER_URL = 'wss://s.altnet.rippletest.net:51233';
 
 /**
  * Logs the USD balance for the given wallet.
- * @param client - The XRPL client instance.
  * @param wallet - The wallet whose USD balance is to be logged.
  */
-export async function log_usd_balance(client: Client, wallet: Wallet): Promise<void> {
+export async function log_usd_balance(wallet: Wallet): Promise<void> {
+    const client = new Client(SERVER_URL);
     try {
+        await client.connect();
         const accountInfo: AccountLinesResponse = await client.request({
             command: 'account_lines',
             account: wallet.address
@@ -30,18 +32,21 @@ export async function log_usd_balance(client: Client, wallet: Wallet): Promise<v
             console.log('No USD balance found.');
         }
     } catch (error) {
-        console.error('error:', error);
+        console.error('Error in log_usd_balance:', error);
+    } finally {
+        await client.disconnect();
     }
 }
 
 /**
  * Sends USD to the specified wallet.
- * @param client - The XRPL client instance.
  * @param wallet - The wallet to send USD to.
  * @param amountStr - The amount of USDC to send as a string. Defaults to '1000'.
  */
-export async function send_usd_to(client: Client, wallet: Wallet, amountStr: string = '1000'): Promise<void> {
+export async function send_usd_to(wallet: Wallet, amountStr: string = '1000'): Promise<void> {
+    const client = new Client(SERVER_URL);
     try {
+        await client.connect();
         const issuerWallet: Wallet = Wallet.fromSeed(USDC_issuer.secret);
 
         const paymentTx: {
@@ -69,17 +74,20 @@ export async function send_usd_to(client: Client, wallet: Wallet, amountStr: str
         const paymentResult = await client.submitAndWait(signedPaymentTx.tx_blob);
         logResponse(paymentResult);
     } catch (error) {
-        console.error('error:', error);
+        console.error('Error in send_usd_to:', error);
+    } finally {
+        await client.disconnect();
     }
 }
 
 /**
  * Establishes a USDC trust line for the given wallet.
- * @param client - The XRPL client instance.
  * @param wallet - The wallet for which to establish the trust line.
  */
-export async function establish_usdc_trust_line(client: Client, wallet: Wallet): Promise<void> {
+export async function establish_usdc_trust_line(wallet: Wallet): Promise<void> {
+    const client = new Client(SERVER_URL);
     try {
+        await client.connect();
         const trustSetTx: {
             TransactionType: string;
             Account: string;
@@ -103,6 +111,8 @@ export async function establish_usdc_trust_line(client: Client, wallet: Wallet):
         const result = await client.submitAndWait(signedTx.tx_blob);
         logResponse(result);
     } catch (error) {
-        console.error('error:', error);
+        console.error('Error in establish_usdc_trust_line:', error);
+    } finally {
+        await client.disconnect();
     }
 }
