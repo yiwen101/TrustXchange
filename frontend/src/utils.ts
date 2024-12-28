@@ -1,0 +1,52 @@
+// ThreadPool.ts
+type Task<T> = () => Promise<T>;
+
+export class ThreadPool {
+    private pool: number;
+    private activeCount: number = 0;
+    private queue: Array<{
+        task: Task<any>;
+        resolve: (value: any) => void;
+        reject: (reason?: any) => void;
+    }> = [];
+
+    constructor(poolLimit: number) {
+        this.pool = poolLimit;
+    }
+
+    public run<T>(task: Task<T>): Promise<T> {
+        return new Promise((resolve, reject) => {
+            this.queue.push({ task, resolve, reject });
+            this.next();
+        });
+    }
+
+    private next() {
+        if (this.activeCount >= this.pool || this.queue.length === 0) {
+            return;
+        }
+
+        const { task, resolve, reject } = this.queue.shift()!;
+        this.activeCount++;
+
+        task()
+            .then(resolve)
+            .catch(reject)
+            .finally(() => {
+                this.activeCount--;
+                this.next();
+            });
+    }
+}
+
+import { useRef } from 'react';
+
+export const useThreadPool = (poolLimit: number = 4) => {
+    const threadPoolRef = useRef<ThreadPool | null>(null);
+
+    if (!threadPoolRef.current) {
+        threadPoolRef.current = new ThreadPool(poolLimit);
+    }
+
+    return threadPoolRef.current;
+};

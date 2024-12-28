@@ -55,14 +55,8 @@ export async function swap_usdc_for_XRP(wallet: Wallet, usd_amount: number, inte
  * @param info - AMM information.
  * @returns The calculated amount as a BigNumber.
  */
-async function _get_amount_for_token(token_amount: number, token_is_xrp: boolean, is_intended_token: boolean, info: AMMInfo | null = null): Promise<BigNumber> {
-    const client = new Client(testnet_url);
-    try {
-        await client.connect();
-        let amm_info = info;
-        if (!amm_info) {
-            amm_info = await get_amm_info(false);
-        }
+function _get_amount_for_token(token_amount: number, token_is_xrp: boolean, is_intended_token: boolean, info: AMMInfo): BigNumber {
+        const amm_info = info;
         const swap_for_xrp = token_is_xrp === is_intended_token;
         const pool_in_bn = new BigNumber(swap_for_xrp ? amm_info.usd_amount : amm_info.xrp_amount);
         const pool_out_bn = new BigNumber(swap_for_xrp ? amm_info.xrp_amount : amm_info.usd_amount);
@@ -72,12 +66,6 @@ async function _get_amount_for_token(token_amount: number, token_is_xrp: boolean
             ? swapOut(asset_out_bn, pool_in_bn, pool_out_bn, full_trading_fee)
             : swapIn(asset_out_bn, pool_in_bn, pool_out_bn, full_trading_fee);
         return unrounded_amount;
-    } catch (error) {
-        console.error('Error in _get_amount_for_token:', error);
-        throw error;
-    } finally {
-        await client.disconnect();
-    }
 }
 
 /**
@@ -87,7 +75,7 @@ async function _get_amount_for_token(token_amount: number, token_is_xrp: boolean
  * @param info - AMM information.
  * @returns The obtainable amount as a BigNumber.
  */
-async function _get_amount_can_get_with_token(token_amount: number, token_is_xrp: boolean, info: AMMInfo | null = null): Promise<BigNumber> {
+function _get_amount_can_get_with_token(token_amount: number, token_is_xrp: boolean, info: AMMInfo): BigNumber {
     return _get_amount_for_token(token_amount, token_is_xrp, false, info);
 }
 
@@ -98,7 +86,7 @@ async function _get_amount_can_get_with_token(token_amount: number, token_is_xrp
  * @param info - AMM information.
  * @returns The required amount as a BigNumber.
  */
-async function _get_amount_needed_for_token(token_amount: number, token_is_xrp: boolean, info: AMMInfo | null = null): Promise<BigNumber> {
+function _get_amount_needed_for_token(token_amount: number, token_is_xrp: boolean, info: AMMInfo): BigNumber {
     return _get_amount_for_token(token_amount, token_is_xrp, true, info);
 }
 
@@ -108,7 +96,7 @@ async function _get_amount_needed_for_token(token_amount: number, token_is_xrp: 
  * @param info - AMM information.
  * @returns The required USD amount as a BigNumber.
  */
-export async function get_usd_needed_for_xrp(xrp_amount: number, info: AMMInfo | null = null): Promise<BigNumber> {
+export function get_usd_needed_for_xrp(xrp_amount: number, info: AMMInfo): BigNumber {
     return _get_amount_needed_for_token(xrp_amount, true, info);
 }
 
@@ -118,7 +106,7 @@ export async function get_usd_needed_for_xrp(xrp_amount: number, info: AMMInfo |
  * @param info - AMM information.
  * @returns The required XRP amount as a BigNumber.
  */
-export async function get_xrp_needed_for_usd(usd_amount: number, info: AMMInfo | null = null): Promise<BigNumber> {
+export function get_xrp_needed_for_usd(usd_amount: number, info: AMMInfo): BigNumber {
     return _get_amount_needed_for_token(usd_amount, false, info);
 }
 
@@ -128,7 +116,7 @@ export async function get_xrp_needed_for_usd(usd_amount: number, info: AMMInfo |
  * @param info - AMM information.
  * @returns The obtainable USD amount as a BigNumber.
  */
-export async function get_usd_can_get_with_xrp(xrp_amount: number, info: AMMInfo | null = null): Promise<BigNumber> {
+export function get_usd_can_get_with_xrp(xrp_amount: number, info: AMMInfo): BigNumber {
     return _get_amount_can_get_with_token(xrp_amount, true, info);
 }
 
@@ -138,7 +126,7 @@ export async function get_usd_can_get_with_xrp(xrp_amount: number, info: AMMInfo
  * @param info - AMM information.
  * @returns The obtainable XRP amount as a BigNumber.
  */
-export async function get_xrp_can_get_with_usd(usd_amount: number, info: AMMInfo | null = null): Promise<BigNumber> {
+export function get_xrp_can_get_with_usd(usd_amount: number, info: AMMInfo): BigNumber {
     return _get_amount_can_get_with_token(usd_amount, false, info);
 }
 
