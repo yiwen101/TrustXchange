@@ -1,8 +1,92 @@
-import { EXPLORER,USDC_issuer,USDC_currency_code,testnet_url,trust_line_limit } from './const.js';
+import { EXPLORER,USDC_issuer,USDC_currency_code,testnet_url,trust_line_limit,mainnet_url,mannnet_Bitstamp_usd_address } from './const.js';
 import * as xrpl from 'xrpl';
 import fs from 'fs';
 import BigNumber from 'bignumber.js';
-import exp from 'constants';
+
+/**
+ * Fetches the ledger index closest to the given timestamp.
+ *
+ * @param {xrpl.Client} client - The connected XRPL client.
+ * @param {number} timestamp - The UNIX timestamp (seconds since epoch).
+ * @returns {Promise<number>} - The ledger index.
+ */
+async function getLedgerIndexByTimestamp(client) {
+    const max_ledgers = 10; 
+    const latestLedgerInfo = await client.request({
+        command: 'ledger',
+        ledger_index: 'validated',
+        include_all_data: false
+    });
+
+    let currentLedger = latestLedgerInfo.result.ledger;
+    console.log(`Current ledger: ${currentLedger.ledger_index} with parent close time: ${currentLedger.close_time}`);
+
+    for (let i = 0; i < max_ledgers; i++) {
+        const prevLedgerInfo = await client.request({
+            command: 'ledger',
+            ledger_index: currentLedger.index - i * 100,
+            include_all_data: false
+        });
+        console.log(`ledge with index ${currentLedger.index - i * 100} has close time ${prevLedgerInfo.result.ledger.close_time}`)
+    }
+
+    throw new Error('Ledger traversal exceeded maximum attempts.');
+}
+
+export async function get_latest_xrp_price() {
+    const client = new xrpl.Client(mainnet_url);
+    try {
+        await client.connect();
+        const amm_info_request = {
+            "command": "amm_info",
+            "asset": {
+            "currency": 'USD',
+            "issuer": mannnet_Bitstamp_usd_address
+            },
+            "asset2": {
+            "currency": "XRP",
+            },
+            "ledger_index": "validated"
+        }
+        const amm_info_result = await client.request(amm_info_request)
+        const usd_amount = amm_info_result.result.amm.amount.value
+        const xrp_amount_drops = amm_info_result.result.amm.amount2
+        const xrp_amount = xrpl.dropsToXrp(xrp_amount_drops)
+        console.log(`XRP price: ${usd_amount/xrp_amount} USD/XRP`)
+        return usd_amount/xrp_amount
+    } catch(err) {
+              console.log(err)
+    } finally {
+        await client.disconnect();
+    }
+}
+
+export async function top_up_amm(client) {
+    try {
+        const generation_result = await client.fundWallet()
+        const wallet = generation_result.wallet
+        console.log(`created wallet: ${wallet.address}`)
+        for (let i = 0; i < 10; i++) {
+            await fund_wallet(client,wallet,"1000");
+        }
+        await check_AMM_exist(client)
+        await add_xrp_to_XRP_USDC_AMM(client,wallet,10000);
+        const info = await check_AMM_exist(client)
+        const amm_xrp_amount = info.xrp_amount
+        const amm_usd_amount = info.usd_amount
+        const price = await get_latest_xrp_price()
+        const expected_amm_usd_amount = Math.floor(price * amm_xrp_amount)
+        const amm_usd_amount_to_add = Math.max(0,expected_amm_usd_amount - amm_usd_amount)
+        if (amm_usd_amount_to_add > 0) {
+            await add_usd_to_XRP_USDC_AMM(client,wallet,amm_usd_amount_to_add)
+        }
+        await check_AMM_exist(client)
+    } catch(err) {
+              console.log(err)
+    } finally {
+        await client.disconnect();
+    }
+}
 
 export function load_wallet_from_file(fileName) {
     const data = fs.readFileSync(fileName);
@@ -255,7 +339,7 @@ export async function add_usd_to_XRP_USDC_AMM(client, wallet, usd_amount) {
       const signed = wallet.sign(prepared);
       console.log("Submitting transaction...");
       const ammadd_result = await client.submitAndWait(signed.tx_blob);
-      console.log(ammadd_result)
+      //console.log(ammadd_result)
 }
 
 export async function add_xrp_to_XRP_USDC_AMM(client, wallet, xrp_amount) {
