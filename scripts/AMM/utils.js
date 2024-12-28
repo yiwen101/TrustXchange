@@ -1,6 +1,7 @@
 import { EXPLORER,USDC_issuer,USDC_currency_code,testnet_url,trust_line_limit } from './const.js';
 import * as xrpl from 'xrpl';
 import fs from 'fs';
+import BigNumber from 'bignumber.js';
 
 export function load_wallet_from_file(fileName) {
     const data = fs.readFileSync(fileName);
@@ -187,14 +188,18 @@ export async function check_AMM_exist(client) {
         const usd_amount = amm_info_result.result.amm.amount.value
         const xrp_amount_drops = amm_info_result.result.amm.amount2
         const xrp_amount = xrpl.dropsToXrp(xrp_amount_drops)
+        const full_trading_fee = amm_info_result.result.amm.trading_fee
+        const discounted_fee = amm_info_result.result.amm.auction_slot.discounted_fee
+        console.log(`Trading Fee: ${full_trading_fee/1000}%\nDiscounted Fee: ${discounted_fee/1000}%`)
         console.log(`AMM exists with ${usd_amount} USDC and ${xrp_amount} XRP.`)
+        return {
+            usd_amount: usd_amount,
+            xrp_amount: xrp_amount,
+            full_trading_fee: full_trading_fee,
+            discounted_fee: discounted_fee
+        }
     } catch(err) {
-            if (err.data.error === 'actNotFound') {
-            console.log(`No AMM exists yet for the pair
-                        ${USDC_currency_code}.${USDC_issuer.address} / XRP.`)
-            } else {
-            throw(err)
-            }
+           console.log(err)
     }
 
 }
@@ -275,6 +280,182 @@ export async function add_xrp_to_XRP_USDC_AMM(client, wallet, xrp_amount) {
       const ammadd_result = await client.submitAndWait(signed.tx_blob);
       console.log(ammadd_result)
 }
+/*
+let net = getNet()
+
+    const client = new xrpl.Client(net)
+    results = `\n\nConnecting to ${getNet()} ...`
+    standbyResultField.value = results
+
+    await client.connect()
+    results += '\n\nConnected.'
+    standbyResultField.value = results
+
+    try {
+
+        const standby_wallet = xrpl.Wallet.fromSeed(standbySeedField.value)
+
+        const takerPaysCurrency = standbyTakerPaysCurrencyField.value
+        const takerPaysIssuer = standbyTakerPaysIssuerField.value
+        const takerPaysAmount = standbyTakerPaysAmountField.value
+
+        const takerGetsCurrency = standbyTakerGetsCurrencyField.value
+        const takerGetsIssuer = standbyTakerGetsIssuerField.value
+        const takerGetsAmount = standbyTakerGetsAmountField.value
+
+        let takerPays = null
+        let takerGets = null
+
+        if ( takerPaysCurrency == 'XRP' ) {
+            takerPays = xrpl.xrpToDrops(takerPaysAmount)
+        } else {
+            takerPays = {
+                "currency": takerPaysCurrency,
+                "issuer": takerPaysIssuer,
+                "value": takerPaysAmount
+            }
+        }
+
+        if ( takerGetsCurrency == 'XRP' ) {
+            takerGets = xrpl.xrpToDrops(takerGetsAmount)
+        } else {
+            takerGets = {
+                "currency": takerGetsCurrency,
+                "issuer": takerGetsIssuer,
+                "value": takerGetsAmount
+            }
+        }
+
+        results += '\n\nSwapping tokens ...'
+        standbyResultField.value = results
+
+        const offer_result = await client.submitAndWait({
+            "TransactionType": "OfferCreate",
+            "Account": standby_wallet.address,
+            "TakerPays": takerPays,
+            "TakerGets": takerGets
+        }, {autofill: true, wallet: standby_wallet})
+        
+        if (offer_result.result.meta.TransactionResult == "tesSUCCESS") {
+            results += `\n\nTransaction succeeded.`
+            checkAMM()
+        } else {
+            results += `\n\nError sending transaction: ${JSON.stringify(offer_result.result.meta.TransactionResult, null, 2)}`
+        }        
+    } catch (error) {
+        results += `\n\n${error.message}`
+    }
+
+    standbyResultField.value = results
+
+    client.disconnect()
+*/
+// utils.js
+export async function _get_amount_needed_for_token(client, token_amount, token_is_xrp, info=null) {
+    let amm_info = info
+    if (!amm_info) {
+        amm_info = await check_AMM_exist(client)
+    }
+    const pool_in_bn = BigNumber(token_is_xrp ? amm_info.usd_amount : amm_info.xrp_amount)
+    const pool_out_bn = BigNumber(token_is_xrp ? amm_info.xrp_amount : amm_info.usd_amount)
+    const full_trading_fee = amm_info.full_trading_fee
+    const asset_out_bn = BigNumber(token_amount)
+    const unrounded_amount = swapOut(asset_out_bn, pool_in_bn, pool_out_bn, full_trading_fee)
+    return unrounded_amount
+}
+export async function get_usd_needed_for_xrp(client, xrp_amount, info=null) {
+    return _get_amount_needed_for_token(client,xrp_amount, true, info)
+}
+export async function get_xrp_needed_for_usd(client, usd_amount, info=null) {
+    return _get_amount_needed_for_token(client, usd_amount, false, info)
+}
+export async function swap_usdc_for_XRP(client, wallet, usd_amount, intended_xrp_amount) {
+    try {
+        console.log(`Swapping ${usd_amount} USDC for ${intended_xrp_amount} XRP...`)
+        /*
+        const amount_str = usdStrOf(usd_amount)
+       
+        const takerPays = {
+            currency: USDC_currency_code,
+            issuer: USDC_issuer.address,
+            value: amount_str
+        };
+
+        const takerGets = xrpStrOf(intended_xrp_amount)
+
+        const offer_result = await client.submitAndWait({
+            TransactionType: "OfferCreate",
+            Account: wallet.address,
+            TakerPays: takerPays,
+            TakerGets: takerGets
+        }, { autofill: true, wallet: wallet });
+        
+        if (offer_result.result.meta.TransactionResult === "tesSUCCESS") {
+            results += `\n\nTransaction succeeded.`;
+        } else {
+            results += `\n\nError sending transaction: ${offer_result.result.meta.TransactionResult}`;
+        }
+            */
+    } catch (error) {
+        console.error('error:', error);
+    }
+}
 
 const xrpStrOf = (amount) => xrpl.xrpToDrops(amount).toString();
 const usdStrOf = (amount) => amount.toString();
+
+
+
+// credit: https://github.com/XRPLF/xrpl-dev-portal/tree/master
+
+/* Implement the AMM SwapOut formula, as defined in XLS-30 section 2.4 AMM 
+ * Swap, formula 10. The asset weights WA/WB are currently always 1/1 so 
+ * they're canceled out.
+ * C++ source: https://github.com/XRPLF/rippled/blob/2d1854f354ff8bb2b5671fd51252c5acd837c433/src/ripple/app/misc/AMMHelpers.h#L253-L258
+ * @param asset_out_bn BigNumber - The target amount to receive from the AMM.
+ * @param pool_in_bn BigNumber - The amount of the input asset in the AMM's 
+ *                               pool before the swap.
+ * @param pool_out_bn BigNumber - The amount of the output asset in the AMM's
+ *                                pool before the swap.
+ * @param trading_fee int - The trading fee as an integer {0, 1000} where 1000 
+ *                          represents a 1% fee.
+ * @returns BigNumber - The amount of the input asset that must be swapped in 
+ *                      to receive the target output amount. Unrounded, because
+ *                      the number of decimals depends on if this is drops of 
+ *                      XRP or a decimal amount of a token; since this is a
+ *                      theoretical input to the pool, it should be rounded 
+ *                      up (ceiling) to preserve the pool's constant product.
+ */
+function swapOut(asset_out_bn, pool_in_bn, pool_out_bn, trading_fee) {
+    return ( ( pool_in_bn.multipliedBy(pool_out_bn) ).dividedBy(
+                pool_out_bn.minus(asset_out_bn)
+             ).minus(pool_in_bn)
+           ).dividedBy(feeMult(trading_fee))
+}
+
+function feeDecimal(tFee) {
+    const AUCTION_SLOT_FEE_SCALE_FACTOR = 100000
+    return BigNumber(tFee).dividedBy(AUCTION_SLOT_FEE_SCALE_FACTOR)
+}
+
+function feeMult(tFee) {
+    return BigNumber(1).minus( feeDecimal(tFee) )
+}
+
+// ai generated, to test
+/**
+ * Implement the AMM SwapIn formula.
+ * @param asset_in_bn BigNumber - The amount of the input asset to swap into the AMM.
+ * @param pool_in_bn BigNumber - The amount of the input asset in the AMM's pool before the swap.
+ * @param pool_out_bn BigNumber - The amount of the output asset in the AMM's pool before the swap.
+ * @param trading_fee int - The trading fee as an integer {0, 1000} where 1000 represents a 1% fee.
+ * @returns BigNumber - The amount of the output asset that will be received from the swap.
+ */
+function swapIn(asset_in_bn, pool_in_bn, pool_out_bn, trading_fee) {
+    const feeMultiplier = feeMult(trading_fee);
+    const newPoolIn = pool_in_bn.plus(asset_in_bn.multipliedBy(feeMultiplier));
+    const outputAmount = pool_out_bn.minus(
+        pool_in_bn.multipliedBy(pool_out_bn).dividedBy(newPoolIn)
+    );
+    return outputAmount;
+}
