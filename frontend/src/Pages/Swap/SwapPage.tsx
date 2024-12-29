@@ -5,24 +5,28 @@ import SwapVertIcon from '@mui/icons-material/SwapVert';
 import { XrpIcon, UsdcIcon } from '../../icons/Icons';
 import InputCard from './InputCard';
 import xrp_api from '../../api/xrp';
-import { useXrpPriceState } from '../../hooks/usePriceState';
+import { useXrpPriceValue } from '../../hooks/usePriceState';
 
 const SwapPage = () => {
   const [usdValueInput, setUsdValueInput] = useState('');
   const [xrpValueInput, setXrpValueInput] = useState('');
   const [isXrpToUsd, setIsXrpToUsd] = useState(true);
   const [dp, setDp] = useState(2);
-  const { xrpPrice, xrpPriceYesterday,ammInfo } = useXrpPriceState();
+  const { xrpPrice, xrpPriceYesterday,ammInfo } = useXrpPriceValue();
   
   const handleSwitch = () => {
     setIsXrpToUsd(!isXrpToUsd);
+    setUsdValueInput('')
+    setXrpValueInput('')
+
   };
   const handleXrpValueChange = (value: string) => {
     const max_tradable_usd = ammInfo!.usd_amount-10;
     const max_tradable_xrp = ammInfo!.xrp_amount-10;
+    const xrp_amount = parseFloat(value)
     if (isXrpToUsd) {
       const usd_can_get = xrp_api.get_usd_can_get_with_xrp(parseFloat(value),ammInfo!);
-      if (usd_can_get.toNumber() > max_tradable_usd) {
+      if (usd_can_get.toNumber() > max_tradable_usd-1) {
         setUsdValueInput(max_tradable_usd.toFixed(dp));
         const xrp_required = xrp_api.get_xrp_needed_for_usd(max_tradable_usd,ammInfo!);
         setXrpValueInput(xrp_required.toFixed(dp));
@@ -30,7 +34,7 @@ const SwapPage = () => {
       }
       setUsdValueInput(usd_can_get.toFixed(dp));
     } else {
-      if (parseFloat(value) > max_tradable_xrp) {
+      if (xrp_amount > max_tradable_xrp-1) {
         const usd_needed = xrp_api.get_usd_needed_for_xrp(max_tradable_xrp,ammInfo!);
         setXrpValueInput(max_tradable_xrp.toFixed(dp));
         setUsdValueInput(usd_needed.toFixed());
@@ -39,7 +43,7 @@ const SwapPage = () => {
       const usd_can_get = xrp_api.get_usd_needed_for_xrp(parseFloat(value),ammInfo!);
       setUsdValueInput(usd_can_get.toFixed(dp));
     }
-    setXrpValueInput(value);
+    setXrpValueInput(value)
   }
   const handleUsdValueChange = (value: string) => {
     const max_tradable_usd = ammInfo!.usd_amount-10;

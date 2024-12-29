@@ -1,5 +1,5 @@
 // usePriceState.ts
-import { atom, useRecoilState } from "recoil";
+import { atom,  useRecoilValue, useSetRecoilState } from "recoil";
 import { useRef } from "react";
 import xrp_api from "../api/xrp";
 import { AMMInfo } from "../api/xrp/amm_transection";
@@ -20,17 +20,24 @@ const xrpAMMState = atom({
     default: null as AMMInfo | null,
 });
 
-export const useXrpPriceState = () => {
-    const [xrpPrice, setXrpPrice] = useRecoilState(xrpPriceState);
-    const [xrpPriceYesterday, setXrpPriceYesterday] = useRecoilState(xrpPriceYesterdayState);
-    const [ammInfo, setAmmInfo] = useRecoilState(xrpAMMState);
-    
-    const threadPool = useThreadPool(2); // Set desired concurrency limit
+export const useXrpPriceValue= () => {
+    const xrpPrice = useRecoilValue(xrpPriceState);
+    const ammInfo = useRecoilValue(xrpAMMState);
+    const xrpPriceYesterday = useRecoilValue(xrpPriceYesterdayState);
+    return { xrpPrice, ammInfo , xrpPriceYesterday};
+}
 
+export const useXrpPriceState = () => {
+    const setXrpPrice = useSetRecoilState(xrpPriceState);
+    const setXrpPriceYesterday = useSetRecoilState(xrpPriceYesterdayState);
+    const setAmmInfo = useSetRecoilState(xrpAMMState);
+    
+    const threadPool = useThreadPool(8);
     // Mutex to ensure init is called only once
     const isInitialized = useRef(false);
+    
 
-    const delegateInitTasks = () => {
+    const delegateInitTasks = async () => {
         threadPool.run(async () => {
             console.log("Task1");
             const _latest_price = await xrp_api.get_xrp_price_at_ledger();
@@ -52,15 +59,25 @@ export const useXrpPriceState = () => {
             await reloadAmmInfo();
             console.log("Task3 finished");
         });
+        threadPool.run(async () => {
+            console.log("Task4");
+            const reload = await xrp_api.even_out_amm()
+            if (reload) {
+            console.log("reload")
+            await reloadAmmInfo()
+            }
+            console.log("Task4 finished");
+        })
+        await threadPool.finish_all()
     };
 
-    const init = () => {
+    const init = async () => {
         if (isInitialized.current) {
             return;
         }
         isInitialized.current = true;
         console.log("init");
-        delegateInitTasks();
+        await delegateInitTasks();
     };
 
     const reloadAmmInfo = async () => {
@@ -73,5 +90,5 @@ export const useXrpPriceState = () => {
         }
     };
 
-    return { xrpPrice, xrpPriceYesterday, ammInfo, init, reloadAmmInfo };
+    return { init, reloadAmmInfo };
 };

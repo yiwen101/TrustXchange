@@ -2,7 +2,7 @@ import { Client, Wallet, dropsToXrp, SubmittableTransaction, AMMInfoResponse, Is
 import BigNumber from 'bignumber.js';
 import { logResponse, usdStrOf, xrpStrOf } from './common';
 import { fund_wallet } from './wallet';
-import { get_latest_xrp_price } from './xrp_price';
+import { get_latest_xrp_price, get_xrp_price_at_ledger } from './xrp_price';
 import {  USDC_issuer,USDC_currency_code,mannnet_Bitstamp_usd_address, mainnet_url, testnet_url } from '../../const';
 
 export interface AMMInfo {
@@ -354,6 +354,42 @@ export async function top_up_amm(): Promise<void> {
         await client.disconnect();
     }
 }
+
+export async function even_out_amm(info?:AMMInfo|undefined, market_price?:number|undefined){
+    if (!info) {
+        info = await get_amm_info() as AMMInfo
+    }
+    if (!market_price) {
+        market_price = await get_xrp_price_at_ledger() as number
+    }
+    const xrp_amount = info.xrp_amount;
+    const usd_amount = info.usd_amount;
+    const expected_usd_amount = Math.floor(market_price * xrp_amount);
+    if (expected_usd_amount > usd_amount+100) {
+        add_usd_to_XRP_USDC_AMM(Wallet.fromSeed(USDC_issuer.secret), expected_usd_amount - usd_amount)
+        return true;
+    } else {
+        const expected_xrp_amount = Math.floor(usd_amount / market_price);
+        const xrp_to_add = expected_xrp_amount - xrp_amount;
+        const xrp_to_add_int = Math.floor(xrp_to_add)
+        if (xrp_to_add < 100) {
+            return false
+        }
+        if (xrp_to_add_int < 1000) {
+            const wallet = Wallet.fromSeed(USDC_issuer.secret);
+            await add_xrp_to_XRP_USDC_AMM(wallet, xrp_to_add_int);
+            add_xrp_to_XRP_USDC_AMM(wallet, xrp_to_add_int)
+        } else {
+            const wallet = Wallet.fromSeed(USDC_issuer.secret);
+            await fund_wallet(wallet, '1000')
+            await add_xrp_to_XRP_USDC_AMM(wallet, 1000);
+            info = await get_amm_info() as AMMInfo
+            await even_out_amm(info, market_price);
+        }
+        return true
+    }
+}
+
 
 /**
  * Swaps out a specified asset.

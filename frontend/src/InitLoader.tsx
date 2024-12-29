@@ -8,11 +8,15 @@ import PoolPage from './Pages/Pool/PoolPage';
 import P2pPage from './Pages/P2P/P2pPage';
 import SwapPage from './Pages/Swap/SwapPage';
 import FuturePage from './Pages/Future/FuturePage';
-import { useXrpPriceState } from './hooks/usePriceState';
+import { useXrpPriceState} from './hooks/usePriceState';
+import xrp_api from './api/xrp';
+
+
+
 const InitLoader = () => {
-    const { init } = useXrpPriceState(); 
-    const _init = useCallback(() => {
-      init(); 
+    const { init} = useXrpPriceState(); 
+    const _init = useCallback(async () => {
+      await init()
     }, []);
 
     useEffect(() => {
