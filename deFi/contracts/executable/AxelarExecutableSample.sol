@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { AxelarExecutable } from '../AxelarExecutable.sol';
-import { IAxelarGateway } from '../../interfaces/IAxelarGateway.sol';
+import { AxelarExecutable } from './abstract/AxelarExecutable.sol';
+import { IAxelarGateway } from '../interfaces/IAxelarGateway.sol';
 
 contract ExecutableSample is AxelarExecutable {
     string public sourceChain;

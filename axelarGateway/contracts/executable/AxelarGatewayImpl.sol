@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 
 import { IAxelarGateway } from '../interfaces/IAxelarGateway.sol';
+import { EternalStorage } from './EternalStorage.sol';
 /**
  * @title AxelarGateway Contract
  * @notice This contract serves as the gateway for cross-chain contract calls,
@@ -11,7 +12,11 @@ import { IAxelarGateway } from '../interfaces/IAxelarGateway.sol';
  * The contract is managed via the decentralized governance mechanism on the Axelar network.
  * @dev EternalStorage is used to simplify storage for upgradability, and InterchainGovernance module is used for governance.
  */
-contract AxelarGateway is IAxelarGateway {
+contract AxelarGateway is IAxelarGateway,EternalStorage{
+    bytes32 internal constant PREFIX_COMMAND_EXECUTED = keccak256('command-executed');
+    bytes32 internal constant PREFIX_CONTRACT_CALL_APPROVED = keccak256('contract-call-approved');
+    bytes32 internal constant PREFIX_CONTRACT_CALL_APPROVED_WITH_MINT = keccak256('contract-call-approved-with-mint');
+    
     bytes32 internal constant SELECTOR_APPROVE_CONTRACT_CALL = keccak256('approveContractCall');
     bytes32 internal constant SELECTOR_APPROVE_CONTRACT_CALL_WITH_MINT = keccak256('approveContractCallWithMint');
     
@@ -31,13 +36,11 @@ contract AxelarGateway is IAxelarGateway {
      * @notice Ensures that the caller of the function is the gateway contract itself.
      */
     modifier onlyAuthModule() {
-        if (msg.sender != authModule) revert NotAuthModule();
-
+        require(msg.sender == authModule, "Caller is not the auth module");
         _;
     }
     modifier onlySelf() {
-        if (msg.sender != address(this)) revert NotSelf();
-
+        require(msg.sender == address(this), "Caller is not the contract itself");
         _;
     }
 
@@ -78,7 +81,7 @@ contract AxelarGateway is IAxelarGateway {
         string calldata sourceAddress,
         address contractAddress,
         bytes32 payloadHash
-    ) external view override returns (bool) {
+    ) external view returns (bool) {
         return getBool(_getIsContractCallApprovedKey(commandId, sourceChain, sourceAddress, contractAddress, payloadHash));
     }
 
@@ -101,7 +104,7 @@ contract AxelarGateway is IAxelarGateway {
         bytes32 payloadHash,
         string calldata symbol,
         uint256 amount
-    ) external view override returns (bool) {
+    ) external view returns (bool) {
         return
             getBool(
                 _getIsContractCallApprovedWithMintKey(commandId, sourceChain, sourceAddress, contractAddress, payloadHash, symbol, amount)
@@ -188,7 +191,7 @@ contract AxelarGateway is IAxelarGateway {
      * @dev Emits an Executed event for successfully executed commands.
      */
     // slither-disable-next-line cyclomatic-complexity
-    function execute(bytes calldata input) external onlyAuthModule override {
+    function execute(bytes calldata input) external onlyAuthModule {
         (bytes memory data, bytes memory proof) = abi.decode(input, (bytes, bytes));
 
         //bytes32 messageHash = ECDSA.toEthSignedMessageHash(keccak256(data));
@@ -302,9 +305,9 @@ contract AxelarGateway is IAxelarGateway {
         uint256 amount
     ) internal {
         // pretends to mint tokens
-        if (symbol == usd_symble) {
+        if (keccak256(abi.encodePacked(symbol)) == keccak256(abi.encodePacked(usd_symble))) {
             mockMintedUsdTokens[account] += amount;
-        } else if (symbol == xrp_symble) {
+        } else if (keccak256(abi.encodePacked(symbol)) == keccak256(abi.encodePacked(xrp_symble))) {
             mockMintedXrpTokens[account] += amount;
         } else {
             revert InvalidTokenSymbol();
@@ -325,12 +328,12 @@ contract AxelarGateway is IAxelarGateway {
         uint256 amount
     ) internal {
         // pretends to burn tokens
-        if (symbol == usd_symble) {
+        if (keccak256(abi.encodePacked(symbol)) == keccak256(abi.encodePacked(usd_symble))) {
             if (mockMintedUsdTokens[sender] < amount) {
                 revert InsufficientBalance();
             }
             mockMintedUsdTokens[sender] -= amount;
-        } else if (symbol == xrp_symble) {
+        } else if (keccak256(abi.encodePacked(symbol)) == keccak256(abi.encodePacked(xrp_symble))) {
             if (mockMintedXrpTokens[sender] < amount) {
                 revert InsufficientBalance();
             }

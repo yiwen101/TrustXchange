@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-import { IAxelarGatewayWithToken } from '../interfaces/IAxelarGatewayWithToken.sol';
-import { IAxelarExecutableWithToken } from '../interfaces/IAxelarExecutableWithToken.sol';
+import { IAxelarGatewayWithToken } from '../../interfaces/IAxelarGatewayWithToken.sol';
+import { IAxelarExecutableWithToken } from '../../interfaces/IAxelarExecutableWithToken.sol';
 import { AxelarExecutable } from './AxelarExecutable.sol';
 
 /**
