@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import { IAxelarGateway } from '../interfaces/IAxelarGateway.sol';
+import { IMyAxelarGateway } from '../interfaces/IMyAxelarGateway.sol';
 import { IAxelarExecutable } from '../interfaces/IAxelarExecutable.sol';
 
 /**
@@ -68,7 +68,7 @@ abstract contract AxelarExecutable is IAxelarExecutable {
      * @notice Returns the address of the AxelarGateway contract.
      * @return The Axelar Gateway instance.
      */
-    function gateway() public view returns (IAxelarGateway) {
-        return IAxelarGateway(gatewayAddress);
+    function gateway() public view returns (IMyAxelarGateway) {
+        return IMyAxelarGateway(gatewayAddress);
     }
 }

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { AxelarExecutable } from './abstract/AxelarExecutable.sol';
-import { IAxelarGateway } from '../interfaces/IAxelarGateway.sol';
+import { AxelarExecutable } from '../abstract/AxelarExecutable.sol';
+import { IMyAxelarGateway } from '../interfaces/IMyAxelarGateway.sol';
 
 contract ExecutableSample is AxelarExecutable {
     string public sourceChain;
@@ -27,6 +27,6 @@ contract ExecutableSample is AxelarExecutable {
         sourceChain = sourceChain_;
         sourceAddress = sourceAddress_;
 
-        emit Executed(sourceChain, sourceAddress, message, IAxelarGateway(gateway).tokenSymbol(tokenDenom), tokenAmount);
+        emit Executed(sourceChain, sourceAddress, message, tokenDenom, tokenAmount);
     }
 }

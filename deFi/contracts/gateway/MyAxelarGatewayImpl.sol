@@ -2,7 +2,7 @@
 //https://arbiscan.io/address/0x99b5fa03a5ea4315725c43346e55a6a6fbd94098#code
 pragma solidity ^0.8.0;
 
-import { IAxelarGateway } from '../interfaces/IAxelarGateway.sol';
+import { IMyAxelarGateway } from '../common/interfaces/IMyAxelarGateway.sol';
 import { EternalStorage } from './EternalStorage.sol';
 /**
  * @title AxelarGateway Contract
@@ -12,7 +12,7 @@ import { EternalStorage } from './EternalStorage.sol';
  * The contract is managed via the decentralized governance mechanism on the Axelar network.
  * @dev EternalStorage is used to simplify storage for upgradability, and InterchainGovernance module is used for governance.
  */
-contract AxelarGateway is IAxelarGateway,EternalStorage{
+contract MyAxelarGatewayImpl is IMyAxelarGateway,EternalStorage{
     bytes32 internal constant PREFIX_COMMAND_EXECUTED = keccak256('command-executed');
     bytes32 internal constant PREFIX_CONTRACT_CALL_APPROVED = keccak256('contract-call-approved');
     bytes32 internal constant PREFIX_CONTRACT_CALL_APPROVED_WITH_MINT = keccak256('contract-call-approved-with-mint');
@@ -220,9 +220,9 @@ contract AxelarGateway is IAxelarGateway,EternalStorage{
             bytes4 commandSelector;
             bytes32 commandHash = keccak256(abi.encodePacked(commands[i]));
             if (commandHash == SELECTOR_APPROVE_CONTRACT_CALL) {
-                commandSelector = AxelarGateway.approveContractCall.selector;
+                commandSelector = MyAxelarGatewayImpl.approveContractCall.selector;
             } else if (commandHash == SELECTOR_APPROVE_CONTRACT_CALL_WITH_MINT) {
-                commandSelector = AxelarGateway.approveContractCallWithMint.selector;
+                commandSelector = MyAxelarGatewayImpl.approveContractCallWithMint.selector;
             }  else {
                 // Ignore unknown commands
                 continue;

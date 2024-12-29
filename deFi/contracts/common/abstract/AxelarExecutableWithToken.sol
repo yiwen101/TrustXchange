@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-import { IAxelarGatewayWithToken } from '../../interfaces/IAxelarGatewayWithToken.sol';
-import { IAxelarExecutableWithToken } from '../../interfaces/IAxelarExecutableWithToken.sol';
+import { IMyAxelarGateway } from '../interfaces/IMyAxelarGateway.sol';
+import { IAxelarExecutableWithToken } from '../interfaces/IAxelarExecutableWithToken.sol';
 import { AxelarExecutable } from './AxelarExecutable.sol';
 
 /**
@@ -77,7 +77,7 @@ abstract contract AxelarExecutableWithToken is IAxelarExecutableWithToken, Axela
      * @notice Returns the address of the IAxelarGatewayWithToken contract.
      * @return The Axelar Gateway with Token instance.
      */
-    function gatewayWithToken() internal view returns (IAxelarGatewayWithToken) {
-        return IAxelarGatewayWithToken(gatewayAddress);
+    function gatewayWithToken() internal view returns (IMyAxelarGateway) {
+        return IMyAxelarGateway(gatewayAddress);
     }
 }
