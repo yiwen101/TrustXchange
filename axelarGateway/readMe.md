@@ -1,0 +1,3 @@
+currently there are no as no AxelarGatewayWithToken on XRP-EVM-sidechain as from [deployed and verified contracts on the XRPL EVM Sidechain Devnet.]https://docs.xrplevm.org/docs/evm-sidechain/axelar-deployed-contracts-devnet, this is a stub implementation for testing and smooth integration of our defi contract supporting GMP
+
+for defails, refer to [doc](https://docs.axelar.dev/dev/general-message-passing/overview/) or code [example](https://github.com/axelarnetwork/cgp-spec/blob/main/solidity/contracts/executable/AxelarExecutable.sol), [example2](https://github.com/axelarnetwork/axelar-gmp-sdk-solidity/blob/main/contracts/gateway/AxelarAmplifierGateway.sol)
