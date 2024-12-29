@@ -12,3 +12,4 @@
 /PoCs/Axelar_GMP_POC/artifacts
 /PoCs/Axelar_GMP_POC/artifacts
 /backend/target/maven-status/maven-compiler-plugin/compile
+/node_modules
