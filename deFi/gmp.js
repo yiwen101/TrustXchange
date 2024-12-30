@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 import dotenv from "dotenv";
+import * as utils from "./utils.js"
 dotenv.config();
 
 /*
@@ -59,25 +60,23 @@ const provider = new ethers.JsonRpcProvider("https://rpc-evm-sidechain.xrpl.org"
 
 // Define the signer (using private key)
 const privateKey = process.env.PRIVATE_KEY;
-const publicKey = process.env.PUBLIC_ADDRESS;
+const authModule = process.env.PUBLIC_ADDRESS;
 const signer = new ethers.Wallet(privateKey, provider);
 
 // Function to call the emitMessage function on the contract
-async function approveContractCall(data, proof) {
+async function approveContractCall(input) {
   const gatewayAbi = [
     "function execute(bytes calldata input) external"
   ];
   const gatewayAddress = process.env.MY_GATEWAY_ADDRESS;
   const gatewayContract = new ethers.Contract(gatewayAddress,  gatewayAbi, signer);
-  // todo, implement
-  let bytes_input;
   try {
-    const tx = await gatewayContract.execute(bytes_input);
+    const tx = await gatewayContract.execute(input);
     console.log("Transaction response:", tx);
     const receipt = await tx.wait();
     console.log("Transaction receipt:", receipt);
   } catch (error) {
-    console.error("Error calling emitMessage:", error);
+    console.error("Error calling execute:", error);
   }
 }
 
@@ -105,7 +104,16 @@ async function callContract() {
   const gmsExecutableAddress = process.env.GMS_EXECUTABLE_ADDRESS;
   const gmsExecutableContract = new ethers.Contract(gmsExecutableAddress,  gmsExecutableAbi, signer)
   try {
-    const tx = await gmsExecutableContract.execute(...)
+     const commandId = ethers.keccak256(ethers.toUtf8Bytes("test_command"));
+     const sourceChain = "sourceChain";
+     const sourceAddress = publicKey;
+     const tokenDenom = 'USD';
+     const tokenAmount = 2;
+      const payload = ethers.AbiCoder.defaultAbiCoder().encode(
+            ['string', 'uint256'],
+            [tokenDenom, tokenAmount]
+        );
+    const tx = await gmsExecutableContract.execute(commandId, sourceChain, sourceAddress, payload)
     console.log("Transaction response:", tx);
     const receipt = await tx.wait();
     console.log("Transaction receipt:", receipt);
@@ -113,3 +121,13 @@ async function callContract() {
     console.error("Error calling emitMessage:", error);
   }
 }
+
+async function main() {
+  const {inputData,payloadBytes} = utils.getMockInputs()
+  //await approveContractCall(inputData)
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

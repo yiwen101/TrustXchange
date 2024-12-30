@@ -1,8 +1,9 @@
-const { ethers } = require("ethers");
-const { keccak256, toUtf8Bytes} = require("ethers/lib/utils");
+import { ethers } from "ethers";
 import dotenv from "dotenv";
 dotenv.config();
 
+const keccak256 = ethers.keccak256;
+const toUtf8Bytes = ethers.toUtf8Bytes;
 // Replace with actual selectors if necessary
 const SELECTOR_APPROVE_CONTRACT_CALL = keccak256(toUtf8Bytes("approveContractCall(bytes,bytes32)"));
 const SELECTOR_APPROVE_CONTRACT_CALL_WITH_MINT = keccak256(toUtf8Bytes("approveContractCallWithMint(bytes,bytes32)"));
@@ -83,34 +84,32 @@ function createGatewayCallWithMintParams(
 }
 
 // not reusable
-function createExecutePayload(tokenDenom, tokenAmount) {
+function createExecutePayload(message) {
     /** Creates a payload for the `_execute` function.
      * @param {string} tokenDenom - The token denomination.
      * @param {number|bigint} tokenAmount - The amount of tokens.
      * @returns {string} The ABI-encoded payload as a hex string.
      */
     return ethers.AbiCoder.defaultAbiCoder().encode(
-        ["string", "uint256"],
-        [tokenDenom, tokenAmount]
+        ["string"],
+        [message]
     );
 }
 
-
-async function main() {
+export function getMockInputs() {
     const tokenDenom = 1;
-    // Example usage
     const chainId = 1;  // Example Chain ID
-    const contractAddress = process.end.MY_GATEWAY_ADDRESS;
-    const mintRecipient = process.end.GMS_EXECUTABLE_ADDRESS;
-    const payloadHash = keccak256(toUtf8Bytes("some payload data"));
+    const contractAddress = process.env.MY_GATEWAY_ADDRESS;
+    const mintRecipient = process.env.GMS_EXECUTABLE_ADDRESS;
+    const payloadBytes = createExecutePayload("hello world")
+    const payloadHash = keccak256(payloadBytes);
     const mintAmount = 100;
-    const sourceChain = "Avalanche";
-    const sourceAddress = "0x0001";
-    const symbol = "XRP";
-    const sourceTxHash = keccak256(toUtf8Bytes("some tx hash"));
+    const sourceChain = "xrp testnet string";
+    const sourceAddress = "source chain address string";
+    const sourceTxHash = keccak256(toUtf8Bytes("ignored"));
     const sourceEventIndex = 0;
 
-    // Command 1: Approve Contract Call
+    /*
     const commandName1 = "approveContractCall";
     const params1 = createGatewayCallParams(
         sourceChain,
@@ -121,39 +120,28 @@ async function main() {
         sourceEventIndex
         );
     const commandId1 = createCommandId(commandName1, params1);
+    */
 
     // Command 2: Approve Contract Call With Mint
-    const commandName2 = "approveContractCallWithMint";
-    const params2 = createGatewayCallWithMintParams(
+    const param = createGatewayCallWithMintParams(
         sourceChain,
         sourceAddress,
         contractAddress,
         payloadHash,
-        symbol,
-        mintAmount,
+        "USD",
+        100,
         sourceTxHash,
         sourceEventIndex
         );
-    const commandId2 = createCommandId(commandName2, params2);
-
-
-
-    const commandIds = [commandId1, commandId2];
-    const commands = [commandName1, commandName2];
-    const params = [params1, params2];
+    const commandId = createCommandId("approveContractCallWithMint", param);
+    const commandIds = [commandId];
+    const commands = ["approveContractCallWithMint"];
+    const params = [param];
 
     const data = prepareCommandData(chainId, commandIds, commands, params);
-    const proof = toUtf8Bytes("some_proof"); // Replace with actual proof
+    const proof = toUtf8Bytes("some_proof"); 
     const inputData = prepareExecuteInput(data, proof);
 
     console.log("Input data (hex):", ethers.hexlify(inputData));
-      // You can use this input_data to call the execute method
-    // on your contract using web3.eth.contract().functions.execute(input_data).transact({...})
+    return {inputData,payloadBytes}
 }
-
-main()
-    .then(() => process.exit(0))
-    .catch((error) => {
-        console.error(error);
-        process.exit(1);
-    });
