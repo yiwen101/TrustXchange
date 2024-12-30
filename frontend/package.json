@@ -25,10 +25,12 @@
     "@mui/x-data-grid": "^7.23.3",
     "bignumber.js": "^9.1.2",
     "chart.js": "^4.4.7",
+    "moment": "^2.30.1",
     "react": "^18.3.1",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.1.1",
+    "recharts": "^2.15.0",
     "recoil": "^0.7.7",
     "xrpl": "^4.0.0"
   },

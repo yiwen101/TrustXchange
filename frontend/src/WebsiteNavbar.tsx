@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 import CompanyName from './CompanyName'; // Adjust the import path as needed
 import { useConnectedWalletValues } from './hooks/useConnectedWallet';
 import ConnectWalletButton from './ConnectWalletButton';
-import { ConnectedWallet } from './connectedWallet';
+import { ConnectedWallet } from './ConnectedWallet';
 import ConnectingWallet from './ConnectingWallet';
 
 function WebsiteNavbar() {
@@ -37,8 +37,8 @@ function WebsiteNavbar() {
           <Button color="inherit" component={Link} to="/swap">
             Swap
           </Button>
-          <Button color="inherit" component={Link} to="/temp">
-            Trade
+          <Button color="inherit" component={Link} to="/dev">
+            Dev
           </Button>
         </Box>
         {connectionStatus === "disconnected" && <ConnectWalletButton />}

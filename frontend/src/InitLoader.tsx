@@ -9,7 +9,7 @@ import P2pPage from './Pages/P2P/P2pPage';
 import SwapPage from './Pages/Swap/SwapPage';
 import FuturePage from './Pages/Future/FuturePage';
 import { useXrpPriceState} from './hooks/usePriceState';
-import xrp_api from './api/xrp';
+import Dev from './Dev';
 
 
 
@@ -32,7 +32,7 @@ const InitLoader = () => {
               <Route path="/wallet" element={<Wallet />} />
               <Route path="/pool" element={<PoolPage />} />
               <Route path="/future" element={<FuturePage />} />
-              <Route path="/trade" element={<Home />} />
+              <Route path="/dev" element={<Dev />} />
               <Route path="/p2p" element={<P2pPage />} />
               <Route path="/swap" element={<SwapPage />} />
             </Routes>

@@ -10,4 +10,7 @@ npx hardhat test
 REPORT_GAS=true npx hardhat test
 npx hardhat node
 npx hardhat ignition deploy ./ignition/modules/Lock.js
+
+npx hardhat ignition deploy ./ignition/modules/<name> --network evm
+npx hardhat verify --network evm <DEPLOYED_CONTRACT_ADDRESS> <CONSTRUCTOR_ARGUMENTS>
 ```
