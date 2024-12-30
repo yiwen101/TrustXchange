@@ -99,6 +99,9 @@ function _execute(
 */
 async function callContract(params) {
   const gmsExecutableAbi = [
+    "error DecodingError(string reason)",
+    "error AmountCheckFailed(uint256 amount)",
+    "error SendTokenFailed(string reason)",
     "function executeWithToken(bytes32 commandId,string calldata sourceChain,string calldata sourceAddress,bytes calldata payload,string calldata tokenSymbol,uint256 amount) external"
   ];
   const gmsExecutableAddress = process.env.GMS_EXECUTABLE_ADDRESS;
@@ -121,8 +124,8 @@ async function callContract(params) {
 }
 
 async function main() {
-  const {inputData,executeWithTokenParams} = utils.getMockInputs(5)
-  //await approveContractCall(inputData);
+  const {inputData,executeWithTokenParams} = utils.getMockInputs(50)
+  await approveContractCall(inputData);
   await callContract(executeWithTokenParams);
 }
 

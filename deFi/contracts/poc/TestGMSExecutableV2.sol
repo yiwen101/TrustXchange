@@ -6,7 +6,7 @@ import { IMyAxelarGateway } from '../common/interfaces/IMyAxelarGateway.sol';
 
 contract TestGMSExecutableV3 is AxelarExecutableWithToken {
     event Executed(string _sourceChain, string _sourceAddress, string message);
-    event ExecutedWithToken(string _sourceChain, string _sourceAddress,  string message);
+    event ExecutedWithToken(string _sourceChain, string _sourceAddress, string message);
     event ExecutionFailed(string _sourceChain, string _sourceAddress, string reason);
     event ExecutionWithTokenFailed(string _sourceChain, string _sourceAddress, string reason);
 
@@ -17,20 +17,13 @@ contract TestGMSExecutableV3 is AxelarExecutableWithToken {
     constructor(address gateway_) AxelarExecutableWithToken(gateway_) {
     }
 
-   function _execute(
+    function _execute(
         bytes32 commandId,
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
     ) internal override {
-        string memory message;
-         try  returns (string memory decodedMessage){
-             message = abi.decode(payload, (string));
-         } catch (bytes memory err) {
-            emit ExecutionFailed(sourceChain, sourceAddress, "Failed to decode payload");
-           revert DecodingError("Failed to decode payload");
-         }
-
+        string memory message = abi.decode(payload, (string));
         emit Executed(sourceChain, sourceAddress, message);
     }
 
@@ -42,25 +35,17 @@ contract TestGMSExecutableV3 is AxelarExecutableWithToken {
         string calldata tokenSymbol,
         uint256 amount
     ) internal override {
-         string memory message;
-         try returns (string memory decodedMessage) {
-             message = abi.decode(payload, (string));
-         } catch (bytes memory err) {
-              emit ExecutionWithTokenFailed(sourceChain, sourceAddress, "Failed to decode payload");
-            revert DecodingError("Failed to decode payload");
-         }
+        string memory message = abi.decode(payload, (string));
 
-        if(amount > 10) {
-            try{
-                gateway().sendToken(sourceChain, sourceAddress, tokenSymbol, amount - 1);
+        if (amount > 10) {
+            try gateway().sendToken(sourceChain, sourceAddress, tokenSymbol, amount - 1) {
                 emit ExecutedWithToken(sourceChain, sourceAddress, message);
             } catch (bytes memory err) {
-               emit ExecutionWithTokenFailed(sourceChain, sourceAddress, "Failed to send token");
-               revert SendTokenFailed("Failed to send token");
+                 emit ExecutionWithTokenFailed(sourceChain, sourceAddress, "Failed to send token");
+                revert SendTokenFailed("Failed to send token");
             }
-
         } else {
-           emit ExecutedWithToken(sourceChain, sourceAddress, "amount less than 10");
+            emit ExecutedWithToken(sourceChain, sourceAddress, "amount less than 10");
         }
     }
 }

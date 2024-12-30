@@ -99,8 +99,7 @@ function createExecutePayload(message) {
 export function getMockInputs(mintAmount = 100) {
     const tokenDenom = 1;
     const chainId = 1;  // Example Chain ID
-    const contractAddress = process.env.MY_GATEWAY_ADDRESS;
-    const mintRecipient = process.env.GMS_EXECUTABLE_ADDRESS;
+    const contractAddress = process.env.GMS_EXECUTABLE_ADDRESS;
     const payloadBytes = createExecutePayload("hello world")
     const payloadHash = keccak256(payloadBytes);
     const sourceChain = "xrp testnet string";
