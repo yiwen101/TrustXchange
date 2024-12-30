@@ -25,7 +25,6 @@ const InitLoader = () => {
     return (
         <Box display="flex" flexDirection="column" height="calc(100vh - 65px)" width="100vw" maxWidth="100%">
           <WebsiteNavbar />
-          <Box height="65px" />
           <Box flex="1" display="flex" flexDirection="column" width="100%" height="calc(100vh - 65px)">
             <Routes>
               <Route path="/" element={<Home />} />

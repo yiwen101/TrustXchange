@@ -258,7 +258,7 @@ const PayoffSection = ({ payoffData, strike }) => {
 const StickyTradeSection = styled(Box)(({ theme }) => ({
     position: 'sticky',
     bottom: 0,
-    backgroundColor: theme.palette.background.paper,
+    backgroundColor: 'rgb(236,236,238)',
     padding: theme.spacing(1),
     zIndex: 100, // Ensure it's above other content
     borderTop: `1px solid ${theme.palette.divider}`,
@@ -267,20 +267,17 @@ const StickyTradeSection = styled(Box)(({ theme }) => ({
     alignItems: 'center',
 }));
 
-// Styled component for the Trade Button
-const StyledTradeButton = styled(Button)(({ theme, open }) => ({
-    backgroundColor: theme.palette.grey[900],
-    color: theme.palette.common.white,
-     '&:hover': {
-    backgroundColor: theme.palette.grey[800], // Darken on hover
+const StyledMenu = styled(Menu)(({ theme }) => ({
+  '& .MuiPaper-root': {
+       backgroundColor: theme.palette.primary.main,
   },
-   ...(open && {
-    backgroundColor: theme.palette.grey[800], // slightly less dark when open
-  }),
+  '& .MuiMenuItem-root:hover': {
+      backgroundColor: theme.palette.primary.light,
+  },
+  '& .MuiMenuItem-root':{
+     color: 'white',
+  }
 }));
-
-
-
 const TradeSection = () => {
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
@@ -305,15 +302,15 @@ const TradeSection = () => {
             <IconButton  aria-label="watchlist" color="primary">
                 <PlaylistAddCheckIcon />
             </IconButton>
-            <StyledTradeButton
+            <Button
                 ref={tradeButtonRef}
                 onClick={handleTradeClick}
                 endIcon={open ? <ArrowDropUpIcon /> : <ArrowDropDownIcon />}
-                open={open}
+                variant="contained"
             >
                 Trade
-            </StyledTradeButton>
-           <Menu
+            </Button>
+           <StyledMenu
                 anchorEl={anchorEl}
                 open={open}
                 onClose={handleClose}
@@ -329,7 +326,7 @@ const TradeSection = () => {
                 <MenuItem onClick={() => handleMenuItemClick('buy/sell')}>Buy/Sell</MenuItem>
                 <MenuItem onClick={() => handleMenuItemClick('short')}>Short</MenuItem>
                 <MenuItem onClick={() => handleMenuItemClick('issue')}>Issue</MenuItem>
-            </Menu>
+            </StyledMenu>
         </StickyTradeSection>
     );
 };

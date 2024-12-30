@@ -14,6 +14,7 @@ import ConnectingWallet from './ConnectingWallet';
 function WebsiteNavbar() {
   const { connectionStatus } = useConnectedWalletValues();
   return (
+    <Box>
     <AppBar position="fixed">
       <Toolbar>
         <CompanyName />
@@ -22,20 +23,20 @@ function WebsiteNavbar() {
           <Button color="inherit" component={Link} to="/">
             Home
           </Button>
-          <Button color="inherit" component={Link} to="/wallet">
-            Wallet
-          </Button>
-          <Button color="inherit" component={Link} to="/pool">
-            Pool
-          </Button>
           <Button color="inherit" component={Link} to="/future">
             Future
           </Button>
           <Button color="inherit" component={Link} to="/p2p">
             P2P
           </Button>
+          <Button color="inherit" component={Link} to="/pool">
+            Pool
+          </Button>
           <Button color="inherit" component={Link} to="/swap">
             Swap
+          </Button>
+          <Button color="inherit" component={Link} to="/wallet">
+            Wallet
           </Button>
           <Button color="inherit" component={Link} to="/dev">
             Dev
@@ -46,6 +47,8 @@ function WebsiteNavbar() {
         {connectionStatus === "connected" && <ConnectedWallet />}
       </Toolbar>
     </AppBar>
+    <Box height="65px" />
+    </Box>
   );
 }
 

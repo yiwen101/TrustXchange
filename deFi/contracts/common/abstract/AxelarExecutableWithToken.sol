@@ -37,7 +37,7 @@ abstract contract AxelarExecutableWithToken is IAxelarExecutableWithToken, Axela
         bytes calldata payload,
         string calldata tokenSymbol,
         uint256 amount
-    ) external virtual {
+    ) external {
         bytes32 payloadHash = keccak256(payload);
 
         if (
