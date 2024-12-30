@@ -96,14 +96,13 @@ function createExecutePayload(message) {
     );
 }
 
-export function getMockInputs() {
+export function getMockInputs(mintAmount = 100) {
     const tokenDenom = 1;
     const chainId = 1;  // Example Chain ID
     const contractAddress = process.env.MY_GATEWAY_ADDRESS;
     const mintRecipient = process.env.GMS_EXECUTABLE_ADDRESS;
     const payloadBytes = createExecutePayload("hello world")
     const payloadHash = keccak256(payloadBytes);
-    const mintAmount = 100;
     const sourceChain = "xrp testnet string";
     const sourceAddress = "source chain address string";
     const sourceTxHash = keccak256(toUtf8Bytes("ignored"));
@@ -129,7 +128,7 @@ export function getMockInputs() {
         contractAddress,
         payloadHash,
         "USD",
-        100,
+        mintAmount,
         sourceTxHash,
         sourceEventIndex
         );
@@ -143,5 +142,13 @@ export function getMockInputs() {
     const inputData = prepareExecuteInput(data, proof);
 
     console.log("Input data (hex):", ethers.hexlify(inputData));
-    return {inputData,payloadBytes}
+    const executeWithTokenParams = {
+        commandId: commandId,
+        sourceChain: sourceChain,
+        sourceAddress: sourceAddress,
+        payload: payloadBytes,
+        tokenSymbol: "USD",
+        amount: mintAmount
+     }
+    return {inputData,executeWithTokenParams}
 }

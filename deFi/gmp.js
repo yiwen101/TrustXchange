@@ -97,23 +97,21 @@ function _execute(
         }
     }
 */
-async function callContract() {
+async function callContract(params) {
   const gmsExecutableAbi = [
-    "function execute(bytes32 commandId, string calldata sourceChain, string calldata sourceAddress, bytes calldata payload) external"
+    "function executeWithToken(bytes32 commandId,string calldata sourceChain,string calldata sourceAddress,bytes calldata payload,string calldata tokenSymbol,uint256 amount) external"
   ];
   const gmsExecutableAddress = process.env.GMS_EXECUTABLE_ADDRESS;
+  console.log('gmsExecutableAddress: ', gmsExecutableAddress);
   const gmsExecutableContract = new ethers.Contract(gmsExecutableAddress,  gmsExecutableAbi, signer)
   try {
-     const commandId = ethers.keccak256(ethers.toUtf8Bytes("test_command"));
-     const sourceChain = "sourceChain";
-     const sourceAddress = publicKey;
-     const tokenDenom = 'USD';
-     const tokenAmount = 2;
-      const payload = ethers.AbiCoder.defaultAbiCoder().encode(
-            ['string', 'uint256'],
-            [tokenDenom, tokenAmount]
-        );
-    const tx = await gmsExecutableContract.execute(commandId, sourceChain, sourceAddress, payload)
+     const commandId = params.commandId;
+      const sourceChain = params.sourceChain;
+      const sourceAddress = params.sourceAddress;
+      const payload = params.payload;
+      const tokenSymbol = params.tokenSymbol;
+      const amount = params.amount;
+    const tx = await gmsExecutableContract.executeWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount);
     console.log("Transaction response:", tx);
     const receipt = await tx.wait();
     console.log("Transaction receipt:", receipt);
@@ -123,8 +121,9 @@ async function callContract() {
 }
 
 async function main() {
-  const {inputData,payloadBytes} = utils.getMockInputs()
-  //await approveContractCall(inputData)
+  const {inputData,executeWithTokenParams} = utils.getMockInputs(5)
+  //await approveContractCall(inputData);
+  await callContract(executeWithTokenParams);
 }
 
 main().catch((error) => {

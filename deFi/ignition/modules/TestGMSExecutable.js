@@ -8,7 +8,7 @@ module.exports = buildModule("TestGMSExecutableModule2", (m) => {
   const gateway_ = m.getParameter("gateway_", MY_GATEWAY_ADDRESS);
 
   // Deploy the MyAxelarGatewayImpl contract with the authModule parameter
-  const TestGMSExecutableModule = m.contract("TestGMSExecutableV2", [gateway_]);
+  const TestGMSExecutableModule = m.contract("TestGMSExecutableV3", [gateway_]);
 
   // Return the deployed contract instance
   return { TestGMSExecutableModule };
