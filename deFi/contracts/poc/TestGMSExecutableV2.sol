@@ -4,9 +4,9 @@ pragma solidity ^0.8.0;
 import { AxelarExecutableWithToken } from '../common/abstract/AxelarExecutableWithToken.sol';
 import { IMyAxelarGateway } from '../common/interfaces/IMyAxelarGateway.sol';
 
-contract TestGMSExecutable is AxelarExecutableWithToken {
+contract TestGMSExecutableV2 is AxelarExecutableWithToken {
     event Executed(string _sourceChain, string _sourceAddress,  string _tokenSymbol, uint256 _tokenAmount);
-    event ExecutedWithToken(string _sourceChain, string _sourceAddress,  string _tokenSymbol, uint256 _tokenAmount);
+    event ExecutedWithToken(string _sourceChain, string _sourceAddress,  string message);
 
     constructor(address gateway_) AxelarExecutableWithToken(gateway_) {
     }
@@ -19,6 +19,7 @@ contract TestGMSExecutable is AxelarExecutableWithToken {
     ) internal override {
         (string memory tokenDenom, uint256 tokenAmount) = abi.decode(payload, (string, uint256));
         if(tokenAmount > 1) {
+            // should give error
             gateway().sendToken(sourceChain, sourceAddress, tokenDenom, tokenAmount - 1);
             emit Executed(sourceChain, sourceAddress, tokenDenom, tokenAmount-1);
         } else {
@@ -34,6 +35,12 @@ contract TestGMSExecutable is AxelarExecutableWithToken {
         string calldata tokenSymbol,
         uint256 amount
     ) internal override {
-        emit ExecutedWithToken(sourceChain, sourceAddress, tokenSymbol, amount);
+        string memory message = abi.decode(payload, (string));
+        if(amount > 10) {
+            gateway().sendToken(sourceChain, sourceAddress, tokenSymbol, amount - 1);
+            emit ExecutedWithToken(sourceChain, sourceAddress, message);
+        } else {
+           emit ExecutedWithToken(sourceChain, sourceAddress, "amount less than 10");
+        }
     }
 }
