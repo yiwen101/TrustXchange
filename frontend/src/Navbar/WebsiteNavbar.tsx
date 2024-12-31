@@ -50,7 +50,7 @@ function WebsiteNavbar() {
         {connectionStatus === "connected" && <ConnectedWallet />}
       </Toolbar>
     </AppBar>
-    <Box height="65px" />
+    <Box height="48px" />
     </Box>
   );
 }

@@ -1,35 +1,30 @@
-// src/PoolPage.tsx
-import React from 'react';
-import {
-  Box,
-  Grid2,
-  Paper,
-  Stack,
-} from '@mui/material';
-import PoolInfo from './PledgeInfo';
-import PoolActions from './PledgeActions';
+import React, { useState } from 'react';
+import { Box, Tabs, Tab } from '@mui/material';
+import LendingTab from './LendingTab';
+import TransactionHistoryTab from './TransactionHistoryTab';
+import LiquidityProvisionTab from './LiquidityProvisionTab';
 
-const PoolPage: React.FC = () => {
+function PledgePage() {
+    const [activeTab, setActiveTab] = useState<number>(0);
 
+    const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+      setActiveTab(newValue);
+    };
 
-  return (
-    <Stack height={"calc(100vh-65px)"} display={'flex'} flexDirection={'column'}>
-      <Box p={3}>
-        <Grid2 container spacing={4} justifyContent="center">
-            <Grid2 >
-              <Paper elevation={3} sx={{ p: 3 }}>
-                <PoolInfo />
-              </Paper>
-            </Grid2>
-            <Grid2 >
-              <Paper elevation={3} sx={{ p: 3 }}>
-                <PoolActions />
-              </Paper>
-            </Grid2>
-        </Grid2>
-      </Box>
-      </Stack>
-  );
-};
+    return (
+    <Box sx={{ width: '100%', maxWidth: 800, mx: 'auto', mt: 4, p: 2 }}>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                <Tabs value={activeTab} onChange={handleChange} aria-label="pledge tabs">
+                    <Tab label="Lending" />
+                    <Tab label="Transaction History" />
+                    <Tab label="Liquidity Provision" />
+                </Tabs>
+            </Box>
+            {activeTab === 0 && <LendingTab />}
+            {activeTab === 1 && <TransactionHistoryTab />}
+            {activeTab === 2 && <LiquidityProvisionTab />}
+        </Box>
+    );
+}
 
-export default PoolPage;
+export default PledgePage;

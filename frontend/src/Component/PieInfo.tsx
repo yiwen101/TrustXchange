@@ -13,8 +13,9 @@ import {
   }
   export const PieInfo: React.FC<PieInfoProps> = (prop) => {
     // will be obtained from historical data of AMM in reality, but AMM on testnet is just created, so give a fake amount
+    // reference: https://www.coinbase.com/earn
     const getMockAnnualInterestRate = (prop: PieInfoProps | null) => {
-      return prop&&prop.usd_amount && prop.xrp_amount ? '10%' : 'XXX';
+      return prop&&prop.usd_amount && prop.xrp_amount ? '3.47%' : 'XXX';
     }
     // when info not ready, give an estimated 65/35 composition for visualization
     const getComposition = (prop: PieInfoProps | null) => {
@@ -56,7 +57,7 @@ import {
           <Box display="flex" justifyContent="center" gap={4}>
             <Stack alignItems="center">
               <Box component="span" fontWeight="fontWeightBold" fontSize="3rem">{getMockAnnualInterestRate(prop)}</Box>
-              <Typography variant="subtitle1">Interest Rate</Typography>
+              <Typography variant="subtitle1">Annual Yield</Typography>
             </Stack>
             <Stack alignItems="center">
               <Box component="span" fontWeight="fontWeightBold" fontSize="3rem">{totalLiquidity(prop)}</Box>
