@@ -66,10 +66,7 @@ export async function get_xrp_price_day_ago(x: number): Promise<number> {
 }
 
 export async function get_xrp_price_at(dateTime: Date): Promise<number> {
-    const client = new Client(mainnet_url);
-    await client.connect();
     const ledger_index = await get_estimated_ledger_index(dateTime);
-    await client.disconnect();
     const price = await get_xrp_price_at_ledger(ledger_index);
     const dateTimeFormatted = new Date(dateTime).toISOString();
     console.log(`Price at ${dateTimeFormatted}: ${price}`);

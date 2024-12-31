@@ -4,6 +4,7 @@ import { XrpIcon, UsdcIcon } from '../../icons/Icons';
 import { useConnectedWalletValues } from '../../hooks/useConnectedWallet';
 import { useXrpPriceValue } from '../../hooks/usePriceState';
 import xrp_api from '../../api/xrp';
+import PieInfo from '../../Component/PieInfo';
 
 const PoolPage = () => {
   const {connectedWallet,connectionStatus } = useConnectedWalletValues();
@@ -82,10 +83,7 @@ const PoolPage = () => {
 
   return (
     <Card style={{ padding: '20px', width: '300px', margin: 'auto' }}>
-      <Typography variant="h5">Pool</Typography>
-        <Box mt={2}>
-              {getLiquidityInfo()}
-        </Box>
+       <PieInfo usd_amount={ammInfo?.usd_amount || 0} xrp_amount={ammInfo?.xrp_amount || 0} />
         <Box mt={3}>
         <Typography variant="h6">Add Liquidity</Typography>
             <TextField
