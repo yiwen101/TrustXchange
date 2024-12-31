@@ -1,13 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "prb-math/contracts/PRBMathUD60x18.sol";
 
-contract XrpLending is Ownable, ReentrancyGuard {
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "prb-math/contracts/PRBMathUD60x18.sol";
+import { AxelarExecutableWithToken } from '../common/abstract/AxelarExecutableWithToken.sol';
+import { IMyAxelarGateway } from '../common/interfaces/IMyAxelarGateway.sol';
+
+contract XrpLending is Ownable, AxelarExecutableWithToken {
     using PRBMathUD60x18 for uint256;
+
+    bytes32 internal constant SELECTOR_LEND = keccak256("lend");
+    bytes32 internal constant SELECTOR_WITHDRAW = keccak256("withdraw");
+    bytes32 internal constant SELECTOR_CLAIM_REWARD = keccak256("claimReward");
+    bytes32 internal constant SELECTOR_BORROW = keccak256("borrow");
+    bytes32 internal constant SELECTOR_REPAY_LOAN = keccak256("repayLoan");
+    bytes32 internal constant SELECTOR_LIQUIDATE_LOAN = keccak256("liquidateLoan");
 
     // --- Structs ---
     struct Loan {
@@ -40,7 +48,6 @@ contract XrpLending is Ownable, ReentrancyGuard {
     uint256 public dailyRate;
 
     // Simulate, since the GatewayImpl does not really mint the token
-    uint256 public usdOfThisContract = 0;
     uint256 public profit = 0;
 
     // Reward Tracking Variables
@@ -78,7 +85,7 @@ contract XrpLending is Ownable, ReentrancyGuard {
     event AccRewardPerShareUpdated(uint256 accRewardPerShare);
 
     // --- Constructor ---
-    constructor(address _usdTokenAddress, uint256 _initialXRPPriceUSD) Ownable(msg.sender) {
+    constructor(address gateway_, uint256 _initialXRPPriceUSD) Ownable() AxelarExecutableWithToken(gateway_) {
         usdToken = ERC20(_usdTokenAddress);
         currentXRPPriceUSD = _initialXRPPriceUSD;
         loanCounter = 0;
@@ -89,13 +96,8 @@ contract XrpLending is Ownable, ReentrancyGuard {
     }
 
     // --- Modifiers ---
-    modifier validPrice() {
-        require(currentXRPPriceUSD > 0, "Invalid XRP price");
-        _;
-    }
-
-    modifier onlyLiquidator() {
-        require(hasRole(LIQUIDATOR_ROLE, msg.sender), "Caller is not a liquidator");
+    modifier onlySelf() {
+        require(msg.sender == address(this), "Caller is not the contract itself");
         _;
     }
 
@@ -121,13 +123,64 @@ contract XrpLending is Ownable, ReentrancyGuard {
         liquidationThreshold = _liquidationThreshold;
     }
 
-    function setLoanDurationBlocks(uint256 _loanDurationBlocks) external onlyOwner {
-        loanDurationBlocks = _loanDurationBlocks;
+    function _execute(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload
+    ) internal override {
+       (command,params)= abi.decode(payload, (string,bytes));
+        bytes32 commandHash = keccak256(abi.encodePacked(command));
+        if (commandHash == SELECTOR_CLAIM_REWARD) {
+            claimReward();
+        } else if (commandHash == SELECTOR_BORROW) {
+            (uint256 borrowAmountUSD) = abi.decode(params, (uint256));
+            borrow(borrowAmountUSD);
+        } else if (commandHash == SELECTOR_REPAY_LOAN) {
+            (uint256 loanId, uint256 repayAmountUSD) = abi.decode(params, (uint256, uint256));
+            repayLoan(loanId, repayAmountUSD);
+        } else if (commandHash == SELECTOR_LIQUIDATE_LOAN) {
+            (uint256 loanId) = abi.decode(params, (uint256));
+            liquidateLoan(loanId);
+        } else {
+            revert("Invalid command");
+        }
+
+        emit Executed(sourceChain, sourceAddress, message);
     }
 
+    function _executeWithToken(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload,
+        string calldata tokenSymbol,
+        uint256 amount
+    ) internal override {
+        (command)= abi.decode(payload, (string));
+        if (tokenSymbol != "USD") {
+            revert("Invalid token");
+        }
+        bytes32 commandHash = keccak256(abi.encodePacked(command));
+        if (commandHash == SELECTOR_LEND) {
+            lend(amount);
+        } else if (commandHash == SELECTOR_WITHDRAW) {
+            withdraw(amount);
+        } else {
+            revert("Invalid command");
+        }
+
+        emit ExecutedWithToken(sourceChain, sourceAddress, message);
+    }
+
+
+    /******************\
+    |* Self Functions *|
+    \******************/
+
     // --- User Functions ---
-    function lend(uint256 lendingAmount) external nonReentrant {
-        updatePool();
+    function lend(uint256 lendingAmount) external onlySelf {
+        distributeRewards();
 
         UserInfo storage user = userInfo[msg.sender];
 
@@ -155,8 +208,8 @@ contract XrpLending is Ownable, ReentrancyGuard {
         emit RewardsDistributed(lastRewardBatchId, lendingAmount);
     }
 
-    function withdraw(uint256 withdrawAmount) external nonReentrant {
-        updatePool();
+    function withdraw(uint256 withdrawAmount) external onlySelf {
+        distributeRewards();
 
         UserInfo storage user = userInfo[msg.sender];
 
@@ -182,7 +235,24 @@ contract XrpLending is Ownable, ReentrancyGuard {
         user.rewardDebt = (user.lendBalance * accRewardPerShare) / 1e18;
     }
 
-    function borrow(uint256 _borrowAmountUSD) external payable validPrice {
+    function claimReward() external onlySelf {
+        distributeRewards();
+
+        UserInfo storage user = userInfo[msg.sender];
+        uint256 pending = (user.lendBalance * accRewardPerShare) / 1e18 - user.rewardDebt;
+
+        require(pending > 0, "No rewards to claim");
+
+        // Update user's reward debt
+        user.rewardDebt = (user.lendBalance * accRewardPerShare) / 1e18;
+
+        // Transfer the rewards to the user
+        require(usdToken.transfer(msg.sender, pending), "Reward transfer failed");
+
+        emit RewardsClaimed(msg.sender, pending);
+    }
+
+    function borrow(uint256 _borrowAmountUSD) external onlySelf {
         uint256 requiredCollateralXRP = (_borrowAmountUSD * collateralRatio) / (100 * currentXRPPriceUSD);
         require(msg.value >= requiredCollateralXRP, "Not enough XRP collateral sent.");
 
@@ -225,11 +295,10 @@ contract XrpLending is Ownable, ReentrancyGuard {
             emit LoanCreated(loanCounter, msg.sender, _borrowAmountUSD, msg.value);
         }
 
-        // Distribute rewards after borrowing
         distributeRewards();
     }
 
-    function repayLoan(uint256 _loanId, uint256 _repayAmountUSD) external nonReentrant {
+    function repayLoan(uint256 _loanId, uint256 _repayAmountUSD) external onlySelf {
         Loan storage loan = loans[_loanId];
 
         require(loan.borrower == msg.sender, "Not the loan owner");
@@ -292,7 +361,7 @@ contract XrpLending is Ownable, ReentrancyGuard {
         distributeRewards();
     }
 
-    function liquidateLoan(uint256 _loanId) public validPrice onlyOwner nonReentrant {
+    function liquidateLoan(uint256 _loanId) public onlySelf {
         Loan storage loan = loans[_loanId];
 
         require(!loan.isLiquidated, "Loan already liquidated");
@@ -301,88 +370,21 @@ contract XrpLending is Ownable, ReentrancyGuard {
         updateInterest(_loanId);
 
         uint256 totalOwed = loan.borrowAmountUSD + loan.accruedInterestUSD - loan.repaidPrincipalUSD - loan.repaidInterestUSD;
-        uint256 currentCollateralValueUSD = (loan.collateralAmountXRP * currentXRPPriceUSD) / 100;
+        uint256 currentCollateralValueUSD = (loan.collateralAmountXRP * currentXRPPriceUSD);
 
         uint256 liquidationThresholdValue = (totalOwed * liquidationThreshold) / 100;
 
         // Check if loan is undercollateralized
         require(currentCollateralValueUSD < liquidationThresholdValue, "Cannot liquidate yet");
 
-        // Transfer the collateral to the liquidator
-        payable(msg.sender).transfer(loan.collateralAmountXRP);
-
+        // pretend is traded via AMM
+        profit += (currentCollateralValueUSD - totalOwed);
         loan.isLiquidated = true;
 
         emit LoanLiquidated(_loanId, msg.sender, loan.collateralAmountXRP);
 
         // Distribute rewards after liquidation
         distributeRewards();
-    }
-
-    function contributeLiquidity(uint256 usd_amount) public payable nonReentrant {
-        require(msg.value == usd_amount, "Invalid amount sent");
-        usdOfThisContract += usd_amount;
-        liquidators[msg.sender] += usd_amount;
-
-        // Update total liquidity
-        totalLiquidity += usd_amount;
-    }
-
-    // --- Reward Distribution Functions ---
-    function distributeRewards() internal {
-        // Check if enough time has passed since last distribution
-        if (block.timestamp < lastRewardTimeStamp + rewardInterval) {
-            return;
-        }
-
-        if (profit == 0) return;
-
-        // Example: Distribute 1% of the profit as rewards
-        uint256 rewardAmount = profit / 100;
-        if (rewardAmount == 0) return;
-
-        // Update accumulated reward per share
-        accRewardPerShare += (rewardAmount * 1e18) / totalLiquidity;
-
-        // Reset profit
-        profit -= rewardAmount;
-
-        lastRewardBatchId += 1;
-        rewardClaimAmounts[lastRewardBatchId] = rewardAmount;
-        lastRewardTimeStamp = block.timestamp;
-
-        emit RewardsDistributed(lastRewardBatchId, rewardAmount);
-        emit AccRewardPerShareUpdated(accRewardPerShare);
-    }
-
-    function updatePool() public {
-        distributeRewards();
-    }
-
-    function getClaimableRewards(address _user) public view returns (uint256) {
-        UserInfo storage user = userInfo[_user];
-        uint256 accumulated = (user.lendBalance * accRewardPerShare) / 1e18;
-        if (accumulated < user.rewardDebt) {
-            return 0;
-        }
-        return accumulated - user.rewardDebt;
-    }
-
-    function claimRewards() external nonReentrant {
-        updatePool();
-
-        UserInfo storage user = userInfo[msg.sender];
-        uint256 pending = (user.lendBalance * accRewardPerShare) / 1e18 - user.rewardDebt;
-
-        require(pending > 0, "No rewards to claim");
-
-        // Update user's reward debt
-        user.rewardDebt = (user.lendBalance * accRewardPerShare) / 1e18;
-
-        // Transfer the rewards to the user
-        require(usdToken.transfer(msg.sender, pending), "Reward transfer failed");
-
-        emit RewardsClaimed(msg.sender, pending);
     }
 
     // --- Internal Functions ---
@@ -420,7 +422,32 @@ contract XrpLending is Ownable, ReentrancyGuard {
         return estimatedInterest;
     }
 
-    // New internal function to calculate daily rate
+    function distributeRewards() internal {
+        // Check if enough time has passed since last distribution
+        if (block.timestamp < lastRewardTimeStamp + rewardInterval) {
+            return;
+        }
+
+        if (profit == 0) return;
+
+        // Example: Distribute 1% of the profit as rewards
+        uint256 rewardAmount = profit / 100;
+        if (rewardAmount == 0) return;
+
+        // Update accumulated reward per share
+        accRewardPerShare += (rewardAmount * 1e18) / totalLiquidity;
+
+        // Reset profit
+        profit -= rewardAmount;
+
+        lastRewardBatchId += 1;
+        rewardClaimAmounts[lastRewardBatchId] = rewardAmount;
+        lastRewardTimeStamp = block.timestamp;
+
+        emit RewardsDistributed(lastRewardBatchId, rewardAmount);
+        emit AccRewardPerShareUpdated(accRewardPerShare);
+    }
+   
     function calculateDailyRate(uint256 _annualRate) internal pure returns (uint256) {
         uint256 annualRateFixed = (_annualRate * 1e18) / 100;
         return annualRateFixed / 365;
@@ -437,5 +464,14 @@ contract XrpLending is Ownable, ReentrancyGuard {
 
     function calculateInterestAfterDays(uint256 _loanId, uint256 _days) external view returns (uint256) {
         return calculateInterestAfterDaysInternal(_loanId, _days);
+    }
+
+    function getClaimableRewards(address _user) public view returns (uint256) {
+        UserInfo storage user = userInfo[_user];
+        uint256 accumulated = (user.lendBalance * accRewardPerShare) / 1e18;
+        if (accumulated < user.rewardDebt) {
+            return 0;
+        }
+        return accumulated - user.rewardDebt;
     }
 }
