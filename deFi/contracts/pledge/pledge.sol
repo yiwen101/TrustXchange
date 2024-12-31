@@ -36,7 +36,6 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
     }
 
     // --- State Variables ---
-    ERC20 public usdToken; // Address of the USD stablecoin ERC20 token
     uint256 public collateralRatio = 150; // Collateral ratio as a percentage (e.g., 150 for 150%)
     uint256 public interestRate = 10; // Annual interest rate in percentage.
     uint256 public liquidationThreshold = 120; // Liquidation threshold as a percentage (e.g. 120%)
@@ -54,17 +53,17 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
     uint256 public lastRewardBatchId;
     uint256 public lastRewardTimeStamp;
     mapping(uint256 => uint256) public rewardClaimAmounts; // batchId => rewardAmount
-    mapping(address => uint256) public lastClaimBatchId; // user => lastClaimedBatchId
+    mapping(string => uint256) public lastClaimBatchId; // user => lastClaimedBatchId
 
     uint256 public totalLiquidity;
 
     // Mapping to store loan data
     mapping(uint256 => Loan) public loans;
-    mapping(address => uint256) public userLoans; // Changed from uint256[] to uint256
-    mapping(address => uint256) public liquidators;
+    mapping(string => uint256) public userLoans;
+    mapping(string => uint256) public liquidators;
 
     // Mapping to track liquidity contributions and reward debt
-    mapping(address => UserInfo) public userInfo;
+    mapping(string => UserInfo) public userInfo;
 
     // Accumulated Reward Per Share
     uint256 public accRewardPerShare; // Accumulated rewards per share, scaled by 1e18
@@ -72,21 +71,19 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
     uint256 public rewardInterval = 1 days; // Interval between reward distributions
 
     // --- Events ---
-    event LoanCreated(uint256 loanId, address borrower, uint256 borrowAmountUSD, uint256 collateralAmountXRP);
-    event LoanUpdated(uint256 loanId, address borrower, uint256 newBorrowAmountUSD, uint256 newCollateralAmountXRP);
+    event LoanCreated(uint256 loanId, string borrower, uint256 borrowAmountUSD, uint256 collateralAmountXRP);
+    event LoanUpdated(uint256 loanId, string borrower, uint256 newBorrowAmountUSD, uint256 newCollateralAmountXRP);
     event LoanRepaid(uint256 loanId, uint256 amountRepaid, uint256 repaidPrincipal, uint256 repaidInterest);
     event LoanPartiallyRepaid(uint256 loanId, uint256 amountRepaid, uint256 repaidPrincipal, uint256 repaidInterest);
-    event LoanLiquidated(uint256 loanId, address liquidator, uint256 collateralLiquidated);
+    event LoanLiquidated(uint256 loanId, string liquidator, uint256 collateralLiquidated);
     event PriceUpdated(uint256 newPrice);
     event InterestAccrued(uint256 loanId, uint256 interest);
-    event LiquidatorRoleGranted(address indexed account);
     event RewardsDistributed(uint256 batchId, uint256 rewardAmount);
-    event RewardsClaimed(address indexed user, uint256 amount);
+    event RewardsClaimed(string indexed user, uint256 amount);
     event AccRewardPerShareUpdated(uint256 accRewardPerShare);
 
     // --- Constructor ---
     constructor(address gateway_, uint256 _initialXRPPriceUSD) Ownable() AxelarExecutableWithToken(gateway_) {
-        usdToken = ERC20(_usdTokenAddress);
         currentXRPPriceUSD = _initialXRPPriceUSD;
         loanCounter = 0;
         dailyRate = calculateDailyRate(interestRate);
@@ -123,30 +120,29 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         liquidationThreshold = _liquidationThreshold;
     }
 
+        // --- Gateway Functions ---
+
     function _execute(
         bytes32 commandId,
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
     ) internal override {
+        string command;
+        bytes memory params;
        (command,params)= abi.decode(payload, (string,bytes));
         bytes32 commandHash = keccak256(abi.encodePacked(command));
         if (commandHash == SELECTOR_CLAIM_REWARD) {
-            claimReward();
-        } else if (commandHash == SELECTOR_BORROW) {
-            (uint256 borrowAmountUSD) = abi.decode(params, (uint256));
-            borrow(borrowAmountUSD);
-        } else if (commandHash == SELECTOR_REPAY_LOAN) {
-            (uint256 loanId, uint256 repayAmountUSD) = abi.decode(params, (uint256, uint256));
-            repayLoan(loanId, repayAmountUSD);
+            claimReward(sourceChain, sourceAddress);
+        } else if (commandHash == SELECTOR_WITHDRAW) {
+            (uint256 withdrawAmount) = abi.decode(params, (uint256));
+            withdraw(sourceChain, sourceAddress, withdrawAmount);
         } else if (commandHash == SELECTOR_LIQUIDATE_LOAN) {
             (uint256 loanId) = abi.decode(params, (uint256));
             liquidateLoan(loanId);
         } else {
             revert("Invalid command");
         }
-
-        emit Executed(sourceChain, sourceAddress, message);
     }
 
     function _executeWithToken(
@@ -157,32 +153,36 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         string calldata tokenSymbol,
         uint256 amount
     ) internal override {
-        (command)= abi.decode(payload, (string));
-        if (tokenSymbol != "USD") {
-            revert("Invalid token");
+        if (amount == 0) {
+            revert("Invalid amount");
         }
+        string command;
+        bytes memory _params;
+        (command,_params)= abi.decode(payload, (string,bytes));
         bytes32 commandHash = keccak256(abi.encodePacked(command));
         if (commandHash == SELECTOR_LEND) {
-            lend(amount);
-        } else if (commandHash == SELECTOR_WITHDRAW) {
-            withdraw(amount);
+            lend(sourceAddress, tokenSymbol, amount);
+        } else if (commandHash == SELECTOR_BORROW) {
+            uint256 borrowAmountUSD = abi.decode(_params, (uint256));
+            borrow(sourceChain,sourceAddress,tokenSymbol,amount, borrowAmountUSD);
+        } else if (commandHash == SELECTOR_REPAY_LOAN) {
+            uint256 loanId = abi.decode(_params, uint256);
+            repayLoan(sourceChain, sourceAddress, tokenSymbol, amount, loanId);
         } else {
             revert("Invalid command");
         }
-
-        emit ExecutedWithToken(sourceChain, sourceAddress, message);
     }
-
-
+    
     /******************\
     |* Self Functions *|
     \******************/
 
     // --- User Functions ---
-    function lend(uint256 lendingAmount) external onlySelf {
+    function lend(string sourceAddress,string tokenSymbol, uint256 lendingAmount) internal {
+        require(tokenSymbol == "USD", "Invalid token symbol");
         distributeRewards();
 
-        UserInfo storage user = userInfo[msg.sender];
+        UserInfo storage user = userInfo[sourceAddress];
 
         // Update user pending rewards before changing lendBalance
         if (user.lendBalance > 0) {
@@ -191,12 +191,6 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
                 rewardClaimAmounts[lastRewardBatchId] += pending;
             }
         }
-
-        require(usdToken.allowance(msg.sender, address(this)) >= lendingAmount, "Allowance required");
-        require(usdToken.balanceOf(msg.sender) >= lendingAmount, "Low balance");
-
-        // Transfer USD tokens from user to contract
-        require(usdToken.transferFrom(msg.sender, address(this), lendingAmount), "Transfer failed.");
 
         // Update user balance and total liquidity
         user.lendBalance += lendingAmount;
@@ -208,10 +202,10 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         emit RewardsDistributed(lastRewardBatchId, lendingAmount);
     }
 
-    function withdraw(uint256 withdrawAmount) external onlySelf {
+    function withdraw(string calldata sourceChain,string calldata sourceAddress,uint256 withdrawAmount) internal {
         distributeRewards();
 
-        UserInfo storage user = userInfo[msg.sender];
+        UserInfo storage user = userInfo[sourceAddress];
 
         // Update user pending rewards before changing lendBalance
         if (user.lendBalance > 0) {
@@ -221,24 +215,23 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
             }
         }
 
-        require(user.lendBalance >= withdrawAmount, "Withdrawing more than your balance!");
-        require(lastClaimBatchId[msg.sender] >= lastRewardBatchId, "Claim your rewards before withdrawing!");
+        require(lastClaimBatchId[sourceAddress] >= lastRewardBatchId, "Claim your rewards before withdrawing!");
 
         // Update user balance and total liquidity
         user.lendBalance -= withdrawAmount;
         totalLiquidity -= withdrawAmount;
 
         // Transfer USD tokens back to user
-        require(usdToken.transfer(msg.sender, withdrawAmount), "Transfer failed.");
+        gateway().sendToken(sourceChain, sourceAddress, "usd", withdrawAmount);
 
         // Update reward debt
         user.rewardDebt = (user.lendBalance * accRewardPerShare) / 1e18;
     }
 
-    function claimReward() external onlySelf {
+    function claimReward(string calldata sourceChain,string calldata sourceAddress) internal {
         distributeRewards();
 
-        UserInfo storage user = userInfo[msg.sender];
+        UserInfo storage user = userInfo[sourceAddress];
         uint256 pending = (user.lendBalance * accRewardPerShare) / 1e18 - user.rewardDebt;
 
         require(pending > 0, "No rewards to claim");
@@ -247,16 +240,18 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         user.rewardDebt = (user.lendBalance * accRewardPerShare) / 1e18;
 
         // Transfer the rewards to the user
-        require(usdToken.transfer(msg.sender, pending), "Reward transfer failed");
+        gateway().sendToken(sourceChain, sourceAddress, "USD", pending);
 
-        emit RewardsClaimed(msg.sender, pending);
+        emit RewardsClaimed(sourceAddress, pending);
     }
 
-    function borrow(uint256 _borrowAmountUSD) external onlySelf {
+    function borrow(string calldata sourceChain,string calldata sourceAddress,string tokenSymbol,
+        uint256 xrpAmount, uint256 _borrowAmountUSD) internal {
+        require(tokenSymbol == "XRP", "Invalid token symbol");
         uint256 requiredCollateralXRP = (_borrowAmountUSD * collateralRatio) / (100 * currentXRPPriceUSD);
-        require(msg.value >= requiredCollateralXRP, "Not enough XRP collateral sent.");
+        require(xrpAmount >= requiredCollateralXRP, "Insufficient collateral");
 
-        uint256 existingLoanId = userLoans[msg.sender];
+        uint256 existingLoanId = userLoans[sourceAddress];
 
         if (existingLoanId != 0) {
             Loan storage existingLoan = loans[existingLoanId];
@@ -264,24 +259,26 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
 
             // Update accrued interest before modifying loan
             updateInterest(existingLoanId);
-
+            gateway().sendToken(sourceChain, sourceAddress, "USD", _borrowAmountUSD);
             // Update existing loan amounts
             existingLoan.borrowAmountUSD += _borrowAmountUSD;
-            existingLoan.collateralAmountXRP += msg.value;
+            existingLoan.collateralAmountXRP += xrpAmount;
             existingLoan.lastInterestUpdateTime = block.timestamp;
 
-            emit LoanUpdated(existingLoanId, msg.sender, existingLoan.borrowAmountUSD, existingLoan.collateralAmountXRP);
+            
+
+            emit LoanUpdated(existingLoanId, sourceAddress, existingLoan.borrowAmountUSD, existingLoan.collateralAmountXRP);
         } else {
             // Transfer the borrowed USD to user
-            require(usdToken.transfer(msg.sender, _borrowAmountUSD), "Transfer failed.");
+            gateway().sendToken(sourceChain, sourceAddress, "USD", _borrowAmountUSD);
 
             loanCounter++;
 
             // Create Loan entry
             loans[loanCounter] = Loan({
-                borrower: msg.sender,
+                borrower: sourceAddress,
                 borrowAmountUSD: _borrowAmountUSD,
-                collateralAmountXRP: msg.value,
+                collateralAmountXRP: xrpAmount,
                 startTime: block.timestamp,
                 lastInterestUpdateTime: block.timestamp,
                 repaidPrincipalUSD: 0,
@@ -290,18 +287,19 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
                 isLiquidated: false
             });
 
-            userLoans[msg.sender] = loanCounter;
+            userLoans[sourceAddress] = loanCounter;
 
-            emit LoanCreated(loanCounter, msg.sender, _borrowAmountUSD, msg.value);
+            emit LoanCreated(loanCounter, sourceAddress, _borrowAmountUSD, xrpAmount);
         }
 
         distributeRewards();
     }
 
-    function repayLoan(uint256 _loanId, uint256 _repayAmountUSD) external onlySelf {
+    function repayLoan(string sourceChain, string sourceAddress, string tokenSymbol, uint256 _repayAmountUSD, uint256 _loanId) internal {
+        require(tokenSymbol == "USD", "Invalid token symbol");
         Loan storage loan = loans[_loanId];
 
-        require(loan.borrower == msg.sender, "Not the loan owner");
+        require(loan.borrower == sourceAddress, "Not the loan owner");
         require(!loan.isLiquidated, "Loan is already liquidated");
         require(_repayAmountUSD > 0, "Repayment amount must be greater than zero");
 
@@ -313,12 +311,6 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         require(_repayAmountUSD <= totalOwed, "Repayment exceeds amount owed");
 
         // Ensure enough USD is allowed and available.
-        require(usdToken.allowance(msg.sender, address(this)) >= _repayAmountUSD, "Insufficient allowance");
-        require(usdToken.balanceOf(msg.sender) >= _repayAmountUSD, "Insufficient balance to repay");
-
-        // Transfer USD to the contract.
-        require(usdToken.transferFrom(msg.sender, address(this), _repayAmountUSD), "USD transfer failed");
-
         uint256 repaymentToInterest = 0;
         uint256 repaymentToPrincipal = 0;
 
@@ -350,18 +342,18 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
             loan.repaidInterestUSD >= loan.accruedInterestUSD
         ) {
             // Transfer collateral back to user
-            payable(msg.sender).transfer(loan.collateralAmountXRP);
+            gateway().sendToken(sourceChain, sourceAddress, "XRP", loan.collateralAmountXRP);
             // Mark loan as repaid
             loan.isLiquidated = true;
             // Remove loan from userLoans mapping
-            userLoans[msg.sender] = 0;
+            userLoans[sourceAddress] = 0;
         }
 
         // Distribute rewards after repayment
         distributeRewards();
     }
 
-    function liquidateLoan(uint256 _loanId) public onlySelf {
+    function liquidateLoan(uint256 _loanId) internal {
         Loan storage loan = loans[_loanId];
 
         require(!loan.isLiquidated, "Loan already liquidated");
