@@ -32,6 +32,8 @@ export const useConnectedWalletActions = () => {
     const [connectedWalletValue, setConnectedWalletValue] = useRecoilState(connectedWalletState);
     const [connectionStatus, setConnectionStatus] = useRecoilState(walletConnectionStatusState);
     const setWalletAMMStatus = useSetRecoilState(walletAMMState);
+    const threadPool = useThreadPool(8);
+
     const connectOrCreateWallet = async () => {
         if (connectionStatus === "connected") {
             return;
@@ -45,8 +47,7 @@ export const useConnectedWalletActions = () => {
             setConnectedWalletValue(wallet!);
             setConnectionStatus("connected");
             console.log("Connected wallet:", wallet);
-            const threadPool = useThreadPool(8);
-
+            
             // on connect
             threadPool.run(async () => {
                 const userAmmInfo = await xrp_api.get_user_usd_xrp_amm_contribution(wallet!);
