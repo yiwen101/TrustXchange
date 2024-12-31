@@ -1,7 +1,9 @@
-import { atom, useRecoilState, useRecoilValue } from "recoil";
+import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { Client, Wallet } from 'xrpl';
 import xrp_api from "../api/xrp";
 import { testnet_url } from "../const";
+import { useThreadPool } from "../utils";
+import { userUsdXrpAMMInfo } from "../api/xrp/amm_transection";
 
 const connectedWalletState = atom({
     key: "CONNECTED_WALLET",
@@ -13,15 +15,23 @@ const walletConnectionStatusState = atom({
     default: "disconnected" as "disconnected" | "connecting" | "connected",
 });
 
+const walletAMMState = atom({
+    key: "WALLET_AMM_STATUS",
+    default: null as userUsdXrpAMMInfo | null,
+});
+
+
 export const useConnectedWalletValues = () => {
     const connectedWallet = useRecoilValue(connectedWalletState);
     const connectionStatus = useRecoilValue(walletConnectionStatusState);
-    return { connectedWallet, connectionStatus };
+    const walletAMMnStatus = useRecoilValue(walletAMMState);
+    return { connectedWallet, connectionStatus, walletAMMnStatus };
 }
 
 export const useConnectedWalletActions = () => {
     const [connectedWalletValue, setConnectedWalletValue] = useRecoilState(connectedWalletState);
     const [connectionStatus, setConnectionStatus] = useRecoilState(walletConnectionStatusState);
+    const setWalletAMMStatus = useSetRecoilState(walletAMMState);
     const connectOrCreateWallet = async () => {
         if (connectionStatus === "connected") {
             return;
@@ -35,6 +45,13 @@ export const useConnectedWalletActions = () => {
             setConnectedWalletValue(wallet!);
             setConnectionStatus("connected");
             console.log("Connected wallet:", wallet);
+            const threadPool = useThreadPool(8);
+
+            // on connect
+            threadPool.run(async () => {
+                const userAmmInfo = await xrp_api.get_user_usd_xrp_amm_contribution(wallet!);
+                setWalletAMMStatus(userAmmInfo);
+            });
         } catch (error) {
             console.error("Failed to connect wallet:", error);
             setConnectionStatus("disconnected");
@@ -52,6 +69,9 @@ export const useConnectedWalletActions = () => {
         }
         setConnectionStatus("disconnected");  
         setConnectedWalletValue(null);
+
+        // on disconnect
+        setWalletAMMStatus(null);
     }
     const getTruncatedAddress = () => {
         if(connectedWalletValue !== null) {
