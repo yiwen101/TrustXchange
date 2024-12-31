@@ -89,27 +89,27 @@ const PoolPage = () => {
         <Box mt={3}>
         <Typography variant="h6">Add Liquidity</Typography>
             <TextField
-                label="XRP Amount"
-                type="number"
-                value={xrpValueInput}
-                onChange={handleXrpValueChange}
-                InputProps={{
-                    startAdornment: <XrpIcon />,
-                  }}
-                fullWidth
-                margin="normal"
+              label="XRP Amount"
+              type="number"
+              value={xrpValueInput}
+              onChange={handleXrpValueChange}
+              InputProps={{
+                startAdornment: <Box mr={1}><XrpIcon /></Box>,
+                }}
+              fullWidth
+              margin="normal"
              />
-          <TextField
+            <TextField
               label="USD Amount"
-                type="number"
-                value={usdValueInput}
+              type="number"
+              value={usdValueInput}
                onChange={handleUsdValueChange}
-                InputProps={{
-                    startAdornment: <UsdcIcon />,
-                 }}
-                fullWidth
-                margin="normal"
-          />
+              InputProps={{
+                startAdornment: <Box mr={1}><UsdcIcon /></Box>,
+               }}
+              fullWidth
+              margin="normal"
+            />
         <Button
           variant="contained"
           color="primary"
