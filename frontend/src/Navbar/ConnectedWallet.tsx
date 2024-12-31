@@ -1,6 +1,6 @@
 import { Typography, Popover, Stack, Button } from '@mui/material';
-import {  XrpFaucetIcon } from './icons/Icons';
-import { useConnectedWalletActions } from './hooks/useConnectedWallet';
+import {  XrpFaucetIcon } from '../icons/Icons';
+import { useConnectedWalletActions } from '../hooks/useConnectedWallet';
 import React from 'react';
 
 export const ConnectedWallet = () => {

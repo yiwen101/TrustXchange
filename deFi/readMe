@@ -1,8 +1,0 @@
-this is a plan:
-AxelarAmplifierGatewayStub: a self implemented stub of AxelarAmplifierGateway
-P2P_lending: smart contracts handling async creation and acception of lending requests and its execution
-P2P_borrowing: symmatrical
-Liquidity_Poll: fexible duration borrowing and lending via a pool
-ETX/AMM? extension future
-Insurance: for issue and purchase of insurance of XRP coin's value
-Derivative market: for trading of signed insurance, P2P_lending and P2P_borrowing.

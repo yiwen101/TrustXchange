@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Box } from '@mui/material';
-import WebsiteNavbar from './WebsiteNavbar';
+import WebsiteNavbar from './Navbar/WebsiteNavbar';
 import Home from './Pages/Home/HomePage';
 import Wallet from './Pages/Wallet/WalletPage';
 import PoolPage from './Pages/Pool/PoolPage';
@@ -31,7 +31,7 @@ const InitLoader = () => {
               <Route path="/" element={<Home />} />
               <Route path="/wallet" element={<Wallet />} />
               <Route path="/pool" element={<PoolPage />} />
-              <Route path="//pledge" element={<PledgePage />} />
+              <Route path="/pledge" element={<PledgePage />} />
               <Route path="/future" element={<FuturePage />} />
               <Route path="/dev" element={<Dev />} />
               <Route path="/p2p" element={<P2pPage />} />

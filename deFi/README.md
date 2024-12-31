@@ -1,16 +1,11 @@
-# Sample Hardhat Project
-
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.
-
-Try running some of the following tasks:
-
+to deploy contract, do:
 ```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat ignition deploy ./ignition/modules/Lock.js
-
 npx hardhat ignition deploy ./ignition/modules/<name> --network evm
+```
+
+to verify a contract (not necessary), do:
+```shell
 npx hardhat verify --network evm <DEPLOYED_CONTRACT_ADDRESS> <CONSTRUCTOR_ARGUMENTS>
 ```
+
+reusable interface and abstract classes are put in common folder. poc is a sample of `AxelarExecutableWithToken`

@@ -2,7 +2,7 @@ export const currencyCode = '5553444300000000000000000000000000000000';
 
 export const user1Info = {
     address: 'rB8KX92KiXugoNncVb6uAMkXtDTeo3BVcU',
-    secret: 'sEd7ZHXbc1xt73PgnRa4PFed9bftfyv', // Ensure this is a valid secret
+    secret: 'sEd7ZHXbc1xt73PgnRa4PFed9bftfyv', 
 };
 
 // fake

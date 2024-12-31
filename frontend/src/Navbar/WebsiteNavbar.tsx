@@ -5,8 +5,8 @@ import Toolbar from '@mui/material/Toolbar';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import { Link } from 'react-router-dom';
-import CompanyName from './CompanyName'; // Adjust the import path as needed
-import { useConnectedWalletValues } from './hooks/useConnectedWallet';
+import CompanyName from './CompanyName'; 
+import { useConnectedWalletValues } from '../hooks/useConnectedWallet';
 import ConnectWalletButton from './ConnectWalletButton';
 import { ConnectedWallet } from './ConnectedWallet';
 import ConnectingWallet from './ConnectingWallet';

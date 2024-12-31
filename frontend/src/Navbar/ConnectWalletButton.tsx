@@ -1,6 +1,6 @@
 import { Button } from "@mui/material";
 import React from "react";
-import { useConnectedWalletActions } from "./hooks/useConnectedWallet";
+import { useConnectedWalletActions } from "../hooks/useConnectedWallet";
 
 export const ConnectWalletButton : React.FC = () => {
     const { connectOrCreateWallet} = useConnectedWalletActions();

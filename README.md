@@ -1,8 +1,10 @@
-# Temp
+# TrustXchange
 
-todo: use test net as dev net are regularly reset
+backend: serve the role of axelar net for GMP and an information provider for frontend
 
-cast send <contract_address> "<function_signature>(<param_types>)" <param_values> --private-key <your_private_key> --rpc-url <rpc_url> --gas-limit <gas_limit> --gas-price <gas_price>
+deFi: contains all the smart contract for Axelar Gateway Stub, P2P, Pledge and Future features
 
-make contract fulfill axle standard if get time
-monitor with param if get time
+frontend: web UI
+
+PoCs: for testing and exploration only. Will be deleted soon.
+
