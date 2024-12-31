@@ -1,5 +1,5 @@
-import { Client, Wallet, AccountLinesResponse, SubmittableTransaction } from 'xrpl';
-import { logResponse } from './common';
+import { Client, Wallet, SubmittableTransaction } from 'xrpl';
+import { get_account_currency_balance, logResponse } from './common';
 
 // Ensure these constants are defined elsewhere in your project
 declare const USDC_currency_code: string;
@@ -12,29 +12,16 @@ const testnet_url = 'wss://s.altnet.rippletest.net:51233';
  * @param wallet - The wallet whose USD balance is to be logged.
  */
 export async function log_usd_balance(wallet: Wallet): Promise<void> {
-    const client = new Client(testnet_url);
     try {
-        await client.connect();
-        const accountInfo: AccountLinesResponse = await client.request({
-            command: 'account_lines',
-            account: wallet.address
-        });
+        const balance = await get_account_currency_balance(wallet, USDC_currency_code, USDC_issuer.address);
 
-        const lines = accountInfo.result.lines;
-        const usdLine = lines.find(
-            (line) =>
-                line.currency === USDC_currency_code && line.account === USDC_issuer.address
-        );
-
-        if (usdLine) {
-            console.log('USD balance:', usdLine.balance);
+        if (balance) {
+            console.log('USD balance:', balance);
         } else {
             console.log('No USD balance found.');
         }
     } catch (error) {
         console.error('Error in log_usd_balance:', error);
-    } finally {
-        await client.disconnect();
     }
 }
 

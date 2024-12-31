@@ -1,6 +1,6 @@
-import { Client, Wallet, dropsToXrp, SubmittableTransaction, AMMInfoResponse, IssuedCurrencyAmount, AMMInfoRequest, AccountSetAsfFlags } from 'xrpl';
+import { Client, Wallet, dropsToXrp, SubmittableTransaction, AMMInfoResponse, IssuedCurrencyAmount, AMMInfoRequest, AccountSetAsfFlags, AccountInfoRequest, AccountInfoResponse } from 'xrpl';
 import BigNumber from 'bignumber.js';
-import { logResponse, usdStrOf, xrpStrOf } from './common';
+import { get_account_currency_balance, logResponse, usdStrOf, xrpStrOf } from './common';
 import { fund_wallet } from './wallet';
 import { get_latest_xrp_price, get_xrp_price_at_ledger } from './xrp_price';
 import {  USDC_issuer,USDC_currency_code,mannnet_Bitstamp_usd_address, mainnet_url, testnet_url } from '../../const';
@@ -9,6 +9,7 @@ export interface AMMInfo {
     usd_amount: number;
     xrp_amount: number;
     full_trading_fee: number;
+    lp_token: IssuedCurrencyAmount
 }
 
 /**
@@ -198,11 +199,13 @@ export async function get_amm_info(mainnet: boolean = false, ledger_index: numbe
         const xrp_amount_drops = amm_info_result.result.amm.amount2;
         const xrp_amount = dropsToXrp(xrp_amount_drops as BigNumber.Value);
         const full_trading_fee = amm_info_result.result.amm.trading_fee;
+        const lp_token = amm_info_result.result.amm.lp_token;
         console.log(`AMM exists with ${usd_amount} USDC and ${xrp_amount} XRP.`);
         return {
             usd_amount: usd_amount,
             xrp_amount: xrp_amount,
             full_trading_fee: full_trading_fee,
+            lp_token: lp_token
         };
     } catch (error) {
         console.error('Error in get_amm_info in line 220:', error);
@@ -390,6 +393,46 @@ export async function even_out_amm(info?:AMMInfo|undefined, market_price?:number
     }
 }
 
+export interface userUsdXrpAMMInfo {
+    user_share: number;
+    usd_claimable: number;
+    xrp_claimable: number;
+}
+/**
+ * Retrieves a user's share of the AMM pool, in liquidity provider tokens and the amount of each token they can claim.
+ * @param wallet The wallet of the user
+ * @param mainnet - Indicates whether to use the mainnet. Defaults to false (testnet).
+ * @param ledger_index - The ledger index to query. Defaults to "validated".
+ * @returns The user's liquidity provider token balance and the amount of each token they can claim.
+*/
+
+    export async function get_user_usd_xrp_amm_contribution(
+        user_wallet: Wallet,
+        mainnet: boolean = false,
+        ledger_index: number | "validated" = "validated",
+        amm_info?: AMMInfo
+    ): Promise<userUsdXrpAMMInfo > {
+        const client = new Client(mainnet ? mainnet_url : testnet_url);
+        await client.connect();
+        if (!amm_info) {
+            amm_info = await get_amm_info(mainnet, ledger_index);
+        }
+
+        const lp_token_balance = await get_account_currency_balance(user_wallet, amm_info.lp_token.currency, amm_info.lp_token.issuer);
+        const user_lp_bn = new BigNumber(lp_token_balance);
+        
+        const pool_total_lp_tokens = amm_info.lp_token.value;
+        const pool_lp_bn = new BigNumber(pool_total_lp_tokens);
+        
+        const user_share = user_lp_bn.dividedBy(pool_lp_bn);
+        const user_usd_amount_share = user_lp_bn.multipliedBy(amm_info.usd_amount).dividedBy(pool_lp_bn);
+        const user_xrp_amount_share = user_lp_bn.multipliedBy(amm_info.xrp_amount).dividedBy(pool_lp_bn);
+        return {
+            user_share: user_share.toNumber(),
+            usd_claimable: user_usd_amount_share.toNumber(),
+            xrp_claimable: user_xrp_amount_share.toNumber()
+        };
+    }
 
 /**
  * Swaps out a specified asset.

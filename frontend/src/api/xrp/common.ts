@@ -1,4 +1,5 @@
-import {TxResponse, xrpToDrops } from 'xrpl';
+import {AccountLinesResponse, Client, TxResponse, Wallet, xrpToDrops } from 'xrpl';
+import { testnet_url } from '../../const';
 
 export function usdStrOf(amount: number): string {
     return amount.toFixed(2);
@@ -23,3 +24,27 @@ export const logResponse = (response: TxResponse) => {
    
 }
 
+export async function get_account_currency_balance(wallet: Wallet, currency_code:string, issuer_address: string): Promise<number> {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+        const accountInfo: AccountLinesResponse = await client.request({
+            command: 'account_lines',
+            account: wallet.address
+        });
+
+        const lines = accountInfo.result.lines;
+        const Line = lines.find(
+            (line) =>
+                line.currency === currency_code && line.account === issuer_address
+        );
+
+        if (Line) {
+            return parseFloat(Line.balance);
+        } else {
+            return 0;
+        }
+    } finally {
+        await client.disconnect();
+    }
+}
