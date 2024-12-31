@@ -18,10 +18,15 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { styled } from '@mui/material/styles'; // Import styled
+import BigNumber from 'bignumber.js';
 
 const COLLATERAL_MULTIPLIER = 1.5; // Example multiplier
 const INTEREST_RATE = 0.12;  // 12% as a decimal
-const INTEREST_TERM = "Annual";
+const INTEREST_TERM = "Annual interest, compounding daily";
+const dailyInterestBn = BigNumber(1.12).exponentiatedBy(new BigNumber(1).dividedBy(365)).minus(1);
+function getPayableAfterDays(loanAmount:number, days:number) {
+  return dailyInterestBn.exponentiatedBy(days).times(loanAmount).toNumber();
+}
 
 
 // Styled TextField for the borrow amount
@@ -89,16 +94,16 @@ function LoanForm() {
       let calculatedRepayment;
         switch (repaymentTerm) {
           case 'week':
-            calculatedRepayment = amount * (1 + INTEREST_RATE / 52); // Assuming yearly interest
+            calculatedRepayment = getPayableAfterDays(amount, 7);
             break;
           case 'month':
-               calculatedRepayment = amount * (1 + INTEREST_RATE / 12);
+               calculatedRepayment = getPayableAfterDays(amount, 30);
               break;
           case 'quarter':
-               calculatedRepayment = amount * (1 + INTEREST_RATE / 4);
+               calculatedRepayment = getPayableAfterDays(amount, 90);
               break;
           case 'year':
-            calculatedRepayment = amount * (1 + INTEREST_RATE);
+            calculatedRepayment = getPayableAfterDays(amount, 365);
             break;
           default:
             calculatedRepayment = 0;
