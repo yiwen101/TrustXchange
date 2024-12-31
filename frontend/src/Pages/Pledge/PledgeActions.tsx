@@ -8,7 +8,7 @@ import {
     Card,
     CardContent,
 } from '@mui/material';
-import PoolAction from './PollAction';
+import PoolAction from './PledgeAction';
 
 const UserInfo: React.FC = () => {
     const userDetails = {

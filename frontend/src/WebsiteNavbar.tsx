@@ -23,17 +23,20 @@ function WebsiteNavbar() {
           <Button color="inherit" component={Link} to="/">
             Home
           </Button>
-          <Button color="inherit" component={Link} to="/future">
-            Future
-          </Button>
-          <Button color="inherit" component={Link} to="/p2p">
-            P2P
+          <Button color="inherit" component={Link} to="/swap">
+            Swap
           </Button>
           <Button color="inherit" component={Link} to="/pool">
             Pool
           </Button>
-          <Button color="inherit" component={Link} to="/swap">
-            Swap
+          <Button color="inherit" component={Link} to="/pledge">
+            Pledge
+          </Button>
+          <Button color="inherit" component={Link} to="/p2p">
+            P2P
+          </Button>
+          <Button color="inherit" component={Link} to="/future">
+            Future
           </Button>
           <Button color="inherit" component={Link} to="/wallet">
             Wallet

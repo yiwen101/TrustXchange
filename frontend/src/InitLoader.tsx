@@ -10,6 +10,7 @@ import SwapPage from './Pages/Swap/SwapPage';
 import FuturePage from './Pages/Future/FuturePage';
 import { useXrpPriceState} from './hooks/usePriceState';
 import Dev from './Dev';
+import PledgePage from './Pages/Pledge/PledgePage';
 
 
 
@@ -30,6 +31,7 @@ const InitLoader = () => {
               <Route path="/" element={<Home />} />
               <Route path="/wallet" element={<Wallet />} />
               <Route path="/pool" element={<PoolPage />} />
+              <Route path="//pledge" element={<PledgePage />} />
               <Route path="/future" element={<FuturePage />} />
               <Route path="/dev" element={<Dev />} />
               <Route path="/p2p" element={<P2pPage />} />
