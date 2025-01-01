@@ -7,8 +7,8 @@ import { IMyAxelarGateway } from '../common/interfaces/IMyAxelarGateway.sol';
 
 
 interface PriceOracle {
-    function getPriceXRPUSDT() external view returns (uint256)
-};
+    function getPriceXRPUSDT() external view returns (uint256);
+}
 
 contract XrpLending is AxelarExecutableWithToken {
     using PRBMathUD60x18 for uint256;

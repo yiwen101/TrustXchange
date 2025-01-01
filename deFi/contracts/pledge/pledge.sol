@@ -128,7 +128,7 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         string calldata sourceAddress,
         bytes calldata payload
     ) internal override {
-        string command;
+        string memory command;
         bytes memory params;
        (command,params)= abi.decode(payload, (string,bytes));
         bytes32 commandHash = keccak256(abi.encodePacked(command));
@@ -156,7 +156,7 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         if (amount == 0) {
             revert("Invalid amount");
         }
-        string command;
+        string memory command;
         bytes memory _params;
         (command,_params)= abi.decode(payload, (string,bytes));
         bytes32 commandHash = keccak256(abi.encodePacked(command));
