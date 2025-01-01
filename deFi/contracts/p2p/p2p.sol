@@ -70,7 +70,9 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
     }
 
     // --- State Variables ---
-    uint256 public currentXRPPriceUSD;    
+    PriceOracle priceOracle;
+    uint256 public currentXRPPriceUSD; 
+    uint256 public lastPriceUpdateTimestamp;   
     uint256 public loanCounter;       
     mapping(uint256 => Loan) public loans;            
     mapping(uint256 => LendingRequest) public lendingRequests; 
@@ -130,11 +132,11 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
     event RequestFilled(uint256 requestId, uint256 amountFilled);
 
     // --- Constructor ---
-    constructor(address gateway_, uint256 _initialXRPPriceUSD) 
+    constructor(address gateway_, address priceOracledAddress) 
         Ownable(msg.sender)
         AxelarExecutableWithToken(gateway_) 
     {
-        currentXRPPriceUSD = _initialXRPPriceUSD;
+        priceOracle = PriceOracle(priceOracledAddress);
         loanCounter = 0;
         requestCounter = 0;
     }
@@ -209,25 +211,42 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         bytes memory params;
         (command, params) = abi.decode(payload, (string, bytes));
         bytes32 commandHash = keccak256(abi.encodePacked(command));
-
-        if(commandHash == SELECTOR_LENDING_REQUEST) {
-            (uint256 amountToLendUSD, uint256 minCollateralRatio, uint256 liquidationThreshold, uint256 desiredInterestRate, uint256 paymentDuration, uint256 minimalPartialFill) = abi.decode(params, (uint256, uint256, uint256, uint256, uint256, uint256));
-            createLendingRequest(sourceChain, sourceAddress, amountToLendUSD, minCollateralRatio, liquidationThreshold, desiredInterestRate, paymentDuration, minimalPartialFill);
-        } else if(commandHash == SELECTOR_BORROWING_REQUEST) {
-            (uint256 amountToBorrowUSD, uint256 collateralAmountXRP, uint256 maxCollateralRatio, uint256 liquidationThreshold, uint256 desiredInterestRate, uint256 paymentDuration, uint256 minimalPartialFill) = abi.decode(params, (uint256, uint256, uint256, uint256, uint256, uint256, uint256));
-            createBorrowingRequest(sourceChain, sourceAddress, amountToBorrowUSD, collateralAmountXRP, maxCollateralRatio, liquidationThreshold, desiredInterestRate, paymentDuration, minimalPartialFill);
-        } else if(commandHash == SELECTOR_ACCEPT_LENDING_REQUEST) {
-            (uint256 requestId, uint256 borrowAmountUSD, uint256 collateralAmountXRP) = abi.decode(params, (uint256, uint256, uint256));
-            acceptLendingRequest(requestId, sourceChain, sourceAddress, tokenSymbol, borrowAmountUSD, collateralAmountXRP);
-        } else if(commandHash == SELECTOR_ACCEPT_BORROWING_REQUEST) {
-            (uint256 requestId, uint256 amountToLendUSD, uint256 collateralAmountXRP) = abi.decode(params, (uint256, uint256, uint256));
-            acceptBorrowingRequest(requestId, sourceChain, sourceAddress, tokenSymbol, amountToLendUSD, collateralAmountXRP);
-        } else if(commandHash == SELECTOR_REPAY_LOAN) {
-            (uint256 repayAmountUSD, uint256 loanId) = abi.decode(params, (uint256, uint256));
-            repayLoan(sourceChain, sourceAddress, tokenSymbol, repayAmountUSD, loanId);
-        } else {
-            revert("Invalid command");
+        try {
+            if(commandHash == SELECTOR_LENDING_REQUEST) {
+                (uint256 _minCollateralRatio,
+                uint256 _liquidationThreshold, 
+                uint256 _desiredInterestRate, 
+                uint256 _paymentDuration,
+                uint256 _minimalPartialFill) = abi.decode(params, (uint256, uint256, uint256, uint256, uint256));
+                createLendingRequest(sourceChain, sourceAddress, tokenSymbol, amount,
+                    _minCollateralRatio, _liquidationThreshold, _desiredInterestRate, _paymentDuration, _minimalPartialFill);
+            } else if (commandHash == SELECTOR_BORROWING_REQUEST) {
+                (uint256 _maxCollateralRatio, 
+                uint256 _liquidationThreshold, 
+                uint256 _desiredInterestRate, 
+                uint256 _paymentDuration,
+                uint256 _minimalPartialFill) = abi.decode(params, (uint256, uint256, uint256, uint256, uint256));
+                createBorrowingRequest(sourceChain, sourceAddress, tokenSymbol, amount,
+                    _maxCollateralRatio, _liquidationThreshold, _desiredInterestRate, _paymentDuration, _minimalPartialFill);
+            } else if (commandHash == SELECTOR_ACCEPT_LENDING_REQUEST) {
+                (uint256 _requestId, uint256 _borrowAmountUSD) = abi.decode(params, (uint256, uint256));
+                acceptLendingRequest(sourceChain, sourceAddress, tokenSymbol, amount,
+                    _requestId, _borrowAmountUSD);
+            } else if (commandHash == SELECTOR_ACCEPT_BORROWING_REQUEST) {
+                (uint256 _requestId, uint256 _collateralAmountXRP) = abi.decode(params, (uint256, uint256));
+                acceptBorrowingRequest(sourceChain, sourceAddress, tokenSymbol, amount,
+                    _requestId, _collateralAmountXRP);
+            } else if (commandHash == SELECTOR_REPAY_LOAN) {
+                (uint256 _repayAmountUSD, uint256 _loanId) = abi.decode(params, (uint256, uint256));
+                repayLoan(sourceChain, sourceAddress, tokenSymbol, amount, _loanId);
+            } else {
+                revert("Invalid command");
+            }
+        } catch (bytes memory error) {
+            gateway().sendToken(sourceChain, sourceAddress, tokenSymbol, amount-1);
+            revert(string(error));
         }
+        
     }
 
     /******************\
@@ -238,7 +257,8 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
     function createLendingRequest(
         string memory sourceChain,
         string memory sourceAddress,
-        uint256 _amountToLendUSD, 
+        string memory tokenSymbol,
+        uint256 memory _amountToLendUSD,
         uint256 _minCollateralRatio,
         uint256 _liquidationThreshold, 
         uint256 _desiredInterestRate, 
@@ -275,8 +295,9 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
     function createBorrowingRequest(
         string memory sourceChain,
         string memory sourceAddress,
+        string memory tokenSymbol,
+        uint256 memory _collateralAmountXRP,
         uint256 _amountToBorrowUSD, 
-        uint256 _collateralAmountXRP,
         uint256 _maxCollateralRatio, 
         uint256 _liquidationThreshold, 
         uint256 _desiredInterestRate, 
@@ -314,12 +335,12 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
 
     // 5% of interest income goes to the platform, so borrower pays principle + 105% of interest specified by the lender
     function acceptLendingRequest(
-        uint256 _requestId,
         string memory sourceChain,
         string memory sourceAddress, 
-        string memory tokenSymbol, 
+        string memory tokenSymbol,
+        uint256 memory _collateralAmountXRP,
+        uint256 _requestId, 
         uint256 _borrowAmountUSD, 
-        uint256 _collateralAmountXRP
     ) internal {
         string memory borrower = sourceAddress;
         
@@ -388,11 +409,11 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
 
     // 5% of interest income goes to the platform, so lender receives principle + 95% of interest specified by the borrower
     function acceptBorrowingRequest(
-        uint256 _requestId,
         string memory sourceChain, 
         string memory sourceAddress,
         string memory tokenSymbol,
-        uint256 _amountToLendUSD, 
+        uint256 memory _amountToLendUSD, 
+        uint256 _requestId,
         uint256 _collateralAmountXRP
     ) internal {
         string memory lender = sourceAddress;
@@ -491,7 +512,7 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         string memory sourceChain, 
         string memory sourceAddress, 
         string memory tokenSymbol, 
-        uint256 _repayAmountUSD,
+        uint256 memory _repayAmountUSD,
         uint256 _loanId
     ) internal {
         string memory borrower = sourceAddress;
@@ -528,6 +549,7 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
 
         require(!loan.isLiquidated, "Loan already liquidated");
         require(block.timestamp > loan.repayBy, "Cannot liquidate before due date");
+        updatePrice();
         uint256 currentCollateralValueUSD = (loan.collateralAmountXRP * currentXRPPriceUSD);
         uint256 liquidationThresholdValue = (loan.amountPayableToLender * loan.liquidationThreshold) / 100;
         // Check if loan is undercollateralized
@@ -556,6 +578,15 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         return _amountBorrowedUSD + calculateInterest(_amountBorrowedUSD, _desiredInterestRate);
     }
 
+    function updatePrice() internal {
+        // Update price no more frequently than once every hour
+        if (block.timestamp - lastPriceUpdateTimestamp >= 3600) {
+            currentXRPPriceUSD = priceOracle.getPriceXRPUSDT();
+            lastPriceUpdateTimestamp = block.timestamp;
+            emit PriceUpdated(currentXRPPriceUSD);
+        }
+    }
+
     // --- View Functions ---
     function getLoanDetails(uint256 _loanId) public view returns (Loan memory) {
         return loans[_loanId];
@@ -579,5 +610,9 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
 
     function getUserBorrowingRequests(string memory _user) public view returns (uint256[] memory) {
         return userBorrowingRequests[_user];
+    }
+
+    function getCurrentPrice() public view returns (uint256) {
+        return currentXRPPriceUSD;
     }
 }
