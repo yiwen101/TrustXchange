@@ -9,7 +9,7 @@ import lombok.Data;
 import java.sql.Timestamp;
 
 @Entity
-@Table(name = "loans")
+@Table(name = "p2p_loans")
 @Data
 public class LoanEntity {
     @Id

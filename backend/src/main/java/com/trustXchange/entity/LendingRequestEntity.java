@@ -4,7 +4,7 @@ import javax.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "lending_requests")
+@Table(name = "p2p_lending_requests")
 @Data
 public class LendingRequestEntity {
     @Id
