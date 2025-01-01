@@ -6,21 +6,37 @@ import "prb-math/contracts/PRBMathUD60x18.sol";
 import { AxelarExecutableWithToken } from '../common/abstract/AxelarExecutableWithToken.sol';
 import { IMyAxelarGateway } from '../common/interfaces/IMyAxelarGateway.sol';
 
+
+interface PriceOracle {
+    function getPriceXRPUSDT() public view returns (uint256)
+}
+
 contract XrpLending is Ownable, AxelarExecutableWithToken {
     using PRBMathUD60x18 for uint256;
-
     // --- Constants ---
-    bytes32 internal constant SELECTOR_REPAY_LOAN = keccak256("repayLoan");
-    bytes32 internal constant SELECTOR_LIQUIDATE_LOAN = keccak256("liquidateLoan");
-    bytes32 internal constant SELECTOR_CANCEL_LENDING_REQUEST = keccak256("cancelLendingRequest");
-    bytes32 internal constant SELECTOR_CANCEL_BORROWING_REQUEST = keccak256("cancelBorrowingRequest");
+
+    // execute with token selectors
+    bytes32 public constant SELECTOR_LENDING_REQUEST = keccak256("createLendingRequest");
+    bytes32 public constant SELECTOR_BORROWING_REQUEST = keccak256("createBorrowingRequest");
+    bytes32 public constant SELECTOR_ACCEPT_LENDING_REQUEST = keccak256("acceptLendingRequest");
+    bytes32 public constant SELECTOR_ACCEPT_BORROWING_REQUEST = keccak256("acceptBorrowingRequest");
+    bytes32 public constant SELECTOR_REPAY_LOAN = keccak256("repayLoan");
+
+    // execute selectors
+    bytes32 public constant SELECTOR_CANCEL_LENDING_REQUEST = keccak256("cancelLendingRequest");
+    bytes32 public constant SELECTOR_CANCEL_BORROWING_REQUEST = keccak256("cancelBorrowingRequest");
+    bytes32 public constant SELECTOR_LIQUIDATE_LOAN = keccak256("liquidateLoan");
+
+    string public constant supportedSourceChain = "XRPL_testnet";
+    bytes32 public constant SUPPORTED_SOURCE_CHAIN_HASH = keccak256(bytes(supportedSourceChain));
 
     // --- Structs ---
     struct Loan {
         string lender;           
         string borrower;         
         uint256 amountBorrowedUSD;   
-        uint256 amountPayableUSD; 
+        uint256 amountPayableToLender;
+        uint256 amountPayableToPlatform;
         uint256 amountPaidUSD;  
         uint256 collateralAmountXRP; 
         uint256 repayBy;         
@@ -62,7 +78,9 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
     mapping(string => uint256[]) public userLoans;  
     mapping(string => uint256[]) public userLendingRequests; 
     mapping(string => uint256[]) public userBorrowingRequests; 
-    uint256 public requestCounter;     
+    uint256 public requestCounter;    
+
+    uint256 public constant PLATFORM_FEE_PERCENT = 5;
 
     // --- Events ---
     event LoanCreated(
@@ -71,7 +89,8 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         string indexed borrower, 
         uint256 amountBorrowedUSD, 
         uint256 collateralAmountXRP,
-        uint256 amountPayableUSD,
+        uint256 amountPayableToLender,
+        uint256 amountPayableToPlatform,
         uint256 repayBy,
         uint256 liquidationThreshold
     );
@@ -80,7 +99,7 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         string indexed borrower, 
         uint256 newAmountBorrowedUSD, 
         uint256 newCollateralAmountXRP,
-        uint256 newAmountPayableUSD
+        uint256 newAmountPayableToLender
     );
     event LoanRepaid(uint256 loanId, uint256 amountRepaid, uint256 totalPaid);
     event LoanLiquidated(uint256 loanId, string indexed liquidator, uint256 collateralLiquidated);
@@ -112,7 +131,7 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
 
     // --- Constructor ---
     constructor(address gateway_, uint256 _initialXRPPriceUSD) 
-        Ownable() 
+        Ownable(msg.sender)
         AxelarExecutableWithToken(gateway_) 
     {
         currentXRPPriceUSD = _initialXRPPriceUSD;
@@ -153,26 +172,23 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) external override {
-        require(keccak256(bytes(sourceChain)) == keccak256(bytes("XRPL_testnet")), "Invalid source chain");
+    ) internal override {
+        require(keccak256(bytes(sourceChain)) == SUPPORTED_SOURCE_CHAIN_HASH, "Invalid source chain");
 
         string memory command;
         bytes memory params;
         (command, params) = abi.decode(payload, (string, bytes));
         bytes32 commandHash = keccak256(abi.encodePacked(command));
 
-        if (commandHash == SELECTOR_LIQUIDATE_LOAN) {
-            (uint256 loanId) = abi.decode(params, (uint256));
-            liquidateLoan(loanId, sourceAddress);
-        } else if (commandHash == SELECTOR_CANCEL_LENDING_REQUEST) {
+        if(commandHash == SELECTOR_CANCEL_LENDING_REQUEST) {
             (uint256 requestId) = abi.decode(params, (uint256));
             cancelLendingRequest(sourceChain, sourceAddress, requestId);
-        } else if (commandHash == SELECTOR_CANCEL_BORROWING_REQUEST) {
+        } else if(commandHash == SELECTOR_CANCEL_BORROWING_REQUEST) {
             (uint256 requestId) = abi.decode(params, (uint256));
             cancelBorrowingRequest(sourceChain, sourceAddress, requestId);
-        } else if (commandHash == SELECTOR_REPAY_LOAN) {
-            (uint256 loanId, string memory tokenSymbol) = abi.decode(params, (uint256, string));
-            repayLoan(sourceChain, sourceAddress, tokenSymbol, 0, loanId);
+        } else if(commandHash == SELECTOR_LIQUIDATE_LOAN) {
+            (uint256 loanId) = abi.decode(params, (uint256));
+            liquidateLoan(loanId, sourceAddress);
         } else {
             revert("Invalid command");
         }
@@ -185,18 +201,30 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         bytes calldata payload,
         string calldata tokenSymbol,
         uint256 amount
-    ) external override {
+    ) internal override {
         require(amount > 0, "Invalid amount");
-        require(keccak256(bytes(sourceChain)) == keccak256(bytes("XRPL_testnet")), "Invalid source chain");
+        require(keccak256(bytes(sourceChain)) == SUPPORTED_SOURCE_CHAIN_HASH, "Invalid source chain");
 
         string memory command;
-        bytes memory _params;
-        (command, _params) = abi.decode(payload, (string, bytes));
+        bytes memory params;
+        (command, params) = abi.decode(payload, (string, bytes));
         bytes32 commandHash = keccak256(abi.encodePacked(command));
 
-        if (commandHash == SELECTOR_REPAY_LOAN) {
-            (uint256 loanId) = abi.decode(_params, (uint256));
-            repayLoan(sourceChain, sourceAddress, tokenSymbol, amount, loanId);
+        if(commandHash == SELECTOR_LENDING_REQUEST) {
+            (uint256 amountToLendUSD, uint256 minCollateralRatio, uint256 liquidationThreshold, uint256 desiredInterestRate, uint256 paymentDuration, uint256 minimalPartialFill) = abi.decode(params, (uint256, uint256, uint256, uint256, uint256, uint256));
+            createLendingRequest(sourceChain, sourceAddress, amountToLendUSD, minCollateralRatio, liquidationThreshold, desiredInterestRate, paymentDuration, minimalPartialFill);
+        } else if(commandHash == SELECTOR_BORROWING_REQUEST) {
+            (uint256 amountToBorrowUSD, uint256 collateralAmountXRP, uint256 maxCollateralRatio, uint256 liquidationThreshold, uint256 desiredInterestRate, uint256 paymentDuration, uint256 minimalPartialFill) = abi.decode(params, (uint256, uint256, uint256, uint256, uint256, uint256, uint256));
+            createBorrowingRequest(sourceChain, sourceAddress, amountToBorrowUSD, collateralAmountXRP, maxCollateralRatio, liquidationThreshold, desiredInterestRate, paymentDuration, minimalPartialFill);
+        } else if(commandHash == SELECTOR_ACCEPT_LENDING_REQUEST) {
+            (uint256 requestId, uint256 borrowAmountUSD, uint256 collateralAmountXRP) = abi.decode(params, (uint256, uint256, uint256));
+            acceptLendingRequest(requestId, sourceChain, sourceAddress, tokenSymbol, borrowAmountUSD, collateralAmountXRP);
+        } else if(commandHash == SELECTOR_ACCEPT_BORROWING_REQUEST) {
+            (uint256 requestId, uint256 amountToLendUSD, uint256 collateralAmountXRP) = abi.decode(params, (uint256, uint256, uint256));
+            acceptBorrowingRequest(requestId, sourceChain, sourceAddress, tokenSymbol, amountToLendUSD, collateralAmountXRP);
+        } else if(commandHash == SELECTOR_REPAY_LOAN) {
+            (uint256 repayAmountUSD, uint256 loanId) = abi.decode(params, (uint256, uint256));
+            repayLoan(sourceChain, sourceAddress, tokenSymbol, repayAmountUSD, loanId);
         } else {
             revert("Invalid command");
         }
@@ -207,7 +235,7 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
     \******************/
 
     // --- User Functions ---
-    function createLendingRequestInternal(
+    function createLendingRequest(
         string memory sourceChain,
         string memory sourceAddress,
         uint256 _amountToLendUSD, 
@@ -216,7 +244,7 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         uint256 _desiredInterestRate, 
         uint256 _paymentDuration,
         uint256 _minimalPartialFill
-    ) internal nonReentrant {
+    ) internal {
         string memory lender = sourceAddress;
         
         requestCounter++;
@@ -244,7 +272,7 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         );
     }
 
-    function createBorrowingRequestInternal(
+    function createBorrowingRequest(
         string memory sourceChain,
         string memory sourceAddress,
         uint256 _amountToBorrowUSD, 
@@ -254,7 +282,7 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         uint256 _desiredInterestRate, 
         uint256 _paymentDuration,
         uint256 _minimalPartialFill
-    ) internal nonReentrant {
+    ) internal {
         string memory borrower = sourceAddress;
         
         requestCounter++;
@@ -284,6 +312,7 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         );
     }
 
+    // 5% of interest income goes to the platform, so borrower pays principle + 105% of interest specified by the lender
     function acceptLendingRequest(
         uint256 _requestId,
         string memory sourceChain,
@@ -315,13 +344,17 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         // Attempt to send USD to borrower via Axelar
         try gateway().sendToken(sourceChain, borrower, "USD", _borrowAmountUSD) {
             loanCounter++;
-            uint256 amountPayableUSD = calculatePayableAmount(_borrowAmountUSD, request.desiredInterestRate);
+            uint256 interest = calculateInterest(_borrowAmountUSD, request.desiredInterestRate);
+            uint256 platformFee = (interest * PLATFORM_FEE_PERCENT) / 100;
+            uint256 amountPayableToLender = _borrowAmountUSD + interest;
+            uint256 amountPayableToPlatform = platformFee;
 
             loans[loanCounter] = Loan({
                 lender: request.lender,
                 borrower: borrower,
                 amountBorrowedUSD: _borrowAmountUSD,
-                amountPayableUSD: amountPayableUSD,
+                amountPayableToLender: amountPayableToLender,
+                amountPayableToPlatform: amountPayableToPlatform,
                 amountPaidUSD: 0, // Initialize to 0
                 collateralAmountXRP: _collateralAmountXRP,
                 repayBy: block.timestamp + request.paymentDuration,
@@ -342,7 +375,8 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
                 borrower,
                 _borrowAmountUSD,
                 _collateralAmountXRP,
-                amountPayableUSD,
+                amountPayableToLender,
+                amountPayableToPlatform,
                 block.timestamp + request.paymentDuration,
                 request.liquidationThreshold
             );
@@ -352,6 +386,7 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         }
     }
 
+    // 5% of interest income goes to the platform, so lender receives principle + 95% of interest specified by the borrower
     function acceptBorrowingRequest(
         uint256 _requestId,
         string memory sourceChain, 
@@ -383,14 +418,17 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         // Attempt to send USD to borrower via Axelar
         try gateway().sendToken(sourceChain, request.borrower, "USD", _amountToLendUSD) {
             loanCounter++;
-            uint256 amountPayableUSD = calculatePayableAmount(_amountToLendUSD, request.desiredInterestRate);
+            uint256 interestPaidByBorrower = calculateInterest(_amountToLendUSD, request.desiredInterestRate);
+            uint256 interestReceivedByPlatform = (interestPaidByBorrower * PLATFORM_FEE_PERCENT) / 100;
+            uint256 interestReceivedByLender = interestPaidByBorrower - interestReceivedByPlatform;
 
             loans[loanCounter] = Loan({
                 lender: lender,
                 borrower: request.borrower,
                 amountBorrowedUSD: _amountToLendUSD,
-                amountPayableUSD: amountPayableUSD,
-                amountPaidUSD: 0, // Initialize to 0
+                amountPayableToLender: _amountToLendUSD + interestReceivedByLender,
+                amountPayableToPlatform: interestReceivedByPlatform,
+                amountPaidUSD: 0, 
                 collateralAmountXRP: _collateralAmountXRP,
                 repayBy: block.timestamp + request.paymentDuration,
                 liquidationThreshold: request.liquidationThreshold,
@@ -406,8 +444,9 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
                 request.borrower, 
                 _amountToLendUSD,
                 _collateralAmountXRP,
-                amountPayableUSD,
-                block.timestamp + request.paymentDuration, 
+                _amountToLendUSD + interestReceivedByLender,
+                interestReceivedByPlatform,
+                block.timestamp + request.paymentDuration,
                 request.liquidationThreshold
             );
             emit RequestFilled(_requestId, _amountToLendUSD);
@@ -454,7 +493,7 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         string memory tokenSymbol, 
         uint256 _repayAmountUSD,
         uint256 _loanId
-    ) internal nonReentrant {
+    ) internal {
         string memory borrower = sourceAddress;
         require(keccak256(bytes(tokenSymbol)) == keccak256(bytes("USD")), "Invalid token symbol");
 
@@ -462,56 +501,59 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         require(keccak256(bytes(loan.borrower)) == keccak256(bytes(borrower)), "Not the loan owner");
         require(!loan.isLiquidated, "Loan is already liquidated");
         require(_repayAmountUSD > 0, "Repayment amount must be greater than zero");
-        require(_repayAmountUSD + loan.amountPaidUSD <= loan.amountPayableUSD, "Repayment exceeds amount owed");
+        require(_repayAmountUSD + loan.amountPaidUSD <= loan.amountPayableToLender, "Repayment exceeds amount owed");
 
-        // Pay the repayment amount to the lender via Axelar
-        gateway().sendToken(sourceChain, loan.lender, "USD", _repayAmountUSD);
-        loan.amountPaidUSD += _repayAmountUSD;
-        emit LoanRepaid(_loanId, _repayAmountUSD, loan.amountPaidUSD);
-
+        try gateway().sendToken(sourceChain, borrower, "USD", _repayAmountUSD) {
+            // Update loan state
+            loan.amountPaidUSD += _repayAmountUSD;
+            emit LoanRepaid(_loanId, _repayAmountUSD, loan.amountPaidUSD);
+        } catch {
+            revert("Failed to send USD to borrower");
+        }
         // Check if loan is completely paid, then send back collateral.
-        if (loan.amountPaidUSD >= loan.amountPayableUSD) {
+        if (loan.amountPaidUSD >= loan.amountPayableToLender) {
             // Transfer collateral back to borrower via Axelar
-            gateway().sendToken(sourceChain, borrower, "XRP", loan.collateralAmountXRP);
-            // Mark loan as repaid
-            loan.isLiquidated = true;
-            // Remove loan from userLoans mapping
-            _removeLoanFromUser(borrower, _loanId);
+            try gateway().sendToken(sourceChain, borrower, "XRP", loan.collateralAmountXRP) {
+                // Emit event
+                emit LoanRepaid(_loanId, _repayAmountUSD, loan.amountPaidUSD);
+            } catch {
+                revert("Failed to send XRP to borrower");
+            }
         }
     }
 
     // --- Liquidate Function ---
-    function liquidateLoan(uint256 _loanId, string memory caller) internal nonReentrant {
+    function liquidateLoan(uint256 _loanId, string memory caller) internal {
         Loan storage loan = loans[_loanId];
 
         require(!loan.isLiquidated, "Loan already liquidated");
         require(block.timestamp > loan.repayBy, "Cannot liquidate before due date");
         uint256 currentCollateralValueUSD = (loan.collateralAmountXRP * currentXRPPriceUSD);
-        uint256 liquidationThresholdValue = (loan.amountPayableUSD * loan.liquidationThreshold) / 100;
+        uint256 liquidationThresholdValue = (loan.amountPayableToLender * loan.liquidationThreshold) / 100;
         // Check if loan is undercollateralized
         require(currentCollateralValueUSD < liquidationThresholdValue, "Cannot liquidate yet");
         // Ensure that the caller is the lender
         require(keccak256(bytes(loan.lender)) == keccak256(bytes(caller)), "Only the lender can liquidate the loan");
 
-        // Liquidator gets the collateral via Axelar
-        gateway().sendToken(
-            "LiquidatorChain", 
-            "LiquidatorAddress", 
-            "XRP", 
-            loan.collateralAmountXRP
-        );
-
-        loan.isLiquidated = true;
-        emit LoanLiquidated(_loanId, "LiquidatorAddress", loan.collateralAmountXRP);
+        try gateway().sendToken(supportedSourceChain, loan.lender, "XRP", loan.collateralAmountXRP) {
+            loan.isLiquidated = true;
+            emit LoanLiquidated(_loanId, caller, loan.collateralAmountXRP);
+        } catch {
+            revert("Failed to send XRP to lender");
+        }
     }
 
     // --- Utility Functions ---
+    function calculateInterest(uint256 _amountBorrowedUSD, uint256 _desiredInterestRate) internal pure returns (uint256) {
+        return (_amountBorrowedUSD * _desiredInterestRate) / 100;
+    }
+
     function calculatePayableAmount(uint256 _amountBorrowedUSD, uint256 _desiredInterestRate) 
         internal 
         pure 
         returns (uint256)
     {
-        return _amountBorrowedUSD + (_amountBorrowedUSD * _desiredInterestRate / 100);
+        return _amountBorrowedUSD + calculateInterest(_amountBorrowedUSD, _desiredInterestRate);
     }
 
     // --- View Functions ---
