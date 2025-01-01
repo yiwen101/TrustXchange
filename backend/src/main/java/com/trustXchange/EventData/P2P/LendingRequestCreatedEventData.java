@@ -1,17 +1,18 @@
-package com.trustXchange.DTO.P2P;
+package com.trustXchange.EventData.P2P;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 
 import lombok.Value;
 
 @Value
-public class LendingRequestCreatedDTO extends  P2PEventData {
+public class LendingRequestCreatedEventData extends  P2PEventData {
     int requestId;
     String lender;
     BigDecimal amountToLendUSD;
     BigDecimal minCollateralRatio;
     BigDecimal liquidationThreshold;
     BigDecimal desiredInterestRate;
-    BigDecimal paymentDuration;
+    Duration paymentDuration;
     BigDecimal minimalPartialFill;
 }

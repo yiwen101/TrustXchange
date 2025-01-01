@@ -1,6 +1,8 @@
 package com.trustXchange.Service.P2P;
 
-import com.trustXchange.DTO.P2P.*;
+import com.trustXchange.EventData.P2P.*;
+import com.trustXchange.EventData.P2P.P2PEventData;
+
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.datatypes.Event;
 import org.web3j.abi.datatypes.Utf8String;
@@ -8,6 +10,8 @@ import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.protocol.core.methods.response.Log;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,7 +51,7 @@ public class P2PEventDecoder {
         }
     }
 
-    private static LoanCreatedDTO decodeLoanCreatedEvent(Log log) {
+    private static LoanCreatedEventData decodeLoanCreatedEvent(Log log) {
         List<?> values = FunctionReturnDecoder.decode(log.getData(), P2PContractEvents.LOAN_CREATED_EVENT.getNonIndexedParameters());
         Uint256 loanId = (Uint256) values.get(0);
         Utf8String lender = (Utf8String) values.get(1);
@@ -58,7 +62,7 @@ public class P2PEventDecoder {
         Uint256 amountPayableToPlatform = (Uint256) values.get(6);
         Uint256 repayBy = (Uint256) values.get(7);
         Uint256 liquidationThreshold = (Uint256) values.get(8);
-        return new LoanCreatedDTO(
+        return new LoanCreatedEventData(
             loanId.getValue().intValue(),
             lender.getValue(),
             borrower.getValue(),
@@ -66,19 +70,19 @@ public class P2PEventDecoder {
             new BigDecimal(collateralAmountXRP.getValue()),
             new BigDecimal(amountPayableToLender.getValue()),
             new BigDecimal(amountPayableToPlatform.getValue()),
-            new BigDecimal(repayBy.getValue()),
+            Instant.ofEpochSecond(repayBy.getValue().longValue()),
             new BigDecimal(liquidationThreshold.getValue())
         );
     }
 
-    private static LoanUpdatedDTO decodeLoanUpdatedEvent(Log log) {
+    private static LoanUpdatedEventData decodeLoanUpdatedEvent(Log log) {
         List<?> values = FunctionReturnDecoder.decode(log.getData(), P2PContractEvents.LOAN_UPDATED_EVENT.getNonIndexedParameters());
         Uint256 loanId = (Uint256) values.get(0);
         Utf8String borrower = (Utf8String) values.get(1);
         Uint256 newAmountBorrowedUSD = (Uint256) values.get(2);
         Uint256 newCollateralAmountXRP = (Uint256) values.get(3);
         Uint256 newAmountPayableToLender = (Uint256) values.get(4);
-        return new LoanUpdatedDTO(
+        return new LoanUpdatedEventData(
             loanId.getValue().intValue(),
             borrower.getValue(),
             new BigDecimal(newAmountBorrowedUSD.getValue()),
@@ -87,37 +91,37 @@ public class P2PEventDecoder {
         );
     }
 
-    private static LoanRepaidDTO decodeLoanRepaidEvent(Log log) {
+    private static LoanRepaidEventData decodeLoanRepaidEvent(Log log) {
         List<?> values = FunctionReturnDecoder.decode(log.getData(), P2PContractEvents.LOAN_REPAID_EVENT.getNonIndexedParameters());
         Uint256 loanId = (Uint256) values.get(0);
         Uint256 amountRepaid = (Uint256) values.get(1);
         Uint256 totalPaid = (Uint256) values.get(2);
-        return new LoanRepaidDTO(
+        return new LoanRepaidEventData(
             loanId.getValue().intValue(),
             new BigDecimal(amountRepaid.getValue()),
             new BigDecimal(totalPaid.getValue())
         );
     }
 
-    private static LoanLiquidatedDTO decodeLoanLiquidatedEvent(Log log) {
+    private static LoanLiquidatedEventData decodeLoanLiquidatedEvent(Log log) {
         List<?> values = FunctionReturnDecoder.decode(log.getData(), P2PContractEvents.LOAN_LIQUIDATED_EVENT.getNonIndexedParameters());
         Uint256 loanId = (Uint256) values.get(0);
         Utf8String liquidator = (Utf8String) values.get(1);
         Uint256 collateralLiquidated = (Uint256) values.get(2);
-        return new LoanLiquidatedDTO(
+        return new LoanLiquidatedEventData(
             loanId.getValue().intValue(),
             liquidator.getValue(),
             new BigDecimal(collateralLiquidated.getValue())
         );
     }
 
-    private static PriceUpdatedDTO decodePriceUpdatedEvent(Log log) {
+    private static PriceUpdatedEventData decodePriceUpdatedEvent(Log log) {
         List<?> values = FunctionReturnDecoder.decode(log.getData(), P2PContractEvents.PRICE_UPDATED_EVENT.getNonIndexedParameters());
         Uint256 newPrice = (Uint256) values.get(0);
-        return new PriceUpdatedDTO(new BigDecimal(newPrice.getValue()));
+        return new PriceUpdatedEventData(new BigDecimal(newPrice.getValue()));
     }
 
-    private static LendingRequestCreatedDTO decodeLendingRequestCreatedEvent(Log log) {
+    private static LendingRequestCreatedEventData decodeLendingRequestCreatedEvent(Log log) {
         List<?> values = FunctionReturnDecoder.decode(log.getData(), P2PContractEvents.LENDING_REQUEST_CREATED_EVENT.getNonIndexedParameters());
         Uint256 requestId = (Uint256) values.get(0);
         Utf8String lender = (Utf8String) values.get(1);
@@ -128,19 +132,19 @@ public class P2PEventDecoder {
 
         Uint256 paymentDuration = (Uint256) values.get(6);
         Uint256 minimalPartialFill = (Uint256) values.get(7);
-        return new LendingRequestCreatedDTO(
+        return new LendingRequestCreatedEventData(
             requestId.getValue().intValue(),
             lender.getValue(),
             new BigDecimal(amountToLendUSD.getValue()),
             new BigDecimal(minCollateralRatio.getValue()),
             new BigDecimal(liquidationThreshold.getValue()),
             new BigDecimal(desiredInterestRate.getValue()),
-            new BigDecimal(paymentDuration.getValue()),
+            Duration.ofSeconds(paymentDuration.getValue().longValue()),
             new BigDecimal(minimalPartialFill.getValue())
         );
     }
 
-    private static BorrowingRequestCreatedDTO decodeBorrowingRequestCreatedEvent(Log log) {
+    private static BorrowingRequestCreatedEventData decodeBorrowingRequestCreatedEvent(Log log) {
         List<?> values = FunctionReturnDecoder.decode(log.getData(), P2PContractEvents.BORROWING_REQUEST_CREATED_EVENT.getNonIndexedParameters());
         Uint256 requestId = (Uint256) values.get(0);
         Utf8String borrower = (Utf8String) values.get(1);
@@ -151,7 +155,7 @@ public class P2PEventDecoder {
         Uint256 desiredInterestRate = (Uint256) values.get(6);
         Uint256 paymentDuration = (Uint256) values.get(7);
         Uint256 minimalPartialFill = (Uint256) values.get(8);
-        return new BorrowingRequestCreatedDTO(
+        return new BorrowingRequestCreatedEventData(
             requestId.getValue().intValue(),
             borrower.getValue(),
             new BigDecimal(amountToBorrowUSD.getValue()),
@@ -159,49 +163,49 @@ public class P2PEventDecoder {
             new BigDecimal(maxCollateralRatio.getValue()),
             new BigDecimal(liquidationThreshold.getValue()),
             new BigDecimal(desiredInterestRate.getValue()),
-            new BigDecimal(paymentDuration.getValue()),
+            Duration.ofSeconds(paymentDuration.getValue().longValue()),
             new BigDecimal(minimalPartialFill.getValue()
             )
         );
     }
 
-    private static LendingRequestCanceledDTO decodeLendingRequestCanceledEvent(Log log) {
+    private static LendingRequestCanceledEventData decodeLendingRequestCanceledEvent(Log log) {
         List<?> values = FunctionReturnDecoder.decode(log.getData(), P2PContractEvents.LENDING_REQUEST_CANCELED_EVENT.getNonIndexedParameters());
         Uint256 requestId = (Uint256) values.get(0);
         Utf8String canceller = (Utf8String) values.get(1);
-        return new LendingRequestCanceledDTO(
+        return new LendingRequestCanceledEventData(
             requestId.getValue().intValue(),
             canceller.getValue()
         );
     }
 
-    private static BorrowingRequestCanceledDTO decodeBorrowingRequestCanceledEvent(Log log) {
+    private static BorrowingRequestCanceledEventData decodeBorrowingRequestCanceledEvent(Log log) {
         List<?> values = FunctionReturnDecoder.decode(log.getData(), P2PContractEvents.BORROWING_REQUEST_CANCELED_EVENT.getNonIndexedParameters());
         Uint256 requestId = (Uint256) values.get(0);
         Utf8String canceller = (Utf8String) values.get(1);
-        return new BorrowingRequestCanceledDTO(
+        return new BorrowingRequestCanceledEventData(
             requestId.getValue().intValue(),
             canceller.getValue()
         );
     }
 
-    private static LendingRequestAutoCanceledDTO decodeLendingRequestAutoCanceledEvent(Log log) {
+    private static LendingRequestAutoCanceledEventData decodeLendingRequestAutoCanceledEvent(Log log) {
         List<?> values = FunctionReturnDecoder.decode(log.getData(), P2PContractEvents.LENDING_REQUEST_AUTO_CANCELED_EVENT.getNonIndexedParameters());
         Uint256 requestId = (Uint256) values.get(0);
-        return new LendingRequestAutoCanceledDTO(requestId.getValue().intValue());
+        return new LendingRequestAutoCanceledEventData(requestId.getValue().intValue());
     }
 
-    private static BorrowingRequestAutoCanceledDTO decodeBorrowingRequestAutoCanceledEvent(Log log) {
+    private static BorrowingRequestAutoCanceledEventData decodeBorrowingRequestAutoCanceledEvent(Log log) {
         List<?> values = FunctionReturnDecoder.decode(log.getData(), P2PContractEvents.BORROWING_REQUEST_AUTO_CANCELED_EVENT.getNonIndexedParameters());
         Uint256 requestId = (Uint256) values.get(0);
-        return new BorrowingRequestAutoCanceledDTO(requestId.getValue().intValue());
+        return new BorrowingRequestAutoCanceledEventData(requestId.getValue().intValue());
     }
 
-    private static RequestFilledDTO decodeRequestFilledEvent(Log log) {
+    private static RequestFilledEventData decodeRequestFilledEvent(Log log) {
         List<?> values = FunctionReturnDecoder.decode(log.getData(), P2PContractEvents.REQUEST_FILLED_EVENT.getNonIndexedParameters());
         Uint256 requestId = (Uint256) values.get(0);
         Uint256 amountFilled = (Uint256) values.get(1);
-        return new RequestFilledDTO(
+        return new RequestFilledEventData(
             requestId.getValue().intValue(),
             new BigDecimal(amountFilled.getValue())
         );
