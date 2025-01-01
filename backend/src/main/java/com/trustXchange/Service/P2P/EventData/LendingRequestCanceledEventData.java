@@ -1,4 +1,4 @@
-package com.trustXchange.EventData.P2P;
+package com.trustXchange.Service.P2P.EventData;
 
 import lombok.Value;
 @Value

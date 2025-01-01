@@ -10,7 +10,7 @@ interface PriceOracle {
     function getPriceXRPUSDT() external view returns (uint256);
 }
 
-contract XrpLendingP2PV2 is AxelarExecutableWithToken {
+contract XrpLendingP2PV3 is AxelarExecutableWithToken {
     using PRBMathUD60x18 for uint256;
     // --- Constants ---
 
@@ -52,7 +52,8 @@ contract XrpLendingP2PV2 is AxelarExecutableWithToken {
         uint256 desiredInterestRate; 
         uint256 paymentDuration;    
         uint256 minimalPartialFill; 
-        bool canceled;              
+        bool canceled;
+        bool autoCanceled;              
     }
 
     struct BorrowingRequest {
@@ -67,6 +68,7 @@ contract XrpLendingP2PV2 is AxelarExecutableWithToken {
         uint256 paymentDuration;    
         uint256 minimalPartialFill; 
         bool canceled;
+        bool autoCanceled;
     }
 
     // --- State Variables ---
@@ -82,7 +84,8 @@ contract XrpLendingP2PV2 is AxelarExecutableWithToken {
     mapping(string => uint256[]) public userLoans;  
     mapping(string => uint256[]) public userLendingRequests; 
     mapping(string => uint256[]) public userBorrowingRequests; 
-    uint256 public requestCounter;    
+    uint256 public lendingRequestCounter;
+    uint256 public borrowingRequestCounter;
 
     uint256 public constant PLATFORM_FEE_PERCENT = 5;
 
@@ -136,7 +139,8 @@ contract XrpLendingP2PV2 is AxelarExecutableWithToken {
     event BorrowingRequestCanceled(uint256 requestId, string canceller);
     event LendingRequestAutoCanceled(uint256 requestId);
     event BorrowingRequestAutoCanceled(uint256 requestId);
-    event RequestFilled(uint256 requestId, uint256 amountFilled);
+    event LendingRequestFilled(uint256 requestId, uint256 loanId);
+    event BorrowingRequestFilled(uint256 requestId, uint256 loanId);
 
     // --- Constructor ---
     constructor(address gateway_, address priceOracle_) 
@@ -144,7 +148,8 @@ contract XrpLendingP2PV2 is AxelarExecutableWithToken {
     {
         priceOracle = PriceOracle(priceOracle_);
         loanCounter = 0;
-        requestCounter = 0;
+        lendingRequestCounter = 0;
+        borrowingRequestCounter = 0;
         oracleUpdater = msg.sender;
     }
 
@@ -277,8 +282,8 @@ contract XrpLendingP2PV2 is AxelarExecutableWithToken {
     ) internal {
         string memory lender = sourceAddress;
         
-        requestCounter++;
-        lendingRequests[requestCounter] = LendingRequest({
+        lendingRequestCounter++;
+        lendingRequests[lendingRequestCounter] = LendingRequest({
             lender: lender,
             amountToLendUSD: _amountToLendUSD,
             amountLendedUSD: 0,
@@ -287,11 +292,12 @@ contract XrpLendingP2PV2 is AxelarExecutableWithToken {
             desiredInterestRate: _desiredInterestRate,
             paymentDuration: _paymentDuration,
             minimalPartialFill: _minimalPartialFill,
-            canceled: false
+            canceled: false,
+            autoCanceled: false
         });
-        userLendingRequests[lender].push(requestCounter);
+        userLendingRequests[lender].push(lendingRequestCounter);
         emit LendingRequestCreated(
-            requestCounter, 
+            lendingRequestCounter, 
             lender, 
             _amountToLendUSD, 
             _minCollateralRatio,
@@ -316,8 +322,8 @@ contract XrpLendingP2PV2 is AxelarExecutableWithToken {
     ) internal {
         string memory borrower = sourceAddress;
         
-        requestCounter++;
-        borrowingRequests[requestCounter] = BorrowingRequest({
+        borrowingRequestCounter++;
+        borrowingRequests[borrowingRequestCounter] = BorrowingRequest({
             borrower: borrower,
             amountToBorrowUSD: _amountToBorrowUSD,
             amountBorrowedUSD: 0,
@@ -328,11 +334,12 @@ contract XrpLendingP2PV2 is AxelarExecutableWithToken {
             desiredInterestRate: _desiredInterestRate,
             paymentDuration: _paymentDuration,
             minimalPartialFill: _minimalPartialFill,
-            canceled: false
+            canceled: false,
+            autoCanceled: false
         });
-        userBorrowingRequests[borrower].push(requestCounter);
+        userBorrowingRequests[borrower].push(borrowingRequestCounter);
         emit BorrowingRequestCreated(
-            requestCounter, 
+            borrowingRequestCounter, 
             borrower, 
             _amountToBorrowUSD,
             _collateralAmountXRP, 
@@ -421,7 +428,7 @@ contract XrpLendingP2PV2 is AxelarExecutableWithToken {
                 block.timestamp + request.paymentDuration,
                 request.liquidationThreshold
             );
-            emit RequestFilled(_requestId, _borrowAmountUSD);
+            emit LendingRequestFilled(_requestId, loanCounter);
         } catch {
             revert("Failed to send USD to borrower");
         }
@@ -506,7 +513,7 @@ contract XrpLendingP2PV2 is AxelarExecutableWithToken {
                 block.timestamp + request.paymentDuration,
                 request.liquidationThreshold
             );
-            emit RequestFilled(_requestId, _amountToLendUSD);
+            emit BorrowingRequestFilled(_requestId, loanCounter);
         } catch {
             revert("Failed to send USD to borrower");
         }
@@ -547,6 +554,7 @@ contract XrpLendingP2PV2 is AxelarExecutableWithToken {
         LendingRequest storage request = lendingRequests[_requestId];
         require(!request.canceled, "Request is already canceled");
         request.canceled = true;
+        request.autoCanceled = true;
         emit LendingRequestAutoCanceled(_requestId);
     }
 
@@ -554,6 +562,7 @@ contract XrpLendingP2PV2 is AxelarExecutableWithToken {
         BorrowingRequest storage request = borrowingRequests[_requestId];
         require(!request.canceled, "Request is already canceled");
         request.canceled = true;
+        request.autoCanceled = true;
         emit BorrowingRequestAutoCanceled(_requestId);
     }
 

@@ -125,13 +125,23 @@ public class P2PContractEvents {
         )
     );
 
-    public static final Event REQUEST_FILLED_EVENT = new Event(
-        "RequestFilled",
+    public static final Event LENDING_REQUEST_FILLED_EVENT = new Event(
+        "LendingRequestFilled",
         Arrays.asList(
             new TypeReference<Uint256>(false) {},
             new TypeReference<Uint256>(false) {}
         )
     );
+
+    public static final Event BORROWING_REQUEST_FILLED_EVENT = new Event(
+        "BorrowingRequestFilled",
+        Arrays.asList(
+            new TypeReference<Uint256>(false) {},
+            new TypeReference<Uint256>(false) {}
+        )
+    );
+
+    
 
     public static final List<Event> ALL_EVENTS = Arrays.<Event>asList(
         LOAN_CREATED_EVENT,
@@ -145,7 +155,8 @@ public class P2PContractEvents {
         BORROWING_REQUEST_CANCELED_EVENT,
         LENDING_REQUEST_AUTO_CANCELED_EVENT,
         BORROWING_REQUEST_AUTO_CANCELED_EVENT,
-        REQUEST_FILLED_EVENT
+        LENDING_REQUEST_FILLED_EVENT,
+        BORROWING_REQUEST_FILLED_EVENT
     );
         
     private static Map<String, Event> EVENT_MAP = new HashMap<String, Event>(

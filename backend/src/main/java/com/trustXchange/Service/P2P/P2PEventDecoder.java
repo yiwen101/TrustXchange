@@ -1,13 +1,26 @@
 package com.trustXchange.Service.P2P;
 
-import com.trustXchange.EventData.P2P.*;
-import com.trustXchange.EventData.P2P.P2PEventData;
-
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.datatypes.Event;
 import org.web3j.abi.datatypes.Utf8String;
 import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.protocol.core.methods.response.Log;
+
+import com.trustXchange.Service.P2P.EventData.BorrowingRequestAutoCanceledEventData;
+import com.trustXchange.Service.P2P.EventData.BorrowingRequestCanceledEventData;
+import com.trustXchange.Service.P2P.EventData.BorrowingRequestCreatedEventData;
+import com.trustXchange.Service.P2P.EventData.BorrowingRequestFilledEventData;
+import com.trustXchange.Service.P2P.EventData.LendingRequestAutoCanceledEventData;
+import com.trustXchange.Service.P2P.EventData.LendingRequestCanceledEventData;
+import com.trustXchange.Service.P2P.EventData.LendingRequestCreatedEventData;
+import com.trustXchange.Service.P2P.EventData.LendingRequestFilledEventData;
+import com.trustXchange.Service.P2P.EventData.LoanCreatedEventData;
+import com.trustXchange.Service.P2P.EventData.LoanLiquidatedEventData;
+import com.trustXchange.Service.P2P.EventData.LoanRepaidEventData;
+import com.trustXchange.Service.P2P.EventData.LoanUpdatedEventData;
+import com.trustXchange.Service.P2P.EventData.P2PEventData;
+import com.trustXchange.Service.P2P.EventData.PriceUpdatedEventData;
+
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -44,8 +57,10 @@ public class P2PEventDecoder {
                 return Optional.of(decodeLendingRequestAutoCanceledEvent(log));
             case "BorrowingRequestAutoCanceled":
                 return Optional.of(decodeBorrowingRequestAutoCanceledEvent(log));
-            case "RequestFilled":
-                return Optional.of(decodeRequestFilledEvent(log));
+            case "LendingRequestFilled":
+                return Optional.of(decodeLendingRequestFilledEvent(log));
+            case "BorrowingRequestFilled":
+                return Optional.of(decodeBorrowingRequestFilledEvent(log));
             default:
                 return Optional.empty();
         }
@@ -201,13 +216,23 @@ public class P2PEventDecoder {
         return new BorrowingRequestAutoCanceledEventData(requestId.getValue().intValue());
     }
 
-    private static RequestFilledEventData decodeRequestFilledEvent(Log log) {
-        List<?> values = FunctionReturnDecoder.decode(log.getData(), P2PContractEvents.REQUEST_FILLED_EVENT.getNonIndexedParameters());
+    private static LendingRequestFilledEventData decodeLendingRequestFilledEvent(Log log) {
+        List<?> values = FunctionReturnDecoder.decode(log.getData(), P2PContractEvents.LENDING_REQUEST_FILLED_EVENT.getNonIndexedParameters());
         Uint256 requestId = (Uint256) values.get(0);
-        Uint256 amountFilled = (Uint256) values.get(1);
-        return new RequestFilledEventData(
+        Uint256 loanId = (Uint256) values.get(1);
+        return new LendingRequestFilledEventData(
             requestId.getValue().intValue(),
-            new BigDecimal(amountFilled.getValue())
+            loanId.getValue().intValue()
         );
     }
+    private static BorrowingRequestFilledEventData decodeBorrowingRequestFilledEvent(Log log) {
+        List<?> values = FunctionReturnDecoder.decode(log.getData(), P2PContractEvents.BORROWING_REQUEST_FILLED_EVENT.getNonIndexedParameters());
+        Uint256 requestId = (Uint256) values.get(0);
+        Uint256 loanId = (Uint256) values.get(1);
+        return new BorrowingRequestFilledEventData(
+            requestId.getValue().intValue(),
+            loanId.getValue().intValue()
+        );
+    }
+    
 }

@@ -3,7 +3,7 @@ package com.trustXchange.Service.P2P;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
 
-import com.trustXchange.EventData.P2P.P2PEventData;
+import com.trustXchange.Service.P2P.EventData.P2PEventData;
 
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.DefaultBlockParameterName;

@@ -2,9 +2,11 @@ package com.trustXchange.DTO.P2P;
 
 import java.time.Duration;
 
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
-@Value
+@Data
+@AllArgsConstructor
 public class P2PBorrowingRequestDTO {
     int requestId;
     String borrower;
@@ -18,4 +20,5 @@ public class P2PBorrowingRequestDTO {
     Duration paymentDuration;
     double minimalPartialFill;
     boolean canceled;
+    boolean canceledBySystem;
 }

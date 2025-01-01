@@ -3,9 +3,11 @@ package com.trustXchange.DTO.P2P;
 import java.math.BigDecimal;
 import java.time.Duration;
 
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
-@Value
+@Data
+@AllArgsConstructor
 public class P2PLendingRequestDTO {
     int requestId;
     String lender;
@@ -17,4 +19,5 @@ public class P2PLendingRequestDTO {
     Duration paymentDuration;
     BigDecimal minimalPartialFill;
     boolean canceled;
+    boolean canceledBySystem;
 }
