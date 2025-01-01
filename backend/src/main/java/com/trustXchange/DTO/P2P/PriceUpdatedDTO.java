@@ -1,10 +1,11 @@
 package com.trustXchange.DTO.P2P;
 
+import java.math.BigDecimal;
+
 import lombok.Value;
-import org.web3j.abi.datatypes.generated.Uint256;
 
 
 @Value
 public class PriceUpdatedDTO extends  P2PEventData {
-    Uint256 newPrice;
+    BigDecimal newPrice;
 }
