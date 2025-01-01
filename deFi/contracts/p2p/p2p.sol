@@ -59,7 +59,8 @@ contract XrpLending is AxelarExecutableWithToken {
         string borrower;          
         uint256 amountToBorrowUSD;          
         uint256 amountBorrowedUSD;          
-        uint256 collateralAmountXRP;    
+        uint256 initialCollateralAmountXRP;
+        uint256 existingCollateralAmountXRP; 
         uint256 maxCollateralRatio;  
         uint256 liquidationThreshold; 
         uint256 desiredInterestRate;       
@@ -70,6 +71,8 @@ contract XrpLending is AxelarExecutableWithToken {
 
     // --- State Variables ---
     PriceOracle priceOracle;
+    // eg: currentXRPPriceUSD = 21164 means 1 XRP = 2.1164 USD
+    // xrp and usd amount are assumed integer values for simplicity
     uint256 public currentXRPPriceUSD; 
     uint256 public lastPriceUpdateTimestamp;   
     uint256 public loanCounter;       
@@ -130,6 +133,8 @@ contract XrpLending is AxelarExecutableWithToken {
     );
     event LendingRequestCanceled(uint256 requestId, string canceller);
     event BorrowingRequestCanceled(uint256 requestId, string canceller);
+    event LendingRequestAutoCanceled(uint256 requestId);
+    event BorrowingRequestAutoCanceled(uint256 requestId);
     event RequestFilled(uint256 requestId, uint256 amountFilled);
 
     // --- Constructor ---
@@ -218,40 +223,37 @@ contract XrpLending is AxelarExecutableWithToken {
         bytes memory params;
         (command, params) = abi.decode(payload, (string, bytes));
         bytes32 commandHash = keccak256(abi.encodePacked(command));
-        try {
-            if(commandHash == SELECTOR_LENDING_REQUEST) {
-                (uint256 _minCollateralRatio,
-                uint256 _liquidationThreshold, 
-                uint256 _desiredInterestRate, 
-                uint256 _paymentDuration,
-                uint256 _minimalPartialFill) = abi.decode(params, (uint256, uint256, uint256, uint256, uint256));
-                createLendingRequest(sourceChain, sourceAddress, tokenSymbol, amount,
-                    _minCollateralRatio, _liquidationThreshold, _desiredInterestRate, _paymentDuration, _minimalPartialFill);
-            } else if (commandHash == SELECTOR_BORROWING_REQUEST) {
-                (uint256 _maxCollateralRatio, 
-                uint256 _liquidationThreshold, 
-                uint256 _desiredInterestRate, 
-                uint256 _paymentDuration,
-                uint256 _minimalPartialFill) = abi.decode(params, (uint256, uint256, uint256, uint256, uint256));
-                createBorrowingRequest(sourceChain, sourceAddress, tokenSymbol, amount,
-                    _maxCollateralRatio, _liquidationThreshold, _desiredInterestRate, _paymentDuration, _minimalPartialFill);
-            } else if (commandHash == SELECTOR_ACCEPT_LENDING_REQUEST) {
-                (uint256 _requestId, uint256 _borrowAmountUSD) = abi.decode(params, (uint256, uint256));
-                acceptLendingRequest(sourceChain, sourceAddress, tokenSymbol, amount,
-                    _requestId, _borrowAmountUSD);
-            } else if (commandHash == SELECTOR_ACCEPT_BORROWING_REQUEST) {
-                (uint256 _requestId, uint256 _collateralAmountXRP) = abi.decode(params, (uint256, uint256));
-                acceptBorrowingRequest(sourceChain, sourceAddress, tokenSymbol, amount,
-                    _requestId, _collateralAmountXRP);
-            } else if (commandHash == SELECTOR_REPAY_LOAN) {
-                (uint256 _repayAmountUSD, uint256 _loanId) = abi.decode(params, (uint256, uint256));
-                repayLoan(sourceChain, sourceAddress, tokenSymbol, amount, _loanId);
-            } else {
-                revert("Invalid command");
-            }
-        } catch (bytes memory error) {
+
+        if(commandHash == SELECTOR_LENDING_REQUEST) {
+            (uint256 _minCollateralRatio,
+            uint256 _liquidationThreshold, 
+            uint256 _desiredInterestRate, 
+            uint256 _paymentDuration,
+            uint256 _minimalPartialFill) = abi.decode(params, (uint256, uint256, uint256, uint256, uint256));
+            createLendingRequest(sourceChain, sourceAddress, tokenSymbol, amount,
+                _minCollateralRatio, _liquidationThreshold, _desiredInterestRate, _paymentDuration, _minimalPartialFill);
+        } else if (commandHash == SELECTOR_BORROWING_REQUEST) {
+            (uint256 _maxCollateralRatio, 
+            uint256 _liquidationThreshold, 
+            uint256 _desiredInterestRate, 
+            uint256 _paymentDuration,
+            uint256 _minimalPartialFill) = abi.decode(params, (uint256, uint256, uint256, uint256, uint256));
+            createBorrowingRequest(sourceChain, sourceAddress, tokenSymbol, amount,
+                _maxCollateralRatio, _liquidationThreshold, _desiredInterestRate, _paymentDuration, _minimalPartialFill);
+        } else if (commandHash == SELECTOR_ACCEPT_LENDING_REQUEST) {
+            (uint256 _requestId, uint256 _borrowAmountUSD) = abi.decode(params, (uint256, uint256));
+            acceptLendingRequest(sourceChain, sourceAddress, tokenSymbol, amount,
+                _requestId, _borrowAmountUSD);
+        } else if (commandHash == SELECTOR_ACCEPT_BORROWING_REQUEST) {
+            (uint256 _requestId, uint256 _collateralAmountXRP) = abi.decode(params, (uint256, uint256));
+            acceptBorrowingRequest(sourceChain, sourceAddress, tokenSymbol, amount,
+                _requestId, _collateralAmountXRP);
+        } else if (commandHash == SELECTOR_REPAY_LOAN) {
+            (uint256 _repayAmountUSD, uint256 _loanId) = abi.decode(params, (uint256, uint256));
+            repayLoan(sourceChain, sourceAddress, tokenSymbol, amount, _loanId);
+        } else {
             gateway().sendToken(sourceChain, sourceAddress, tokenSymbol, amount-1);
-            revert(string(error));
+            revert("Invalid command");
         }
         
     }
@@ -318,7 +320,8 @@ contract XrpLending is AxelarExecutableWithToken {
             borrower: borrower,
             amountToBorrowUSD: _amountToBorrowUSD,
             amountBorrowedUSD: 0,
-            collateralAmountXRP: _collateralAmountXRP,
+            initialCollateralAmountXRP: _collateralAmountXRP,
+            existingCollateralAmountXRP: _collateralAmountXRP,
             maxCollateralRatio: _maxCollateralRatio,
             liquidationThreshold: _liquidationThreshold,
             desiredInterestRate: _desiredInterestRate,
@@ -350,25 +353,34 @@ contract XrpLending is AxelarExecutableWithToken {
         uint256 _borrowAmountUSD, 
     ) internal {
         string memory borrower = sourceAddress;
-        
-        // Validate Lending Request
+        bool memory proceed = true;
+        string memory errorMesg = "";
         LendingRequest storage request = lendingRequests[_requestId];
-        require(!request.canceled, "Request is already canceled");
-        require(bytes(request.lender).length != 0, "Lending request not found");
+        if (request.canceled) {
+            proceed = false;
+            errorMesg = "Request is already canceled";
+        } else if (bytes(request.lender).length == 0) {
+            proceed = false;
+            errorMesg = "Lending request not found";
+        } else if (_borrowAmountUSD < request.minimalPartialFill) {
+            proceed = false;
+            errorMesg = "Borrow amount is less than minimal fill";
+        } else if (_borrowAmountUSD > (request.amountToLendUSD - request.amountLendedUSD)) {
+            proceed = false;
+            errorMesg = "Borrow amount exceeds remaining lend amount";
+        } else if (_collateralAmountXRP < calculateCollateralAt(_borrowAmountUSD, request.minCollateralRatio)) {
+            proceed = false;
+            errorMesg = "Insufficient collateral";
+        } else if (keccak256(bytes(tokenSymbol)) != keccak256(bytes("XRP"))) {
+            proceed = false;
+            errorMesg = "Invalid token symbol";
+        }
 
-        // Validate borrow amount
-        uint256 minFillAmount = request.minimalPartialFill;
-        require(_borrowAmountUSD >= minFillAmount, "Borrow amount is less than minimal fill");
-        require(
-            _borrowAmountUSD <= (request.amountToLendUSD - request.amountLendedUSD), 
-            "Borrow amount exceeds remaining lend amount"
-        );
-
-        // Validate collateral amount
-        require(keccak256(bytes(tokenSymbol)) == keccak256(bytes("XRP")), "Invalid token symbol");
-        uint256 requiredCollateralXRP = (_borrowAmountUSD * request.minCollateralRatio) / (100 * currentXRPPriceUSD);
-        require(_collateralAmountXRP >= requiredCollateralXRP, "Insufficient collateral");
-
+        if (!proceed) {
+            gateway().sendToken(sourceChain, borrower, symbol, _collateralAmountXRP-1);
+            revert(errorMesg);
+        }
+       
         // Attempt to send USD to borrower via Axelar
         try gateway().sendToken(sourceChain, borrower, "USD", _borrowAmountUSD) {
             loanCounter++;
@@ -393,8 +405,8 @@ contract XrpLending is AxelarExecutableWithToken {
             userLoans[borrower].push(loanCounter);
             request.amountLendedUSD += _borrowAmountUSD;
 
-            if (request.amountLendedUSD >= request.amountToLendUSD) {
-                cancelLendingRequest(sourceChain, sourceAddress, _requestId);
+            if (request.amountLendedUSD - request.amountToLendUSD < minFillAmount) {
+                mustCancelLendingRequest(_requestId);
             }
 
             emit LoanCreated(
@@ -424,25 +436,36 @@ contract XrpLending is AxelarExecutableWithToken {
         uint256 _collateralAmountXRP
     ) internal {
         string memory lender = sourceAddress;
-        
+        bool memory proceed = true;
+        string memory errorMesg = "";
         // Validate Borrowing Request
         BorrowingRequest storage request = borrowingRequests[_requestId];
-        require(!request.canceled, "Request is already canceled");
-        require(bytes(request.borrower).length != 0, "Borrowing request not found");
 
-        // Validate lend amount
-        uint256 minFillAmount = request.minimalPartialFill;
-        require(_amountToLendUSD >= minFillAmount, "Lend amount is less than minimal fill");
-        require(
-            _amountToLendUSD <= (request.amountToBorrowUSD - request.amountBorrowedUSD), 
-            "Lend amount exceeds remaining borrow amount"
-        );
+        if (request.canceled) {
+            proceed = false;
+            errorMesg = "Request is already canceled";
+        } else if (bytes(request.borrower).length == 0) {
+            proceed = false;
+            errorMesg = "Borrowing request not found";
+        } else if (_amountToLendUSD < request.minimalPartialFill) {
+            proceed = false;
+            errorMesg = "Lend amount is less than minimal fill";
+        } else if (_amountToLendUSD > (request.amountToBorrowUSD - request.amountBorrowedUSD)) {
+            proceed = false;
+            errorMesg = "Lend amount exceeds remaining borrow amount";
+        } else if (_collateralAmountXRP > request.existingCollateralAmountXRP) {
+            proceed = false;
+            errorMesg = "Asking for too much collateral";
+        } else if (keccak256(bytes(tokenSymbol)) != keccak256(bytes("USD"))) {
+            proceed = false;
+            errorMesg = "Invalid token symbol";
+        }
 
-        // Validate collateral amount
-        require(keccak256(bytes(tokenSymbol)) == keccak256(bytes("USD")), "Invalid token symbol");
-        uint256 requiredCollateralXRP = (_amountToLendUSD * request.maxCollateralRatio) / (100 * currentXRPPriceUSD);
-        require(_collateralAmountXRP >= requiredCollateralXRP, "Insufficient collateral");
-
+        if (!proceed) {
+            gateway().sendToken(sourceChain, lender, symbol, _amountToLendUSD-1);
+            revert(errorMesg);
+        }
+        
         // Attempt to send USD to borrower via Axelar
         try gateway().sendToken(sourceChain, request.borrower, "USD", _amountToLendUSD) {
             loanCounter++;
@@ -465,6 +488,11 @@ contract XrpLending is AxelarExecutableWithToken {
 
             userLoans[request.borrower].push(loanCounter);
             request.amountBorrowedUSD += _amountToLendUSD;
+            request.existingCollateralAmountXRP -= _collateralAmountXRP;
+
+            if (request.existingCollateralAmountXRP < calculateCollateralAt(request.minimalPartialFill, request.maxCollateralRatio)) {
+                mustCancelBorrowingRequest(_requestId);
+            }
 
             emit LoanCreated(
                 loanCounter, 
@@ -514,6 +542,20 @@ contract XrpLending is AxelarExecutableWithToken {
         emit BorrowingRequestCanceled(_requestId, canceller);
     }
 
+    function mustCancelLendingRequest(uint256 _requestId) internal {
+        LendingRequest storage request = lendingRequests[_requestId];
+        require(!request.canceled, "Request is already canceled");
+        request.canceled = true;
+        emit LendingRequestAutoCanceled(_requestId);
+    }
+
+    function mustCancelBorrowingRequest(uint256 _requestId) internal {
+        BorrowingRequest storage request = borrowingRequests[_requestId];
+        require(!request.canceled, "Request is already canceled");
+        request.canceled = true;
+        emit BorrowingRequestAutoCanceled(_requestId);
+    }
+
     // --- Repay Function ---
     function repayLoan(
         string calldata sourceChain, 
@@ -523,14 +565,31 @@ contract XrpLending is AxelarExecutableWithToken {
         uint256 _loanId
     ) internal {
         string memory borrower = sourceAddress;
-        require(keccak256(bytes(tokenSymbol)) == keccak256(bytes("USD")), "Invalid token symbol");
-
+        bool memory proceed = true;
+        string memory errorMesg = "";
         Loan storage loan = loans[_loanId];
-        require(keccak256(bytes(loan.borrower)) == keccak256(bytes(borrower)), "Not the loan owner");
-        require(!loan.isLiquidated, "Loan is already liquidated");
-        require(_repayAmountUSD > 0, "Repayment amount must be greater than zero");
-        require(_repayAmountUSD + loan.amountPaidUSD <= loan.amountPayableToLender, "Repayment exceeds amount owed");
 
+        if (keccak256(bytes(tokenSymbol)) != keccak256(bytes("USD"))) {
+            proceed = false;
+            errorMesg = "Invalid token symbol";
+        } else if (keccak256(bytes(loan.borrower)) != keccak256(bytes(borrower))) {
+            proceed = false;
+            errorMesg = "Not the loan owner";
+        } else if (loan.isLiquidated) {
+            proceed = false;
+            errorMesg = "Loan is already liquidated";
+        } else if (_repayAmountUSD == 0) {
+            proceed = false;
+            errorMesg = "Repayment amount must be greater than zero";
+        } else if (_repayAmountUSD + loan.amountPaidUSD > loan.amountPayableToLender) {
+            proceed = false;
+            errorMesg = "Repayment exceeds amount owed";
+        }
+
+        if (!proceed) {
+            gateway().sendToken(sourceChain, borrower, symbol, _repayAmountUSD-1);
+            revert(errorMesg);
+        }
         try gateway().sendToken(sourceChain, borrower, "USD", _repayAmountUSD) {
             // Update loan state
             loan.amountPaidUSD += _repayAmountUSD;
@@ -575,6 +634,10 @@ contract XrpLending is AxelarExecutableWithToken {
     // --- Utility Functions ---
     function calculateInterest(uint256 _amountBorrowedUSD, uint256 _desiredInterestRate) internal pure returns (uint256) {
         return (_amountBorrowedUSD * _desiredInterestRate) / 100;
+    }
+    // minCollateralRatio 150 means 150%, currentXRPPriceUSD 21164 means 1 XRP = 2.1164 USD, so multiply by 10 on the numerator
+    function calculateCollateralAt(uint256 _amountBorrowedUSD, uint256 _collateralRatio) internal pure returns (uint256) {
+        return (_amountBorrowedUSD * _collateralRatio * 10) / currentXRPPriceUSD;
     }
 
     function calculatePayableAmount(uint256 _amountBorrowedUSD, uint256 _desiredInterestRate) 
