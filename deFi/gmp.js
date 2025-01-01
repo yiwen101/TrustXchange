@@ -124,7 +124,7 @@ async function callContract(params) {
 }
 
 async function main() {
-  const {inputData,executeWithTokenParams} = utils.getMockInputs(50)
+  const {inputData,executeWithTokenParams} = utils.getPocMockInputs(50)
   await approveContractCall(inputData);
   await callContract(executeWithTokenParams);
 }
