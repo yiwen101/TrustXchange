@@ -1,36 +1,35 @@
 package com.trustXchange.service.eventHandler;
 
-import com.trustXchange.dao.p2p.P2PLoanDAO;
-import com.trustXchange.dto.p2p.P2PLoanDTO;
+
+import com.trustXchange.entity.LoanEntity;
+import com.trustXchange.repository.LoanRepository;
 import com.trustXchange.service.eventData.LoanCreatedEventData;
-import java.sql.SQLException;
+import org.springframework.stereotype.Service;
 
+
+@Service
 public class LoanCreatedEventHandler {
-    private P2PLoanDAO loanDAO;
+    private LoanRepository loanRepository;
 
-    public LoanCreatedEventHandler(P2PLoanDAO loanDAO) {
-        this.loanDAO = loanDAO;
+    public LoanCreatedEventHandler(LoanRepository loanRepository) {
+        this.loanRepository = loanRepository;
     }
 
     public void handle(LoanCreatedEventData eventData) {
-        try {
-            P2PLoanDTO loan = new P2PLoanDTO(
-                eventData.getLoanId(),
-                eventData.getLender(),
-                eventData.getBorrower(),
-                eventData.getAmountBorrowedUSD().doubleValue(),
-                eventData.getAmountPayableToLender().doubleValue(),
-                eventData.getAmountPayableToPlatform().doubleValue(),
-                0.0,
-                eventData.getCollateralAmountXRP().doubleValue(),
-                eventData.getRepayBy(),
-                eventData.getLiquidationThreshold().doubleValue(),
-                false 
-            );
-            loanDAO.createLoan(loan);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            // Handle exception appropriately
-        }
+        LoanEntity loan = new LoanEntity();
+        loan.setLoanId(eventData.getLoanId());
+        loan.setLender(eventData.getLender());
+        loan.setBorrower(eventData.getBorrower());
+        loan.setAmountBorrowedUSD(eventData.getAmountBorrowedUSD().doubleValue());
+        loan.setAmountPayableToLender(eventData.getAmountPayableToLender().doubleValue());
+        loan.setAmountPayableToPlatform(eventData.getAmountPayableToPlatform().doubleValue());
+        loan.setAmountPaidUSD(0.0);
+        loan.setCollateralAmountXRP(eventData.getCollateralAmountXRP().doubleValue());
+        loan.setRepayBy(java.sql.Timestamp.from(eventData.getRepayBy()));
+        loan.setLiquidationThreshold(eventData.getLiquidationThreshold().doubleValue());
+        loan.setLiquidated(false);
+
+
+        loanRepository.save(loan);
     }
 }

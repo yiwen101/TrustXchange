@@ -1,39 +1,36 @@
 package com.trustXchange.service.eventHandler;
 
-import com.trustXchange.dao.p2p.P2PBorrowingRequestDAO;
-import com.trustXchange.dto.p2p.P2PBorrowingRequestDTO;
+
+import com.trustXchange.entity.BorrowingRequestEntity;
+import com.trustXchange.repository.BorrowingRequestRepository;
 import com.trustXchange.service.eventData.BorrowingRequestCreatedEventData;
+import org.springframework.stereotype.Service;
 
-import java.sql.SQLException;
-
+@Service
 public class BorrowingRequestCreatedEventHandler {
-    private P2PBorrowingRequestDAO borrowingRequestDAO;
+    private BorrowingRequestRepository borrowingRequestRepository;
 
-    public BorrowingRequestCreatedEventHandler(P2PBorrowingRequestDAO borrowingRequestDAO) {
-        this.borrowingRequestDAO = borrowingRequestDAO;
+    public BorrowingRequestCreatedEventHandler(BorrowingRequestRepository borrowingRequestRepository) {
+        this.borrowingRequestRepository = borrowingRequestRepository;
     }
 
     public void handle(BorrowingRequestCreatedEventData eventData) {
-        try {
-            P2PBorrowingRequestDTO request = new P2PBorrowingRequestDTO(
-                eventData.getRequestId(),
-                eventData.getBorrower(),
-                eventData.getAmountToBorrowUSD().doubleValue(),
-                0.0, 
-                eventData.getCollateralAmountXRP().doubleValue(),
-                eventData.getCollateralAmountXRP().doubleValue(),
-                eventData.getMaxCollateralRatio().doubleValue(),
-                eventData.getLiquidationThreshold().doubleValue(),
-                eventData.getDesiredInterestRate().doubleValue(),
-                eventData.getPaymentDuration(),
-                eventData.getMinimalPartialFill().doubleValue(),
-                false,
-                false
-            );
-            borrowingRequestDAO.createBorrowingRequest(request);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            // Handle exception appropriately
-        }
+        BorrowingRequestEntity request = new BorrowingRequestEntity();
+        request.setRequestId(eventData.getRequestId());
+        request.setBorrower(eventData.getBorrower());
+        request.setAmountToBorrowUSD(eventData.getAmountToBorrowUSD().doubleValue());
+        request.setAmountBorrowedUSD(0.0);
+        request.setInitialCollateralAmountXRP(eventData.getCollateralAmountXRP().doubleValue());
+        request.setExistingCollateralAmountXRP(eventData.getCollateralAmountXRP().doubleValue());
+        request.setMaxCollateralRatio(eventData.getMaxCollateralRatio().doubleValue());
+        request.setLiquidationThreshold(eventData.getLiquidationThreshold().doubleValue());
+        request.setDesiredInterestRate(eventData.getDesiredInterestRate().doubleValue());
+        request.setPaymentDuration(eventData.getPaymentDuration().getSeconds());
+        request.setMinimalPartialFill(eventData.getMinimalPartialFill().doubleValue());
+        request.setCanceled(false);
+        request.setCanceledBySystem(false);
+
+        borrowingRequestRepository.save(request);
+
     }
 }

@@ -1,28 +1,23 @@
 package com.trustXchange.service.eventHandler;
 
-import com.trustXchange.dao.p2p.P2PBorrowingRequestDAO;
-import com.trustXchange.dto.p2p.P2PBorrowingRequestDTO;
+import com.trustXchange.repository.BorrowingRequestRepository;
 import com.trustXchange.service.eventData.BorrowingRequestCanceledEventData;
+import org.springframework.stereotype.Service;
 
-import java.sql.SQLException;
-
+@Service
 public class BorrowingRequestAutoCanceledEventHandler {
-    private P2PBorrowingRequestDAO borrowingRequestDAO;
+    private BorrowingRequestRepository borrowingRequestRepository;
 
-    public BorrowingRequestAutoCanceledEventHandler(P2PBorrowingRequestDAO borrowingRequestDAO) {
-        this.borrowingRequestDAO = borrowingRequestDAO;
+    public BorrowingRequestAutoCanceledEventHandler(BorrowingRequestRepository borrowingRequestRepository) {
+        this.borrowingRequestRepository = borrowingRequestRepository;
     }
 
     public void handle(BorrowingRequestCanceledEventData eventData) {
-        try {
-            P2PBorrowingRequestDTO request = borrowingRequestDAO.getBorrowingRequestById(eventData.getRequestId());
-            if (request != null) {
+            borrowingRequestRepository.findById(eventData.getRequestId()).ifPresent(request ->{
                 request.setCanceled(true);
                 request.setCanceledBySystem(true);
-                borrowingRequestDAO.updateBorrowingRequest(request);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+                borrowingRequestRepository.save(request);
+            });
+
     }
 }

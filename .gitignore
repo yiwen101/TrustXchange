@@ -14,3 +14,7 @@
 /backend/target/maven-status/maven-compiler-plugin/compile
 /node_modules
 .DS_Store
+/.vscode
+/backend/target
+/backend/target
+/backend/target

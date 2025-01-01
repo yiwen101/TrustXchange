@@ -1,27 +1,22 @@
 package com.trustXchange.service.eventHandler;
 
-import java.sql.SQLException;
-
-import com.trustXchange.dao.p2p.P2PLoanDAO;
-import com.trustXchange.dto.p2p.P2PLoanDTO;
+import com.trustXchange.repository.LoanRepository;
 import com.trustXchange.service.eventData.LoanRepaidEventData;
+import org.springframework.stereotype.Service;
 
+@Service
 public class LoanRepaidEventHandler {
-    private P2PLoanDAO loanDAO;
+    private LoanRepository loanRepository;
 
-    public LoanRepaidEventHandler(P2PLoanDAO loanDAO) {
-        this.loanDAO = loanDAO;
+    public LoanRepaidEventHandler(LoanRepository loanRepository) {
+        this.loanRepository = loanRepository;
     }
 
     public void handle(LoanRepaidEventData eventData) {
-        try {
-            P2PLoanDTO loan = loanDAO.getLoanById(eventData.getLoanId());
+        loanRepository.findById(eventData.getLoanId()).ifPresent(loan -> {
             loan.setAmountPaidUSD(eventData.getTotalPaid().doubleValue());
-            loanDAO.updateLoan(loan);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
+            loanRepository.save(loan);
+        });
 
-    
+    }
 }

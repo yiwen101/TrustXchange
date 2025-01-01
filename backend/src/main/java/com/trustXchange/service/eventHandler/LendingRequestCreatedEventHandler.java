@@ -1,38 +1,33 @@
 package com.trustXchange.service.eventHandler;
 
-import java.sql.SQLException;
-
-import com.trustXchange.dao.p2p.P2PLendingRequestDAO;
-import com.trustXchange.dto.p2p.P2PLendingRequestDTO;
+import com.trustXchange.entity.LendingRequestEntity;
+import com.trustXchange.repository.LendingRequestRepository;
 import com.trustXchange.service.eventData.LendingRequestCreatedEventData;
+import org.springframework.stereotype.Service;
 
+
+@Service
 public class LendingRequestCreatedEventHandler {
-     private P2PLendingRequestDAO LendingRequestDAO;
+    private LendingRequestRepository lendingRequestRepository;
 
-    public LendingRequestCreatedEventHandler(P2PLendingRequestDAO LendingRequestDAO) {
-        this.LendingRequestDAO = LendingRequestDAO;
+    public LendingRequestCreatedEventHandler(LendingRequestRepository lendingRequestRepository) {
+        this.lendingRequestRepository = lendingRequestRepository;
     }
 
     public void handle(LendingRequestCreatedEventData eventData) {
-        try {
-            P2PLendingRequestDTO request = new P2PLendingRequestDTO(
-                eventData.getRequestId(),
-                eventData.getLender(),
-                eventData.getAmountToLendUSD().doubleValue(),
-                0.0,
-                eventData.getMinCollateralRatio().doubleValue(),
-                eventData.getLiquidationThreshold().doubleValue(),
-                eventData.getDesiredInterestRate().doubleValue(),
-                eventData.getPaymentDuration(),
-                eventData.getMinimalPartialFill().doubleValue(),
-                false,
-                false
-            );
-            LendingRequestDAO.createLendingRequest(request);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            // Handle exception appropriately
-        }
+        LendingRequestEntity request = new LendingRequestEntity();
+        request.setRequestId(eventData.getRequestId());
+        request.setLender(eventData.getLender());
+        request.setAmountToLendUSD(eventData.getAmountToLendUSD().doubleValue());
+        request.setAmountLendedUSD(0.0);
+        request.setMinCollateralRatio(eventData.getMinCollateralRatio().doubleValue());
+        request.setLiquidationThreshold(eventData.getLiquidationThreshold().doubleValue());
+        request.setDesiredInterestRate(eventData.getDesiredInterestRate().doubleValue());
+        request.setPaymentDuration(eventData.getPaymentDuration().getSeconds());
+        request.setMinimalPartialFill(eventData.getMinimalPartialFill().doubleValue());
+        request.setCanceled(false);
+        request.setCanceledBySystem(false);
+
+        lendingRequestRepository.save(request);
     }
-    
 }
