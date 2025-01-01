@@ -2,5 +2,6 @@
   "MyAxelarGatewayModule#MyAxelarGatewayImpl": "0x31126a0BCf78cF10c8dC4381BF8A48a710df5978",
   "TestGMSExecutableModule#TestGMSExecutable": "0x36517d0767921F4a971965B5b69c4fb10EC28226",
   "TestGMSExecutableModule2#TestGMSExecutableV2": "0xcd17B6fE7A0A6504c5c0BB467d74f7e2074717a8",
-  "TestGMSExecutableModule2#TestGMSExecutableV3": "0x08dBB609c00493Db4209Cb26ccDcF4a1245D8595"
+  "TestGMSExecutableModule2#TestGMSExecutableV3": "0x08dBB609c00493Db4209Cb26ccDcF4a1245D8595",
+  "XrpLendingP2PModule#XrpLendingP2P": "0x6527FFbFAd2673521f3A97bCC7847d777A1FC3AE"
 }
