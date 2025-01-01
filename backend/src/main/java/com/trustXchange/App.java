@@ -1,7 +1,7 @@
 // App.java
 package com.trustXchange;
 
-import com.trustXchange.Service.P2P.P2PEventListener;
+import com.trustXchange.service.P2PEventListener;
 
 public class App 
 {
