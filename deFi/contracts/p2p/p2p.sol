@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "prb-math/contracts/PRBMathUD60x18.sol";
 import { AxelarExecutableWithToken } from '../common/abstract/AxelarExecutableWithToken.sol';
 import { IMyAxelarGateway } from '../common/interfaces/IMyAxelarGateway.sol';
 
 
 interface PriceOracle {
-    function getPriceXRPUSDT() public view returns (uint256)
-}
+    function getPriceXRPUSDT() external view returns (uint256)
+};
 
-contract XrpLending is Ownable, AxelarExecutableWithToken {
+contract XrpLending is AxelarExecutableWithToken {
     using PRBMathUD60x18 for uint256;
     // --- Constants ---
 
@@ -84,6 +83,8 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
 
     uint256 public constant PLATFORM_FEE_PERCENT = 5;
 
+    address public immutable oracleUpdater;
+
     // --- Events ---
     event LoanCreated(
         uint256 loanId, 
@@ -139,11 +140,17 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
         priceOracle = PriceOracle(priceOracledAddress);
         loanCounter = 0;
         requestCounter = 0;
+        oracleUpdater = msg.sender;
     }
 
     // --- Modifiers ---
     modifier onlySelf() {
         require(msg.sender == address(this), "Caller is not the contract itself");
+        _;
+    }
+
+    modifier onlyOracleUpdater() {
+        require(msg.sender == oracleUpdater, "Caller is not the oracle updater");
         _;
     }
 
@@ -163,7 +170,7 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
     }
 
     // --- Admin Functions ---
-    function setPriceOracle(uint256 newPrice) external onlyOwner {
+    function setPriceOracle(uint256 newPrice) external onlyOracleUpdater {
         currentXRPPriceUSD = newPrice;
         emit PriceUpdated(newPrice);
     }
@@ -255,10 +262,10 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
 
     // --- User Functions ---
     function createLendingRequest(
-        string memory sourceChain,
-        string memory sourceAddress,
-        string memory tokenSymbol,
-        uint256 memory _amountToLendUSD,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        string calldata tokenSymbol,
+        uint256 _amountToLendUSD,
         uint256 _minCollateralRatio,
         uint256 _liquidationThreshold, 
         uint256 _desiredInterestRate, 
@@ -293,10 +300,10 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
     }
 
     function createBorrowingRequest(
-        string memory sourceChain,
-        string memory sourceAddress,
-        string memory tokenSymbol,
-        uint256 memory _collateralAmountXRP,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        string calldata tokenSymbol,
+        uint256 _collateralAmountXRP,
         uint256 _amountToBorrowUSD, 
         uint256 _maxCollateralRatio, 
         uint256 _liquidationThreshold, 
@@ -335,10 +342,10 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
 
     // 5% of interest income goes to the platform, so borrower pays principle + 105% of interest specified by the lender
     function acceptLendingRequest(
-        string memory sourceChain,
-        string memory sourceAddress, 
-        string memory tokenSymbol,
-        uint256 memory _collateralAmountXRP,
+        string calldata sourceChain,
+        string calldata sourceAddress, 
+        string calldata tokenSymbol,
+        uint256 _collateralAmountXRP,
         uint256 _requestId, 
         uint256 _borrowAmountUSD, 
     ) internal {
@@ -409,10 +416,10 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
 
     // 5% of interest income goes to the platform, so lender receives principle + 95% of interest specified by the borrower
     function acceptBorrowingRequest(
-        string memory sourceChain, 
-        string memory sourceAddress,
-        string memory tokenSymbol,
-        uint256 memory _amountToLendUSD, 
+        string calldata sourceChain, 
+        string calldata sourceAddress,
+        string calldata tokenSymbol,
+        uint256 _amountToLendUSD, 
         uint256 _requestId,
         uint256 _collateralAmountXRP
     ) internal {
@@ -478,8 +485,8 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
 
     // --- Cancel Functions ---
     function cancelLendingRequest(
-        string memory sourceChain,
-        string memory sourceAddress,
+        string calldata sourceChain,
+        string calldata sourceAddress,
         uint256 _requestId
     ) internal {
         string memory canceller = sourceAddress;
@@ -493,8 +500,8 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
     }
 
     function cancelBorrowingRequest(
-        string memory sourceChain,
-        string memory sourceAddress,
+        string calldata sourceChain,
+        string calldata sourceAddress,
         uint256 _requestId
     ) internal {
         string memory canceller = sourceAddress;
@@ -509,10 +516,10 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
 
     // --- Repay Function ---
     function repayLoan(
-        string memory sourceChain, 
-        string memory sourceAddress, 
-        string memory tokenSymbol, 
-        uint256 memory _repayAmountUSD,
+        string calldata sourceChain, 
+        string calldata sourceAddress, 
+        string calldata tokenSymbol, 
+        uint256 _repayAmountUSD,
         uint256 _loanId
     ) internal {
         string memory borrower = sourceAddress;
@@ -544,7 +551,7 @@ contract XrpLending is Ownable, AxelarExecutableWithToken {
     }
 
     // --- Liquidate Function ---
-    function liquidateLoan(uint256 _loanId, string memory caller) internal {
+    function liquidateLoan(uint256 _loanId, string calldata caller) internal {
         Loan storage loan = loans[_loanId];
 
         require(!loan.isLiquidated, "Loan already liquidated");
