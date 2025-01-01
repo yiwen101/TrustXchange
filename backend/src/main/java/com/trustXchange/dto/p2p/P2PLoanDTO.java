@@ -1,6 +1,5 @@
 package com.trustXchange.dto.p2p;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 
 import lombok.AllArgsConstructor;
@@ -14,12 +13,12 @@ public class P2PLoanDTO {
      int loanId;
         String lender;
         String borrower;
-        BigDecimal amountBorrowedUSD;
-        BigDecimal amountPayableToLender;
-        BigDecimal amountPayableToPlatform;
-        BigDecimal amountPaidUSD;
-        BigDecimal collateralAmountXRP;
+        double amountBorrowedUSD;
+        double amountPayableToLender;
+        double amountPayableToPlatform;
+        double amountPaidUSD;
+        double collateralAmountXRP;
         Instant repayBy;
-        BigDecimal liquidationThreshold;
+        double liquidationThreshold;
         boolean isLiquidated;
 }

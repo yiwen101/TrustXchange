@@ -1,4 +1,4 @@
-package com.trustXchange.service.eventHandler.BorrowRequest;
+package com.trustXchange.service.eventHandler;
 
 import com.trustXchange.dao.p2p.P2PBorrowingRequestDAO;
 import com.trustXchange.dto.p2p.P2PBorrowingRequestDTO;

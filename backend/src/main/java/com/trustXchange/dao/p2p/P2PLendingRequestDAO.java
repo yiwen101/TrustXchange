@@ -18,13 +18,13 @@ public class P2PLendingRequestDAO {
         String sql = "INSERT INTO lending_requests (lender, amount_to_lend_usd, amount_lended_usd, min_collateral_ratio, liquidation_threshold, desired_interest_rate, payment_duration, minimal_partial_fill, canceled, canceled_by_system) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, request.getLender());
-            stmt.setBigDecimal(2, request.getAmountToLendUSD());
-            stmt.setBigDecimal(3, request.getAmountLendedUSD());
-            stmt.setBigDecimal(4, request.getMinCollateralRatio());
-            stmt.setBigDecimal(5, request.getLiquidationThreshold());
-            stmt.setBigDecimal(6, request.getDesiredInterestRate());
+            stmt.setDouble(2, request.getAmountToLendUSD());
+            stmt.setDouble(3, request.getAmountLendedUSD());
+            stmt.setDouble(4, request.getMinCollateralRatio());
+            stmt.setDouble(5, request.getLiquidationThreshold());
+            stmt.setDouble(6, request.getDesiredInterestRate());
             stmt.setLong(7, request.getPaymentDuration().getSeconds());
-            stmt.setBigDecimal(8, request.getMinimalPartialFill());
+            stmt.setDouble(8, request.getMinimalPartialFill());
             stmt.setBoolean(9, request.isCanceled());
             stmt.setBoolean(10, request.isCanceledBySystem());
             stmt.executeUpdate();
@@ -40,13 +40,13 @@ public class P2PLendingRequestDAO {
                     return new P2PLendingRequestDTO(
                         rs.getInt("request_id"),
                         rs.getString("lender"),
-                        rs.getBigDecimal("amount_to_lend_usd"),
-                        rs.getBigDecimal("amount_lended_usd"),
-                        rs.getBigDecimal("min_collateral_ratio"),
-                        rs.getBigDecimal("liquidation_threshold"),
-                        rs.getBigDecimal("desired_interest_rate"),
+                        rs.getDouble("amount_to_lend_usd"),
+                        rs.getDouble("amount_lended_usd"),
+                        rs.getDouble("min_collateral_ratio"),
+                        rs.getDouble("liquidation_threshold"),
+                        rs.getDouble("desired_interest_rate"),
                         Duration.ofSeconds(rs.getLong("payment_duration")),
-                        rs.getBigDecimal("minimal_partial_fill"),
+                        rs.getDouble("minimal_partial_fill"),
                         rs.getBoolean("canceled"),
                         rs.getBoolean("canceled_by_system")
                     );
@@ -65,13 +65,13 @@ public class P2PLendingRequestDAO {
                 P2PLendingRequestDTO request = new P2PLendingRequestDTO(
                     rs.getInt("request_id"),
                     rs.getString("lender"),
-                    rs.getBigDecimal("amount_to_lend_usd"),
-                    rs.getBigDecimal("amount_lended_usd"),
-                    rs.getBigDecimal("min_collateral_ratio"),
-                    rs.getBigDecimal("liquidation_threshold"),
-                    rs.getBigDecimal("desired_interest_rate"),
+                    rs.getDouble("amount_to_lend_usd"),
+                    rs.getDouble("amount_lended_usd"),
+                    rs.getDouble("min_collateral_ratio"),
+                    rs.getDouble("liquidation_threshold"),
+                    rs.getDouble("desired_interest_rate"),
                     Duration.ofSeconds(rs.getLong("payment_duration")),
-                    rs.getBigDecimal("minimal_partial_fill"),
+                    rs.getDouble("minimal_partial_fill"),
                     rs.getBoolean("canceled"),
                     rs.getBoolean("canceled_by_system")
                 );
@@ -85,13 +85,13 @@ public class P2PLendingRequestDAO {
         String sql = "UPDATE lending_requests SET lender = ?, amount_to_lend_usd = ?, amount_lended_usd = ?, min_collateral_ratio = ?, liquidation_threshold = ?, desired_interest_rate = ?, payment_duration = ?, minimal_partial_fill = ?, canceled = ?, canceled_by_system = ? WHERE request_id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, request.getLender());
-            stmt.setBigDecimal(2, request.getAmountToLendUSD());
-            stmt.setBigDecimal(3, request.getAmountLendedUSD());
-            stmt.setBigDecimal(4, request.getMinCollateralRatio());
-            stmt.setBigDecimal(5, request.getLiquidationThreshold());
-            stmt.setBigDecimal(6, request.getDesiredInterestRate());
+            stmt.setDouble(2, request.getAmountToLendUSD());
+            stmt.setDouble(3, request.getAmountLendedUSD());
+            stmt.setDouble(4, request.getMinCollateralRatio());
+            stmt.setDouble(5, request.getLiquidationThreshold());
+            stmt.setDouble(6, request.getDesiredInterestRate());
             stmt.setLong(7, request.getPaymentDuration().getSeconds());
-            stmt.setBigDecimal(8, request.getMinimalPartialFill());
+            stmt.setDouble(8, request.getMinimalPartialFill());
             stmt.setBoolean(9, request.isCanceled());
             stmt.setBoolean(10, request.isCanceledBySystem());
             stmt.setInt(11, request.getRequestId());

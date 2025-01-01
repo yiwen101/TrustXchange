@@ -1,6 +1,5 @@
 package com.trustXchange.dto.p2p;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 
 import lombok.AllArgsConstructor;
@@ -11,13 +10,13 @@ import lombok.Data;
 public class P2PLendingRequestDTO {
     int requestId;
     String lender;
-    BigDecimal amountToLendUSD;
-    BigDecimal amountLendedUSD;
-    BigDecimal minCollateralRatio;
-    BigDecimal liquidationThreshold;
-    BigDecimal desiredInterestRate;
+    double amountToLendUSD;
+    double amountLendedUSD;
+    double minCollateralRatio;
+    double liquidationThreshold;
+    double desiredInterestRate;
     Duration paymentDuration;
-    BigDecimal minimalPartialFill;
+    double minimalPartialFill;
     boolean canceled;
     boolean canceledBySystem;
 }
