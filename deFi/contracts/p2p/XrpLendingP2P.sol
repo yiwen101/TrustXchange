@@ -10,7 +10,7 @@ interface PriceOracle {
     function getPriceXRPUSDT() external view returns (uint256);
 }
 
-contract XrpLendingP2P is AxelarExecutableWithToken {
+contract XrpLendingP2PV2 is AxelarExecutableWithToken {
     using PRBMathUD60x18 for uint256;
     // --- Constants ---
 
@@ -88,11 +88,12 @@ contract XrpLendingP2P is AxelarExecutableWithToken {
 
     address public immutable oracleUpdater;
 
+    // no indexed as https://github.com/hyperledger-web3j/web3j/issues/1109
     // --- Events ---
     event LoanCreated(
         uint256 loanId, 
-        string indexed lender, 
-        string indexed borrower, 
+        string lender, 
+        string borrower, 
         uint256 amountBorrowedUSD, 
         uint256 collateralAmountXRP,
         uint256 amountPayableToLender,
@@ -102,13 +103,13 @@ contract XrpLendingP2P is AxelarExecutableWithToken {
     );
     event LoanUpdated(
         uint256 loanId, 
-        string indexed borrower, 
+        string  borrower, 
         uint256 newAmountBorrowedUSD, 
         uint256 newCollateralAmountXRP,
         uint256 newAmountPayableToLender
     );
     event LoanRepaid(uint256 loanId, uint256 amountRepaid, uint256 totalPaid);
-    event LoanLiquidated(uint256 loanId, string indexed liquidator, uint256 collateralLiquidated);
+    event LoanLiquidated(uint256 loanId, string liquidator, uint256 collateralLiquidated);
     event PriceUpdated(uint256 newPrice);
     event LendingRequestCreated(
         uint256 requestId, 
