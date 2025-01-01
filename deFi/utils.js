@@ -96,12 +96,11 @@ function createExecutePayload(message) {
     );
 }
 
-export const getGMPInputs = (payloadBytes, tokenSymbol, tokenAmount) => {
+export const getGMPInputs = (contractAddress,payloadBytes, tokenSymbol, tokenAmount) => {
     const tokenDenom = 1;
     const chainId = 1;  // Example Chain ID
-    const contractAddress = process.env.GMS_EXECUTABLE_ADDRESS;
     const payloadHash = keccak256(payloadBytes);
-    const sourceChain = "xrp testnet string";
+    const sourceChain = "XRPL_testnet";
     const sourceAddress = "source chain address string";
     const sourceTxHash = keccak256(toUtf8Bytes("ignored"));
     const sourceEventIndex = 0;
@@ -139,5 +138,5 @@ export const getGMPInputs = (payloadBytes, tokenSymbol, tokenAmount) => {
 }
 
 export function getPocMockInputs(mintAmount = 100) {
-    return getGMPInputs(createExecutePayload("hello world"), "USD", mintAmount)
+    return getGMPInputs(process.env.GMS_EXECUTABLE_ADDRESS,createExecutePayload("hello world"), "USD", mintAmount)
 }
