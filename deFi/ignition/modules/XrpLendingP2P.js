@@ -11,7 +11,7 @@ module.exports = buildModule("XrpLendingP2PModule", (m) => {
   const priceOracleAddressParam = m.getParameter("priceOracle_", priceOracleAddress);
 
   // Deploy the MyAxelarGatewayImpl contract with the authModule parameter
-  const XrpLendingP2P = m.contract("XrpLendingP2PV3", [gatewayAddressParam, priceOracleAddressParam]);
+  const XrpLendingP2P = m.contract("XrpLendingP2PV4", [gatewayAddressParam, priceOracleAddressParam]);
 
   // Return the deployed contract instance
   return {XrpLendingP2P};

@@ -1,5 +1,6 @@
 package com.trustXchange.service.p2p.eventManager;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
@@ -37,10 +38,10 @@ public class LendingRequestAutoCanceledEventManager  extends P2PEventManager<Len
     }
     public LendingRequestAutoCanceledEventData decode(Log log) {
            List<Object> nonIndexedValues = getNonIndexedValuesOf(log);
-        Uint256 requestId = (Uint256) nonIndexedValues.get(0);
+        BigInteger requestId = (BigInteger) nonIndexedValues.get(0);
 
         return new LendingRequestAutoCanceledEventData(
-            requestId.getValue().intValue()
+            requestId.intValue()
         );
     }
     public void handle(LendingRequestAutoCanceledEventData eventData) {

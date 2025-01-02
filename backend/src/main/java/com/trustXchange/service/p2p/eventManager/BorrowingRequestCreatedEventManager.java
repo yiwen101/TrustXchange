@@ -1,5 +1,6 @@
 package com.trustXchange.service.p2p.eventManager;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
@@ -48,26 +49,26 @@ public class BorrowingRequestCreatedEventManager  extends P2PEventManager<Borrow
 
     public BorrowingRequestCreatedEventData decode(Log log) {
            List<Object> nonIndexedValues = getNonIndexedValuesOf(log);
-        Uint256 requestId = (Uint256) nonIndexedValues.get(0);
-        Utf8String borrower = (Utf8String) nonIndexedValues.get(1);
-        Uint256 amountToBorrowUSD = (Uint256) nonIndexedValues.get(2);
-          Uint256 collateralAmountXRP = (Uint256) nonIndexedValues.get(3);
-          Uint256 maxCollateralRatio = (Uint256) nonIndexedValues.get(4);
-        Uint256 liquidationThreshold = (Uint256) nonIndexedValues.get(5);
-        Uint256 desiredInterestRate = (Uint256) nonIndexedValues.get(6);
-        Uint256 paymentDuration = (Uint256) nonIndexedValues.get(7);
-        Uint256 minimalPartialFill = (Uint256) nonIndexedValues.get(8);
+        BigInteger requestId = (BigInteger) nonIndexedValues.get(0);
+        String borrower = (String) nonIndexedValues.get(1);
+        BigInteger amountToBorrowUSD = (BigInteger) nonIndexedValues.get(2);
+        BigInteger collateralAmountXRP = (BigInteger) nonIndexedValues.get(3);
+        BigInteger maxCollateralRatio = (BigInteger) nonIndexedValues.get(4);
+        BigInteger liquidationThreshold = (BigInteger) nonIndexedValues.get(5);
+        BigInteger desiredInterestRate = (BigInteger) nonIndexedValues.get(6);
+        BigInteger paymentDuration = (BigInteger) nonIndexedValues.get(7);
+        BigInteger minimalPartialFill = (BigInteger) nonIndexedValues.get(8);
 
         return new BorrowingRequestCreatedEventData(
-            requestId.getValue().intValue(),
-            borrower.getValue(),
-            amountToBorrowUSD.getValue(),
-                collateralAmountXRP.getValue(),
-            maxCollateralRatio.getValue(),
-            liquidationThreshold.getValue(),
-            desiredInterestRate.getValue(),
-            paymentDuration.getValue(),
-            minimalPartialFill.getValue()
+            requestId.intValue(),
+            borrower,
+            amountToBorrowUSD,
+                collateralAmountXRP,
+            maxCollateralRatio,
+            liquidationThreshold,
+            desiredInterestRate,
+            paymentDuration,
+            minimalPartialFill
         );
     }
     public void  handle(BorrowingRequestCreatedEventData eventData) {
@@ -75,12 +76,16 @@ public class BorrowingRequestCreatedEventManager  extends P2PEventManager<Borrow
            p2pBorrowingRequest.setRequestId(eventData.getRequestId());
            p2pBorrowingRequest.setBorrower(eventData.getBorrower());
            p2pBorrowingRequest.setAmountToBorrowUsd(eventData.getAmountToBorrowUSD().longValue());
+           p2pBorrowingRequest.setAmountBorrowedUsd(Long.valueOf(0));
            p2pBorrowingRequest.setInitialCollateralAmountXrp(eventData.getCollateralAmountXRP().longValue());
+           p2pBorrowingRequest.setExistingCollateralAmountXrp(eventData.getCollateralAmountXRP().longValue());
            p2pBorrowingRequest.setMaxCollateralRatio(eventData.getMaxCollateralRatio().longValue());
            p2pBorrowingRequest.setLiquidationThreshold(eventData.getLiquidationThreshold().longValue());
            p2pBorrowingRequest.setDesiredInterestRate(eventData.getDesiredInterestRate().longValue());
            p2pBorrowingRequest.setPaymentDuration(eventData.getPaymentDuration().longValue());
            p2pBorrowingRequest.setMinimalPartialFill(eventData.getMinimalPartialFill().longValue());
+            p2pBorrowingRequest.setCanceled(false);
+            p2pBorrowingRequest.setCanceledBySystem(false);
         p2pBorrowingRequestRepository.save(p2pBorrowingRequest);
     }
 

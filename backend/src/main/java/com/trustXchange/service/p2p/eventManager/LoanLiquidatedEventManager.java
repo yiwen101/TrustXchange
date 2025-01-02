@@ -1,5 +1,6 @@
 package com.trustXchange.service.p2p.eventManager;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
@@ -41,13 +42,13 @@ public class LoanLiquidatedEventManager  extends P2PEventManager<LoanLiquidatedE
 
     public LoanLiquidatedEventData decode(Log log) {
         List<Object> nonIndexedValues = getNonIndexedValuesOf(log);
-        Uint256 loanId = (Uint256) nonIndexedValues.get(0);
-         Utf8String liquidator = (Utf8String) nonIndexedValues.get(1);
-        Uint256 collateralLiquidated = (Uint256) nonIndexedValues.get(2);
+        BigInteger loanId = (BigInteger) nonIndexedValues.get(0);
+        String liquidator = (String) nonIndexedValues.get(1);
+        BigInteger collateralLiquidated = (BigInteger) nonIndexedValues.get(2);
         return new LoanLiquidatedEventData(
-            loanId.getValue().intValue(),
-                liquidator.getValue(),
-            collateralLiquidated.getValue()
+            loanId.intValue(),
+                liquidator,
+            collateralLiquidated
         );
     }
 

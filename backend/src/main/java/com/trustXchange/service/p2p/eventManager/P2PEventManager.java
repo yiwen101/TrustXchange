@@ -45,6 +45,7 @@ public abstract class P2PEventManager<T extends P2PEventData>{
         String logEventHash = log.getTopics().get(0);
         if (logEventHash.equals(eventHash)) {
             T eventData = decode(log);
+            System.out.println("Event data: " + eventData);
             handle(eventData);
         }
     }

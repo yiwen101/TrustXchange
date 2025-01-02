@@ -55,23 +55,26 @@ public class P2PEventListener {
      private volatile boolean isRunning = true; 
 
     private static final String RPC_URL = "https://rpc-evm-sidechain.xrpl.org";
-    private static final String CONTRACT_ADDRESS = "0x08A7742C58798c1E8a30Cd6042e8F83A93702824";
+    private static final String CONTRACT_ADDRESS = "0x99006642Dc5F79eBeF9dCAf3e95bd7DA0452C58E";
+    private long lastProcessedBlock = -1;
 
     @PostConstruct
     public void listenFor()  {
         executorService.scheduleAtFixedRate(() -> {
             try{
-        int minutes = 5;
-        logger.info("P2PEventListener started");
+        logger.info("P2PEventListener called");
         Web3j web3j = Web3j.build(new HttpService(RPC_URL));
 
         long latestBlock = web3j.ethBlockNumber().send().getBlockNumber().longValue();
-        long fromBlock = Math.max(0, latestBlock - 2000);
-
+        long fromBlock = lastProcessedBlock + 1;
+        if (lastProcessedBlock < 0) {
+            fromBlock = latestBlock - 3000;
+        } 
+        long toBlock = latestBlock;
         EthFilter historicFilter = new EthFilter(
             DefaultBlockParameter.valueOf(BigInteger.valueOf(fromBlock)),
-                DefaultBlockParameterName.LATEST,
-                CONTRACT_ADDRESS
+            DefaultBlockParameter.valueOf(BigInteger.valueOf(toBlock)),
+            CONTRACT_ADDRESS
         );
 
         Stream<P2PEventManager<?>> stream = eventManagerRegistry.getEventManagerStream();
@@ -81,10 +84,12 @@ public class P2PEventListener {
             Log log = (Log) logResult.get();
             stream.forEach(manager->manager.manage(log));
             };
+
+        lastProcessedBlock = toBlock;
         } catch (Exception e) {
             logger.error("Error in P2PEventListener", e);
         }
-        }, 0, 100, TimeUnit.SECONDS); 
+        }, 0, 5, TimeUnit.SECONDS); 
         /* 
         // Then listen for new events as they come
         Disposable subscription = web3j.ethLogFlowable(historicFilter).subscribe(log -> {

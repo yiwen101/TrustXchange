@@ -1,5 +1,6 @@
 package com.trustXchange.service.p2p.eventManager;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
@@ -53,29 +54,29 @@ public class LoanCreatedFromLendingRequestEventManager  extends P2PEventManager<
 
      public LoanCreatedFromLendingRequestEventData decode(Log log) {
         List<Object> nonIndexedValues = getNonIndexedValuesOf(log);
-        Uint256 loanId = (Uint256) nonIndexedValues.get(0);
-        Uint256 requestId = (Uint256) nonIndexedValues.get(1);
-        Utf8String lender = (Utf8String) nonIndexedValues.get(2);
-        Utf8String borrower = (Utf8String) nonIndexedValues.get(3);
-        Uint256 amountBorrowedUSD = (Uint256) nonIndexedValues.get(4);
-        Uint256 collateralAmountXRP = (Uint256) nonIndexedValues.get(5);
-         Uint256 amountPayableToLender = (Uint256) nonIndexedValues.get(6);
-         Uint256 amountPayableToPlatform = (Uint256) nonIndexedValues.get(7);
-        Uint256 repayBy = (Uint256) nonIndexedValues.get(8);
-        Uint256 liquidationThreshold = (Uint256) nonIndexedValues.get(9);
+        BigInteger loanId = (BigInteger) nonIndexedValues.get(0);
+        BigInteger requestId = (BigInteger) nonIndexedValues.get(1);
+        String lender = (String) nonIndexedValues.get(2);
+        String borrower = (String) nonIndexedValues.get(3);
+        BigInteger amountBorrowedUSD = (BigInteger) nonIndexedValues.get(4);
+        BigInteger collateralAmountXRP = (BigInteger) nonIndexedValues.get(5);
+        BigInteger amountPayableToLender = (BigInteger) nonIndexedValues.get(6);
+        BigInteger amountPayableToPlatform = (BigInteger) nonIndexedValues.get(7);
+        BigInteger repayBy = (BigInteger) nonIndexedValues.get(8);
+        BigInteger liquidationThreshold = (BigInteger) nonIndexedValues.get(9);
 
 
         return new LoanCreatedFromLendingRequestEventData(
-            loanId.getValue().intValue(),
-            requestId.getValue().intValue(),
-            lender.getValue(),
-            borrower.getValue(),
-            amountBorrowedUSD.getValue(),
-            collateralAmountXRP.getValue(),
-                amountPayableToLender.getValue(),
-            amountPayableToPlatform.getValue(),
-            repayBy.getValue(),
-            liquidationThreshold.getValue()
+            loanId.intValue(),
+            requestId.intValue(),
+            lender,
+            borrower,
+            amountBorrowedUSD,
+            collateralAmountXRP,
+                amountPayableToLender,
+            amountPayableToPlatform,
+            repayBy,
+            liquidationThreshold
         );
     }
 
@@ -89,8 +90,10 @@ public class LoanCreatedFromLendingRequestEventManager  extends P2PEventManager<
         loan.setCollateralAmountXrp(eventData.getCollateralAmountXRP().longValue());
         loan.setAmountPayableToLender(eventData.getAmountPayableToLender().longValue());
         loan.setAmountPayableToPlatform(eventData.getAmountPayableToPlatform().longValue());
+        loan.setAmountPaidUsd(Long.valueOf(0));
         loan.setRepayBy(new java.sql.Timestamp(eventData.getRepayBy().longValue() * 1000));
         loan.setLiquidationThreshold(eventData.getLiquidationThreshold().longValue());
+        loan.setLiquidated(false);
         loanRepository.save(loan);
 
         P2pLoanToLenderRequest p2pLoanToLenderRequest = new P2pLoanToLenderRequest();
