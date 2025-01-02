@@ -93,8 +93,21 @@ contract XrpLendingP2PV3 is AxelarExecutableWithToken {
 
     // no indexed as https://github.com/hyperledger-web3j/web3j/issues/1109
     // --- Events ---
-    event LoanCreated(
+    event LoanCreatedFromLendingRequest(
         uint256 loanId, 
+        uint256 requestId,
+        string lender, 
+        string borrower, 
+        uint256 amountBorrowedUSD, 
+        uint256 collateralAmountXRP,
+        uint256 amountPayableToLender,
+        uint256 amountPayableToPlatform,
+        uint256 repayBy,
+        uint256 liquidationThreshold
+    );
+    event LoanCreatedFromBorrowingRequest(
+        uint256 loanId, 
+        uint256 requestId,
         string lender, 
         string borrower, 
         uint256 amountBorrowedUSD, 
@@ -139,8 +152,6 @@ contract XrpLendingP2PV3 is AxelarExecutableWithToken {
     event BorrowingRequestCanceled(uint256 requestId, string canceller);
     event LendingRequestAutoCanceled(uint256 requestId);
     event BorrowingRequestAutoCanceled(uint256 requestId);
-    event LendingRequestFilled(uint256 requestId, uint256 loanId);
-    event BorrowingRequestFilled(uint256 requestId, uint256 loanId);
 
     // --- Constructor ---
     constructor(address gateway_, address priceOracle_) 
@@ -417,8 +428,9 @@ contract XrpLendingP2PV3 is AxelarExecutableWithToken {
                 mustCancelLendingRequest(_requestId);
             }
 
-            emit LoanCreated(
+            emit LoanCreatedFromLendingRequest(
                 loanCounter,
+                _requestId,
                 request.lender,
                 borrower,
                 _borrowAmountUSD,
@@ -428,7 +440,6 @@ contract XrpLendingP2PV3 is AxelarExecutableWithToken {
                 block.timestamp + request.paymentDuration,
                 request.liquidationThreshold
             );
-            emit LendingRequestFilled(_requestId, loanCounter);
         } catch {
             revert("Failed to send USD to borrower");
         }
@@ -502,8 +513,9 @@ contract XrpLendingP2PV3 is AxelarExecutableWithToken {
                 mustCancelBorrowingRequest(_requestId);
             }
 
-            emit LoanCreated(
+            emit LoanCreatedFromBorrowingRequest(
                 loanCounter, 
+                _requestId,
                 lender, 
                 request.borrower, 
                 _amountToLendUSD,
@@ -513,7 +525,6 @@ contract XrpLendingP2PV3 is AxelarExecutableWithToken {
                 block.timestamp + request.paymentDuration,
                 request.liquidationThreshold
             );
-            emit BorrowingRequestFilled(_requestId, loanCounter);
         } catch {
             revert("Failed to send USD to borrower");
         }

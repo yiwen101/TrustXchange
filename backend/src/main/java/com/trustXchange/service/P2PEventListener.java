@@ -3,13 +3,21 @@ package com.trustXchange.service;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
 
-import com.trustXchange.service.eventData.P2PEventData;
+import com.trustXchange.NumberPrinter;
+import com.trustXchange.service.p2p.EventManagerRegistry;
+import com.trustXchange.service.p2p.eventData.P2PEventData;
+import com.trustXchange.service.p2p.eventManager.P2PEventManager;
 
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.request.EthFilter;
 import org.web3j.protocol.core.methods.response.EthLog;
 import org.web3j.protocol.core.methods.response.Log;
+import org.checkerframework.checker.units.qual.C;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.web3j.abi.EventEncoder;
 import org.web3j.abi.datatypes.Event;
 import org.web3j.abi.datatypes.generated.Uint256;
@@ -29,12 +37,32 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
+@Component
 public class P2PEventListener {
+    @Autowired
+    private EventManagerRegistry eventManagerRegistry;
+
+    private static final Logger logger = LoggerFactory.getLogger(P2PEventListener.class);
+     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+     private volatile boolean isRunning = true; 
+
     private static final String RPC_URL = "https://rpc-evm-sidechain.xrpl.org";
     private static final String CONTRACT_ADDRESS = "0x08A7742C58798c1E8a30Cd6042e8F83A93702824";
 
-    public static void listenFor(int minutes) throws Exception {
+    @PostConstruct
+    public void listenFor()  {
+        executorService.scheduleAtFixedRate(() -> {
+            try{
+        int minutes = 5;
+        logger.info("P2PEventListener started");
         Web3j web3j = Web3j.build(new HttpService(RPC_URL));
 
         long latestBlock = web3j.ethBlockNumber().send().getBlockNumber().longValue();
@@ -46,17 +74,17 @@ public class P2PEventListener {
                 CONTRACT_ADDRESS
         );
 
+        Stream<P2PEventManager<?>> stream = eventManagerRegistry.getEventManagerStream();
         // Print existing events
         EthLog ethLog = web3j.ethGetLogs(historicFilter).send();
         for (EthLog.LogResult<?> logResult : ethLog.getLogs()) {
-            Log web3jLog = (Log) logResult.get();
-            String blockNumber = web3jLog.getBlockNumber().toString();
-            System.out.printf("Log: on block %s with %s topics\n", blockNumber, web3jLog.getTopics().size());
-            Optional<P2PEventData> eventData =  P2PEventDecoder.decode(web3jLog);
-            if (eventData.isPresent()) {
-                System.out.println("Event: " + eventData.get());
-            }
+            Log log = (Log) logResult.get();
+            stream.forEach(manager->manager.manage(log));
+            };
+        } catch (Exception e) {
+            logger.error("Error in P2PEventListener", e);
         }
+        }, 0, 100, TimeUnit.SECONDS); 
         /* 
         // Then listen for new events as they come
         Disposable subscription = web3j.ethLogFlowable(historicFilter).subscribe(log -> {
@@ -79,7 +107,7 @@ public class P2PEventListener {
         
 
             
-    private static EventValues extractEventParameters(Event event, Log log) {
+    private  EventValues extractEventParameters(Event event, Log log) {
         List<Type> indexedValues = new ArrayList<>();
         List<Type> nonIndexedValues = new ArrayList<>();
         /* 
@@ -98,5 +126,12 @@ public class P2PEventListener {
         */
         System.out.println("Log: " + log);
         return new EventValues(indexedValues, nonIndexedValues);
+    }
+
+     @PreDestroy
+    public void stopPrinter() {
+        isRunning = false;
+        executorService.shutdown();
+        logger.info("P2PEventListener stopped");
     }
 }
