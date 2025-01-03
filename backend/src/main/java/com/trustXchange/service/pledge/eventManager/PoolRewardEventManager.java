@@ -2,7 +2,7 @@ package com.trustXchange.service.pledge.eventManager;
 
 import com.trustXchange.entities.pledge.PoolLendingPoolEvents;
 import com.trustXchange.repository.pledge.PoolLendingPoolEventsRepository;
-import com.trustXchange.service.common.EventManagerRegistry;
+import com.trustXchange.service.pledge.PledgeEventManagerRegistry;
 import com.trustXchange.service.pledge.eventData.PoolRewardEventData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -23,7 +23,7 @@ public class PoolRewardEventManager  extends PledgeEventManager<PoolRewardEventD
     private PoolLendingPoolEventsRepository poolLendingPoolEventsRepository;
 
     @Autowired
-    private EventManagerRegistry eventManagerRegistry;
+    private PledgeEventManagerRegistry eventManagerRegistry;
 
     public static final Event POOL_REWARD_EVENT = new Event(
             "PoolRewardEvent",

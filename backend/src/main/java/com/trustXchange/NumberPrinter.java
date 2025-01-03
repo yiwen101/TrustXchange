@@ -19,7 +19,7 @@ public class NumberPrinter {
     private AtomicInteger counter = new AtomicInteger(1);
     private volatile boolean isRunning = true; // Use volatile to ensure thread safety
 
-    @PostConstruct
+    //@PostConstruct
     public void startPrinter() {
         executorService.scheduleAtFixedRate(() -> {
             if(isRunning){

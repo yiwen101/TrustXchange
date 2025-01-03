@@ -15,7 +15,7 @@ import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.protocol.core.methods.response.Log;
 
 import com.trustXchange.repository.p2p.P2pLoanRepository;
-import com.trustXchange.service.common.EventManagerRegistry;
+import com.trustXchange.service.p2p.P2PEventManagerRegistry;
 import com.trustXchange.service.p2p.eventData.LoanLiquidatedEventData;
 
 
@@ -25,7 +25,7 @@ public class LoanLiquidatedEventManager  extends P2PEventManager<LoanLiquidatedE
     private P2pLoanRepository loanRepository;
 
      @Autowired
-    private EventManagerRegistry eventManagerRegistry;
+    private P2PEventManagerRegistry eventManagerRegistry;
 
     public static final Event LOAN_LIQUIDATED_EVENT = new Event(
         "LoanLiquidated",

@@ -6,6 +6,8 @@ import org.web3j.protocol.http.HttpService;
 import com.trustXchange.NumberPrinter;
 import com.trustXchange.service.common.EventManager;
 import com.trustXchange.service.common.EventManagerRegistry;
+import com.trustXchange.service.p2p.P2PEventManagerRegistry;
+import com.trustXchange.service.pledge.PledgeEventManagerRegistry;
 
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.DefaultBlockParameterName;
@@ -47,48 +49,24 @@ import javax.annotation.PreDestroy;
 @Component
 public class EventListener {
     @Autowired
-    private EventManagerRegistry eventManagerRegistry;
+    private P2PEventManagerRegistry p2pEventManagerRegistry;
+    @Autowired
+    private PledgeEventManagerRegistry pledgeEventManagerRegistry;
 
     private static final Logger logger = LoggerFactory.getLogger(EventListener.class);
      private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
      private volatile boolean isRunning = true; 
 
     private static final String RPC_URL = "https://rpc-evm-sidechain.xrpl.org";
-    private static final String CONTRACT_ADDRESS = "0x99006642Dc5F79eBeF9dCAf3e95bd7DA0452C58E";
+    private static final String P2P_CONTRACT_ADDRESS = "0x99006642Dc5F79eBeF9dCAf3e95bd7DA0452C58E";
+    private static final String PLEDGE_CONTRACT_ADDRESS = "0x83ABF2594aEDf109E2fD83C94FA23b5d9E38340e";
     private long lastProcessedBlock = -1;
 
     @PostConstruct
     public void listenFor()  {
-        executorService.scheduleAtFixedRate(() -> {
-            try{
-        logger.info("EventListener called");
-        Web3j web3j = Web3j.build(new HttpService(RPC_URL));
-
-        long latestBlock = web3j.ethBlockNumber().send().getBlockNumber().longValue();
-        long fromBlock = lastProcessedBlock + 1;
-        if (lastProcessedBlock < 0) {
-            fromBlock = latestBlock - 3000;
-        } 
-        long toBlock = latestBlock;
-        EthFilter historicFilter = new EthFilter(
-            DefaultBlockParameter.valueOf(BigInteger.valueOf(fromBlock)),
-            DefaultBlockParameter.valueOf(BigInteger.valueOf(toBlock)),
-            CONTRACT_ADDRESS
-        );
-
-        Stream<EventManager<?>> stream = eventManagerRegistry.getEventManagerStream();
-        // Print existing events
-        EthLog ethLog = web3j.ethGetLogs(historicFilter).send();
-        for (EthLog.LogResult<?> logResult : ethLog.getLogs()) {
-            Log log = (Log) logResult.get();
-            stream.forEach(manager->manager.manage(log));
-            };
-
-        lastProcessedBlock = toBlock;
-        } catch (Exception e) {
-            logger.error("Error in EventListener", e);
-        }
-        }, 0, 5, TimeUnit.SECONDS); 
+        //logger.info("EventListener started");
+        executorService.scheduleAtFixedRate(() -> temp(pledgeEventManagerRegistry,PLEDGE_CONTRACT_ADDRESS), 0, 1, TimeUnit.SECONDS);
+        executorService.scheduleAtFixedRate(() -> temp(p2pEventManagerRegistry,P2P_CONTRACT_ADDRESS), 0, 1, TimeUnit.SECONDS);
         /* 
         // Then listen for new events as they come
         Disposable subscription = web3j.ethLogFlowable(historicFilter).subscribe(log -> {
@@ -106,6 +84,35 @@ public class EventListener {
                 }
                 subscription.dispose();
                 */
+        }
+
+        private void temp(EventManagerRegistry eventManagerRegistry,String contractAddress) {
+                try{
+            logger.info("EventListener called");
+            Web3j web3j = Web3j.build(new HttpService(RPC_URL));
+
+            long latestBlock = web3j.ethBlockNumber().send().getBlockNumber().longValue();
+            long fromBlock = lastProcessedBlock + 1;
+            if (lastProcessedBlock < 0) {
+                fromBlock = latestBlock - 3000;
+            } 
+            long toBlock = latestBlock;
+            EthFilter historicFilter = new EthFilter(
+                DefaultBlockParameter.valueOf(BigInteger.valueOf(fromBlock)),
+                DefaultBlockParameter.valueOf(BigInteger.valueOf(toBlock)),
+                contractAddress
+            );
+            List<EventManager> eventManagers = eventManagerRegistry.getEventManagers();
+            EthLog ethLog = web3j.ethGetLogs(historicFilter).send();
+            for (EthLog.LogResult<?> logResult : ethLog.getLogs()) {
+                Log log = (Log) logResult.get();
+                eventManagers.forEach(eventManager -> eventManager.manage(log));
+                };
+
+            lastProcessedBlock = toBlock;
+            } catch (Exception e) {
+                logger.error("Error in EventListener", e);
+            }
         }
         
         

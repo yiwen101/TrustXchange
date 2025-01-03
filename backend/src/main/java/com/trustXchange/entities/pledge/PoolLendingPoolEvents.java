@@ -20,7 +20,7 @@ public class PoolLendingPoolEvents  {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(name = "reward_distributed")
     private Long rewardDistributed;

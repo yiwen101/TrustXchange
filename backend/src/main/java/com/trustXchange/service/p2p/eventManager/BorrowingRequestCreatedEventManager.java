@@ -16,7 +16,7 @@ import org.web3j.protocol.core.methods.response.Log;
 
 import com.trustXchange.entities.p2p.P2pBorrowingRequest;
 import com.trustXchange.repository.p2p.P2pBorrowingRequestRepository;
-import com.trustXchange.service.common.EventManagerRegistry;
+import com.trustXchange.service.p2p.P2PEventManagerRegistry;
 import com.trustXchange.service.p2p.eventData.BorrowingRequestCreatedEventData;
 
 @Component
@@ -25,7 +25,7 @@ public class BorrowingRequestCreatedEventManager  extends P2PEventManager<Borrow
     private P2pBorrowingRequestRepository p2pBorrowingRequestRepository;
 
      @Autowired
-    private EventManagerRegistry eventManagerRegistry;
+    private P2PEventManagerRegistry eventManagerRegistry;
 
     public static final Event BORROWING_REQUEST_CREATED_EVENT = new Event(
         "BorrowingRequestCreated",

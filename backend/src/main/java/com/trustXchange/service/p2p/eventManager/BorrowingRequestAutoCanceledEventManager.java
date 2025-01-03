@@ -14,7 +14,7 @@ import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.protocol.core.methods.response.Log;
 
 import com.trustXchange.repository.p2p.P2pBorrowingRequestRepository;
-import com.trustXchange.service.common.EventManagerRegistry;
+import com.trustXchange.service.p2p.P2PEventManagerRegistry;
 import com.trustXchange.service.p2p.eventData.BorrowingRequestAutoCanceledEventData;
 
 @Component
@@ -23,7 +23,7 @@ public class BorrowingRequestAutoCanceledEventManager extends P2PEventManager<Bo
     private P2pBorrowingRequestRepository p2pBorrowingRequestRepository;
     
     @Autowired
-    private EventManagerRegistry eventManagerRegistry;
+    private P2PEventManagerRegistry eventManagerRegistry;
 
     public static final Event BORROWING_REQUEST_AUTO_CANCELED_EVENT = new Event(
         "BorrowingRequestAutoCanceled",

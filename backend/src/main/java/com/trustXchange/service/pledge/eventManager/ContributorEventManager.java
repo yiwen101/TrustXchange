@@ -4,7 +4,7 @@ import com.trustXchange.entities.pledge.PoolLendingContributor;
 import com.trustXchange.entities.pledge.PoolLendingContributorEvents;
 import com.trustXchange.repository.pledge.PoolLendingContributorEventsRepository;
 import com.trustXchange.repository.pledge.PoolLendingContributorRepository;
-import com.trustXchange.service.common.EventManagerRegistry;
+import com.trustXchange.service.pledge.PledgeEventManagerRegistry;
 import com.trustXchange.service.pledge.eventData.ContributorEventData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,11 +24,11 @@ public class ContributorEventManager  extends PledgeEventManager<ContributorEven
     @Autowired
     private PoolLendingContributorRepository poolLendingContributorRepository;
 
-     @Autowired
+    @Autowired
     private PoolLendingContributorEventsRepository poolLendingContributorEventsRepository;
 
     @Autowired
-    private EventManagerRegistry eventManagerRegistry;
+    private PledgeEventManagerRegistry eventManagerRegistry;
 
     public static final Event CONTRIBUTOR_EVENT = new Event(
             "ContributorEvent",

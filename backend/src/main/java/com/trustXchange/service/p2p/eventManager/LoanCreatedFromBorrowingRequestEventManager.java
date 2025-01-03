@@ -18,7 +18,7 @@ import com.trustXchange.entities.p2p.P2pLoan;
 import com.trustXchange.entities.p2p.P2pLoanToBorrowerRequest;
 import com.trustXchange.repository.p2p.P2pLoanRepository;
 import com.trustXchange.repository.p2p.P2pLoanToBorrowerRequestRepository;
-import com.trustXchange.service.common.EventManagerRegistry;
+import com.trustXchange.service.p2p.P2PEventManagerRegistry;
 import com.trustXchange.service.p2p.eventData.LoanCreatedFromBorrowingRequestEventData;
 
 
@@ -30,7 +30,7 @@ public class LoanCreatedFromBorrowingRequestEventManager  extends P2PEventManage
     private P2pLoanToBorrowerRequestRepository loanToBorrowerRequestRepository;
 
     @Autowired
-    private EventManagerRegistry eventManagerRegistry;
+    private P2PEventManagerRegistry eventManagerRegistry;
 
     public static final Event LOAN_CREATED_FROM_BORROWING_REQUEST_EVENT = new Event(
         "LoanCreatedFromBorrowingRequest",

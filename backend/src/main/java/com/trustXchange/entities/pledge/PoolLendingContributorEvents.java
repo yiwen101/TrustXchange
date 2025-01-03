@@ -19,7 +19,7 @@ public class PoolLendingContributorEvents  {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(name = "event_name", nullable = false)
     private String eventName;

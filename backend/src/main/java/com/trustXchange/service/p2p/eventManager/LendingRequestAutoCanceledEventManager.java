@@ -14,7 +14,7 @@ import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.protocol.core.methods.response.Log;
 
 import com.trustXchange.repository.p2p.P2pLendingRequestRepository;
-import com.trustXchange.service.common.EventManagerRegistry;
+import com.trustXchange.service.p2p.P2PEventManagerRegistry;
 import com.trustXchange.service.p2p.eventData.LendingRequestAutoCanceledEventData;
 
 @Component
@@ -23,7 +23,7 @@ public class LendingRequestAutoCanceledEventManager  extends P2PEventManager<Len
     private P2pLendingRequestRepository p2pLendingRequestRepository;
 
      @Autowired
-    private EventManagerRegistry eventManagerRegistry;
+    private P2PEventManagerRegistry eventManagerRegistry;
 
     public static final Event LENDING_REQUEST_AUTO_CANCELED_EVENT = new Event(
         "LendingRequestAutoCanceled",

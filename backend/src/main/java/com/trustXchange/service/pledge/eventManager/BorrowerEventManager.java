@@ -4,7 +4,7 @@ import com.trustXchange.entities.pledge.PoolLendingBorrower;
 import com.trustXchange.entities.pledge.PoolLendingBorrowerEvents;
 import com.trustXchange.repository.pledge.PoolLendingBorrowerEventsRepository;
 import com.trustXchange.repository.pledge.PoolLendingBorrowerRepository;
-import com.trustXchange.service.common.EventManagerRegistry;
+import com.trustXchange.service.pledge.PledgeEventManagerRegistry;
 import com.trustXchange.service.pledge.eventData.BorrowerEventData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -28,7 +28,7 @@ public class BorrowerEventManager  extends PledgeEventManager<BorrowerEventData>
     private PoolLendingBorrowerEventsRepository poolLendingBorrowerEventsRepository;
 
     @Autowired
-    private EventManagerRegistry eventManagerRegistry;
+    private PledgeEventManagerRegistry eventManagerRegistry;
 
     public static final Event BORROWER_EVENT = new Event(
             "BorrowerEvent",
