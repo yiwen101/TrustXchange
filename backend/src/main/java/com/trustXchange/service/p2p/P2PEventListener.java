@@ -1,10 +1,9 @@
-package com.trustXchange.service;
+package com.trustXchange.service.p2p;
 
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
 
 import com.trustXchange.NumberPrinter;
-import com.trustXchange.service.p2p.EventManagerRegistry;
 import com.trustXchange.service.p2p.eventData.P2PEventData;
 import com.trustXchange.service.p2p.eventManager.P2PEventManager;
 

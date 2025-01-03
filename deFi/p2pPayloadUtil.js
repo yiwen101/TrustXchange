@@ -104,10 +104,6 @@ function prepareLiquidateLoanPayload(loanId) {
     return ethers.AbiCoder.defaultAbiCoder().encode(["string", "bytes"], [command, params]);
 }
 
-
-
-
-
 function getP2PLendingRequestGMPParams() {
     const minCollateralRatio = 150;
     const liquidationThreshold = 110;
