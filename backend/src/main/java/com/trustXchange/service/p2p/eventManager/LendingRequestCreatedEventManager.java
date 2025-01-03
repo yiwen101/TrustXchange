@@ -16,7 +16,7 @@ import org.web3j.protocol.core.methods.response.Log;
 
 import com.trustXchange.entities.p2p.P2pLendingRequest;
 import com.trustXchange.repository.p2p.P2pLendingRequestRepository;
-import com.trustXchange.service.p2p.EventManagerRegistry;
+import com.trustXchange.service.common.EventManagerRegistry;
 import com.trustXchange.service.p2p.eventData.LendingRequestCreatedEventData;
 
 @Component

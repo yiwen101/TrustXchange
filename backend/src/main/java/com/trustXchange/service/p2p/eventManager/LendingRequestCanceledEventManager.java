@@ -15,7 +15,7 @@ import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.protocol.core.methods.response.Log;
 
 import com.trustXchange.repository.p2p.P2pLendingRequestRepository;
-import com.trustXchange.service.p2p.EventManagerRegistry;
+import com.trustXchange.service.common.EventManagerRegistry;
 import com.trustXchange.service.p2p.eventData.LendingRequestCanceledEventData;
 
 @Component

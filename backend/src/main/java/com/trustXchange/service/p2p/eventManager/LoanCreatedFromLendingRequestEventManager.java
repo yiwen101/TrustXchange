@@ -18,7 +18,7 @@ import com.trustXchange.entities.p2p.P2pLoan;
 import com.trustXchange.entities.p2p.P2pLoanToLenderRequest;
 import com.trustXchange.repository.p2p.P2pLoanRepository;
 import com.trustXchange.repository.p2p.P2pLoanToLenderRequestRepository;
-import com.trustXchange.service.p2p.EventManagerRegistry;
+import com.trustXchange.service.common.EventManagerRegistry;
 import com.trustXchange.service.p2p.eventData.LoanCreatedFromLendingRequestEventData;
 
 @Component

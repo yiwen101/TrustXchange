@@ -9,7 +9,7 @@ interface PriceOracle {
     function getPriceXRPUSDT() external view returns (uint256);
 }
 
-contract XrpLendingPoolV2 is AxelarExecutableWithToken {
+contract XrpLendingPoolV4 is AxelarExecutableWithToken {
     using PRBMathUD60x18 for uint256;
 
     // --- Constants ---
@@ -24,27 +24,21 @@ contract XrpLendingPoolV2 is AxelarExecutableWithToken {
     bytes32 public constant SUPPORTED_SOURCE_CHAIN_HASH = keccak256(bytes(supportedSourceChain));
 
     // --- Events ---
-    event LiquidityAdded(string indexed user, uint256 amount, uint256 confirmedRewards, uint256 contributionBalance, uint256 rewardDebt);
-    event LiquidityWithdrawn(string indexed user, uint256 amount, uint256 confirmedRewards, uint256 contributionBalance, uint256 rewardDebt);
-    event RewardsClaimed(string indexed user, uint256 rewardsToClaim, uint256 confirmedRewards, uint256 contributionBalance, uint256 rewardDebt);
-    event LoanCreated(uint256 indexed loanId, string indexed borrower, uint256 borrowAmountUSD, uint256 collateralAmountXRP, uint256 lastInterestUpdateTime);
-    event LoanUpdated(uint256 indexed loanId, string indexed borrower, uint256 borrowAmountUSD, uint256 collateralAmountXRP, uint256 lastInterestUpdateTime);
-    event LoanRepaid(uint256 indexed loanId, uint256 repaidAmountUSD, uint256 remainingAmountPayableUSD);
-    event LoanLiquidated(uint256 indexed loanId, uint256 collateralValueUSD, uint256 amountPayableUSD, uint256 currentPriceUSD);
-    event RewardsDistributed(uint256 rewardAmount, uint256 accRewardPerShareE18);
+    event BorrowerEvent(string eventName, uint256 amount1, string borrower, uint256 borrowAmountUSD, uint256 amountPayableUSD, uint256 collateralAmountXRP, uint256 lastPayableUpdateTime, uint256 repaidUSD);
+    event ContributorEvent(string eventName, uint256 amount1, string user,  uint256 contributionBalance, uint256 rewardDebt, uint256 confirmedRewards);
+    event PoolRewardEvent(uint256 rewardDistributed, uint256 accRewardPerShareE18, uint256 equity, uint256 retainedEarning);
 
     // --- Structs ---
-    struct Loan {
+    struct BorrowerInfo {
         string borrower;
         uint256 borrowAmountUSD;
         uint256 amountPayableUSD;
         uint256 collateralAmountXRP;
         uint256 lastPayableUpdateTime;
         uint256 repaidUSD;
-        bool isLiquidated;
     }
 
-    struct UserInfo {
+    struct ContributorInfo {
         uint256 contributionBalance;
         uint256 rewardDebt;
         uint256 confirmedRewards;
@@ -54,6 +48,7 @@ contract XrpLendingPoolV2 is AxelarExecutableWithToken {
     PriceOracle priceOracle;
 
     address private ownerAddress;
+
     // eg: currentXRPPriceUSD = 21164 means 1 XRP = 2.1164 USD
     uint256 public currentXRPPriceUSDE4;
     uint256 public lastPriceUpdateTimestamp = 0;
@@ -64,8 +59,7 @@ contract XrpLendingPoolV2 is AxelarExecutableWithToken {
     // eg: 1.00026116 means daily rate is 0.026116%, means 10% annual rate as  1.00026116^365 = 1.1
     uint256 public dailyInterestFactorE18;
     uint256 public collateralRatioPc = 150; // Percentage
-    uint256 public interestRatePc = 10; // Annual percentage
-    uint256 public liquidationThresholdPc = 120; 
+    uint256 public liquidationThresholdPc = 110; 
     
 
     // for managing rewards
@@ -74,15 +68,12 @@ contract XrpLendingPoolV2 is AxelarExecutableWithToken {
     uint256 public retainedEarning = 0;
     uint256 public accRewardPerShareE18 = 0;
     
-    uint256 public loanCounter = 0;
-    uint256 public totalLiquidity = 0;
+    uint256 public equity = 0;
     
 
-
     // Mapping to store loan data
-    mapping(uint256 => Loan) public loans;
-    mapping(string => uint256) public userLoan; 
-    mapping(string => UserInfo) public userInfo;
+    mapping(string => BorrowerInfo) public borrowers;
+    mapping(string => ContributorInfo) public contributors;
 
     // --- Constructor ---
     constructor(address gateway_, address priceOracle_, uint256 dailyInterestFactorE18_) AxelarExecutableWithToken(gateway_) {
@@ -147,11 +138,9 @@ contract XrpLendingPoolV2 is AxelarExecutableWithToken {
             (uint256 borrowAmountUSD) = abi.decode(params, (uint256));
             borrow(sourceChain, sourceAddress, tokenSymbol, amount, borrowAmountUSD);
         } else if (commandHash == SELECTOR_REPAY_LOAN) {
-            (uint256 loanId) = abi.decode(params, (uint256));
-            repayLoan(sourceChain, sourceAddress, tokenSymbol, amount, loanId);
+            repayLoan(sourceChain, sourceAddress, tokenSymbol, amount);
         } else if (commandHash == SELECTOR_LIQUIDATE_LOAN) {
-            (uint256 loanId) = abi.decode(params, (uint256));
-            liquidateLoan(sourceChain, sourceAddress, tokenSymbol, amount,loanId);
+            liquidateLoan(sourceChain, sourceAddress, tokenSymbol, amount);
         } else {
             gateway().sendToken(sourceChain, sourceAddress, tokenSymbol, amount - 1);
             revert("Invalid command");
@@ -167,24 +156,26 @@ contract XrpLendingPoolV2 is AxelarExecutableWithToken {
         require(keccak256(bytes(tokenSymbol)) == keccak256(bytes("USD")), "Invalid token symbol");
         distributeRewards();
 
-        UserInfo storage user = userInfo[sourceAddress];
+        ContributorInfo storage user = contributors[sourceAddress];
         updateRewardClaimable(user);
 
         user.contributionBalance += lendingAmount;
-        emit LiquidityAdded(sourceAddress, lendingAmount, user.confirmedRewards, user.contributionBalance, user.rewardDebt);
+        equity += lendingAmount;
+        emit ContributorEvent("contribute",lendingAmount, sourceAddress, user.contributionBalance, user.rewardDebt, user.confirmedRewards);
     }
 
     function withdraw(string calldata sourceChain, string calldata sourceAddress, uint256 withdrawAmount) internal {
         distributeRewards();
 
-        UserInfo storage user = userInfo[sourceAddress];
+        ContributorInfo storage user = contributors[sourceAddress];
         updateRewardClaimable(user);
 
         require(user.contributionBalance >= withdrawAmount, "Insufficient balance");
 
         try gateway().sendToken(sourceChain, sourceAddress, "USD", withdrawAmount) {
             user.contributionBalance -= withdrawAmount;
-            emit LiquidityWithdrawn(sourceAddress, withdrawAmount, user.confirmedRewards, user.contributionBalance, user.rewardDebt);
+            equity -= withdrawAmount;
+            emit ContributorEvent("withdraw", withdrawAmount,sourceAddress, user.contributionBalance, user.rewardDebt, user.confirmedRewards);
         } catch {
             revert("Failed to send USD to user");
         }
@@ -193,14 +184,14 @@ contract XrpLendingPoolV2 is AxelarExecutableWithToken {
     function claimReward(string calldata sourceChain, string calldata sourceAddress) internal {
         distributeRewards();
 
-        UserInfo storage user = userInfo[sourceAddress];
+        ContributorInfo storage user = contributors[sourceAddress];
 
         updateRewardClaimable(user);
 
         require(user.confirmedRewards > 0, "No rewards to claim");
-
         try gateway().sendToken(sourceChain, sourceAddress, "USD", user.confirmedRewards) {
-            emit RewardsClaimed(sourceAddress, user.confirmedRewards, user.confirmedRewards, user.contributionBalance, user.rewardDebt);
+
+           emit ContributorEvent("claimReward",user.confirmedRewards, sourceAddress, user.contributionBalance, user.rewardDebt, 0);
             user.confirmedRewards = 0;
         } catch {
             revert("Failed to send USD to user");
@@ -219,38 +210,32 @@ contract XrpLendingPoolV2 is AxelarExecutableWithToken {
         uint256 requiredCollateralXRP = (_borrowAmountUSD * collateralRatioPc * 100) / currentXRPPriceUSDE4;
         require(xrpAmount >= requiredCollateralXRP, "Insufficient collateral");
 
-        uint256 existingLoanId = userLoan[sourceAddress];
+        BorrowerInfo storage existingBorrower = borrowers[sourceAddress];
 
-        if (existingLoanId != 0) {
-            Loan storage existingLoan = loans[existingLoanId];
-            updateAmountPayable(existingLoan);
+        if (keccak256(bytes(existingBorrower.borrower)) != keccak256(bytes(""))) {
+            updateAmountPayable(existingBorrower);
 
             try gateway().sendToken(sourceChain, sourceAddress, "USD", _borrowAmountUSD) {
-                existingLoan.borrowAmountUSD += _borrowAmountUSD;
-                existingLoan.collateralAmountXRP += xrpAmount;
-                emit LoanUpdated(existingLoanId, sourceAddress, existingLoan.borrowAmountUSD, existingLoan.collateralAmountXRP, existingLoan.amountPayableUSD);
+                existingBorrower.borrowAmountUSD += _borrowAmountUSD;
+                existingBorrower.collateralAmountXRP += xrpAmount;
+                emit BorrowerEvent("borrow", _borrowAmountUSD, sourceAddress, existingBorrower.borrowAmountUSD, existingBorrower.amountPayableUSD, existingBorrower.collateralAmountXRP, existingBorrower.lastPayableUpdateTime, existingBorrower.repaidUSD);
             } catch {
                 revert("Failed to send USD to user");
             }
 
         } else {
             try gateway().sendToken(sourceChain, sourceAddress, "USD", _borrowAmountUSD) {
-                loanCounter++;
-
                 // Create Loan entry
-                loans[loanCounter] = Loan({
+                borrowers[sourceAddress] = BorrowerInfo({
                     borrower: sourceAddress,
                     borrowAmountUSD: _borrowAmountUSD,
                     amountPayableUSD: _borrowAmountUSD,
                     collateralAmountXRP: xrpAmount,
                     lastPayableUpdateTime: block.timestamp,
-                    repaidUSD: 0,
-                    isLiquidated: false
+                    repaidUSD: 0
                 });
 
-                userLoan[sourceAddress] = loanCounter;
-
-                emit LoanCreated(loanCounter, sourceAddress, _borrowAmountUSD, xrpAmount, block.timestamp);
+                 emit BorrowerEvent("borrow", _borrowAmountUSD, sourceAddress, existingBorrower.borrowAmountUSD, existingBorrower.amountPayableUSD, existingBorrower.collateralAmountXRP, existingBorrower.lastPayableUpdateTime, existingBorrower.repaidUSD);
             } catch {
                 revert("Failed to send USD to user");
             }
@@ -263,34 +248,33 @@ contract XrpLendingPoolV2 is AxelarExecutableWithToken {
         string calldata sourceChain,
         string calldata sourceAddress,
         string calldata tokenSymbol,
-        uint256 _repayAmountUSD,
-        uint256 _loanId
+        uint256 _repayAmountUSD
     ) internal {
         require(keccak256(bytes(tokenSymbol)) == keccak256(bytes("USD")), "Invalid token symbol");
-        Loan storage loan = loans[_loanId];
+         BorrowerInfo storage borrower = borrowers[sourceAddress];
 
-        require(keccak256(bytes(loan.borrower)) == keccak256(bytes(sourceAddress)), "Not the loan owner");
-        require(!loan.isLiquidated, "Loan is already liquidated");
+
+        require(keccak256(bytes(borrower.borrower)) == keccak256(bytes(sourceAddress)), "Not the loan owner");
+         require(keccak256(bytes(borrower.borrower)) != keccak256(bytes("")), "Not an active loan");
         require(_repayAmountUSD > 0, "Repayment amount must be greater than zero");
 
-        loan.repaidUSD += _repayAmountUSD;
-        updateAmountPayable(loan);
+        borrower.repaidUSD += _repayAmountUSD;
+        updateAmountPayable(borrower);
 
-        if(_repayAmountUSD >= loan.amountPayableUSD) {
-            loan.amountPayableUSD = 0;
-            loan.isLiquidated = true;
-            try gateway().sendToken(sourceChain, sourceAddress, "XRP", loan.collateralAmountXRP) {
-                loan.isLiquidated = true;
-                userLoan[sourceAddress] = 0;
-                retainedEarning += loan.repaidUSD - loan.borrowAmountUSD;
+        if(_repayAmountUSD >= borrower.amountPayableUSD) {
+            
+            try gateway().sendToken(sourceChain, sourceAddress, "XRP", borrower.collateralAmountXRP) {
+                retainedEarning += borrower.repaidUSD - borrower.borrowAmountUSD;
+                delete borrowers[sourceAddress];
             } catch {
                 revert("Failed to send XRP to user");
             }
         } else {
-            loan.amountPayableUSD -= _repayAmountUSD;
+           borrower.amountPayableUSD -= _repayAmountUSD;
         }
 
-        emit LoanRepaid(_loanId, _repayAmountUSD, loan.amountPayableUSD);
+       emit BorrowerEvent("repayLoan", _repayAmountUSD, sourceAddress, borrower.borrowAmountUSD, borrower.amountPayableUSD, borrower.collateralAmountXRP, borrower.lastPayableUpdateTime, borrower.repaidUSD);
+       
         distributeRewards();
     }
 
@@ -298,26 +282,27 @@ contract XrpLendingPoolV2 is AxelarExecutableWithToken {
     function liquidateLoan(string calldata sourceChain,
         string calldata sourceAddress,
         string calldata tokenSymbol,
-        uint256 _repayAmountUSD,
-        uint256 _loanId ) internal {
-        Loan storage loan = loans[_loanId];
+        uint256 _repayAmountUSD ) internal {
+         BorrowerInfo storage borrower = borrowers[sourceAddress];
+
         
-        require(!loan.isLiquidated, "Loan already liquidated");
+         require(keccak256(bytes(borrower.borrower)) != keccak256(bytes("")), "Not an active loan");
+
 
         updatePrice();
-        updateAmountPayable(loan);
-        uint256 currentCollateralValueUSD = (loan.collateralAmountXRP * currentXRPPriceUSDE4) / 1e4;
-        uint256 liquidationThresholdPcValue = (loan.amountPayableUSD * liquidationThresholdPc) / 100;
+        updateAmountPayable(borrower);
+        uint256 currentCollateralValueUSD = (borrower.collateralAmountXRP * currentXRPPriceUSDE4) / 1e4;
+        uint256 liquidationThresholdPcValue = (borrower.amountPayableUSD * liquidationThresholdPc) / 100;
 
         // Check if loan is undercollateralized
         require(currentCollateralValueUSD < liquidationThresholdPcValue, "Cannot liquidate yet");
         require(keccak256(bytes(tokenSymbol)) == keccak256(bytes("USD")), "Invalid token symbol");
-        require(_repayAmountUSD >= loan.amountPayableUSD, "Repayment amount must be greater than total owed");
-        try gateway().sendToken(sourceChain, sourceAddress, "XRP", loan.collateralAmountXRP) {
-            retainedEarning += _repayAmountUSD - loan.amountPayableUSD;
-            loan.isLiquidated = true;
-            userLoan[loan.borrower] = 0;
-            emit LoanLiquidated(_loanId, currentCollateralValueUSD, loan.amountPayableUSD, currentXRPPriceUSDE4);
+        require(_repayAmountUSD >= borrower.amountPayableUSD, "Repayment amount must be greater than total owed");
+        try gateway().sendToken(sourceChain, sourceAddress, "XRP", borrower.collateralAmountXRP) {
+            retainedEarning += _repayAmountUSD - borrower.amountPayableUSD;
+            delete borrowers[sourceAddress];
+          
+             emit BorrowerEvent("liquidateLoan", currentXRPPriceUSDE4, sourceAddress, borrower.borrowAmountUSD, borrower.amountPayableUSD, borrower.collateralAmountXRP, borrower.lastPayableUpdateTime, borrower.repaidUSD);
             distributeRewards();
         } catch {
             revert("Failed to send XRP to user");
@@ -326,24 +311,24 @@ contract XrpLendingPoolV2 is AxelarExecutableWithToken {
 
     // --- Internal Functions ---
     // if user is not init. contributionBalance is 0, this also serves as a way to initialize user
-    function updateRewardClaimable(UserInfo storage user) internal {
+    function updateRewardClaimable(ContributorInfo storage user) internal {
         uint256 updatedRewardDebt = (user.contributionBalance * accRewardPerShareE18) / 1e18;
         uint256 pending =updatedRewardDebt - user.rewardDebt;
         user.rewardDebt = updatedRewardDebt;
         user.confirmedRewards += pending;
     }
 
-    function updateAmountPayable(Loan storage loan) internal {
-        if (loan.isLiquidated) return;
+    function updateAmountPayable(BorrowerInfo storage borrower) internal {
+         if (keccak256(bytes(borrower.borrower)) == keccak256(bytes(""))) return;
 
-        uint256 timeElapsed = block.timestamp - loan.lastPayableUpdateTime;
+        uint256 timeElapsed = block.timestamp - borrower.lastPayableUpdateTime;
         uint256 daysElapsed = timeElapsed / 1 days;
        
         if (daysElapsed == 0) return;
 
         uint256 factor = (dailyInterestFactorE18).pow(daysElapsed);
-        loan.amountPayableUSD = loan.amountPayableUSD.mul(factor) / 1e18;
-        loan.lastPayableUpdateTime = block.timestamp;
+        borrower.amountPayableUSD = borrower.amountPayableUSD.mul(factor) / 1e18;
+        borrower.lastPayableUpdateTime = block.timestamp;
     }
 
     function distributeRewards() internal {
@@ -355,12 +340,12 @@ contract XrpLendingPoolV2 is AxelarExecutableWithToken {
         if (retainedEarning == 0) return;
 
         // Update accumulated reward per share
-        accRewardPerShareE18 += (retainedEarning * 1e18) / totalLiquidity;
+        accRewardPerShareE18 += (retainedEarning * 1e18) / equity ;
         uint256 rewardAmount = retainedEarning;
         retainedEarning = 0;
         lastRewardTimeStamp = block.timestamp;
 
-        emit RewardsDistributed(rewardAmount,accRewardPerShareE18);
+        emit PoolRewardEvent(rewardAmount, accRewardPerShareE18, equity, retainedEarning);
     }
 
     function updatePrice() internal {
@@ -372,15 +357,11 @@ contract XrpLendingPoolV2 is AxelarExecutableWithToken {
     }
 
     // --- View Functions ---
-    function getLoanDetails(uint256 _loanId) public view returns (Loan memory) {
-        return loans[_loanId];
+    function getBorrowerInfo(string memory _user) public view returns (BorrowerInfo memory) {
+        return borrowers[_user];
     }
 
-    function getUserLoan(string memory _user) public view returns (uint256) {
-        return userLoan[_user];
-    }
-
-    function getUserInfo(string memory _user) public view returns (UserInfo memory) {
-        return userInfo[_user];
+    function getContributorInfo(string memory _user) public view returns (ContributorInfo memory) {
+        return contributors[_user];
     }
 }

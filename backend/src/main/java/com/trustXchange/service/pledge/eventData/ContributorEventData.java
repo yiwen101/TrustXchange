@@ -1,14 +1,14 @@
 package com.trustXchange.service.pledge.eventData;
 
+import lombok.Value;
 import java.math.BigInteger;
 
-import lombok.Value;
-
 @Value
-public class LiquidityAdded  {
-    String user;
+public class ContributorEventData  extends PledgeEventData {
+    String eventName;
     BigInteger amount;
-    BigInteger confirmedRewards;
+    String user;
     BigInteger contributionBalance;
     BigInteger rewardDebt;
+    BigInteger confirmedRewards;
 }

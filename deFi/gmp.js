@@ -2,6 +2,7 @@ import { ethers } from "ethers";
 import dotenv from "dotenv";
 import * as utils from "./utils.js"
 import * as p2pUtils from "./p2pPayloadUtil.js"
+import * as pledgeUtils from "./pledgePayloadUtil.js"
 dotenv.config();
 
 // Define the provider (XRPL EVM endpoint)
@@ -33,10 +34,17 @@ async function callPocContract(params) {
   await callContract(params, process.env.GMS_EXECUTABLE_ADDRESS);
 }
 
-async function callP2PCallContract(params) {
+async function callP2PContract(params) {
   console.log("Calling P2P Contract with address:", process.env.XRP_LENDING_P2P);
   await callContract(params, process.env.XRP_LENDING_P2P);
 }
+
+async function callPoolContract(params) {
+  console.log("Calling P2P Contract with address:", process.env.XRP_LENDING_POOL);
+  await callContract(params, process.env.XRP_LENDING_POOL);
+}
+
+
 
 async function callContract(params, contract_address) {
   const gmsExecutableAbi = [
@@ -64,10 +72,11 @@ async function callContract(params, contract_address) {
 
 async function main() {
   //const {inputData,executeWithTokenParams} = utils.getPocMockInputs(51)
-  const {inputData,executeWithTokenParams} = p2pUtils.getP2PBorrowingRequestGMPParams(100);
-  await approveContractCallWithMint(inputData);
+  //const {inputData,executeWithTokenParams} = p2pUtils.getP2PBorrowingRequestGMPParams(100);
+  const {inputData,executeWithTokenParams} = pledgeUtils.getLendGMPParams(100);
+  //await approveContractCallWithMint(inputData);
   //await callPocContract(executeWithTokenParams);
-  await callP2PCallContract(executeWithTokenParams);
+  await callPoolContract(executeWithTokenParams);
 }
 
 main().catch((error) => {

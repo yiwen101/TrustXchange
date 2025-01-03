@@ -1,11 +1,11 @@
-package com.trustXchange.service.p2p;
+package com.trustXchange.service;
 
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
 
 import com.trustXchange.NumberPrinter;
-import com.trustXchange.service.p2p.eventData.P2PEventData;
-import com.trustXchange.service.p2p.eventManager.P2PEventManager;
+import com.trustXchange.service.common.EventManager;
+import com.trustXchange.service.common.EventManagerRegistry;
 
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.DefaultBlockParameterName;
@@ -45,11 +45,11 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 @Component
-public class P2PEventListener {
+public class EventListener {
     @Autowired
     private EventManagerRegistry eventManagerRegistry;
 
-    private static final Logger logger = LoggerFactory.getLogger(P2PEventListener.class);
+    private static final Logger logger = LoggerFactory.getLogger(EventListener.class);
      private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
      private volatile boolean isRunning = true; 
 
@@ -61,7 +61,7 @@ public class P2PEventListener {
     public void listenFor()  {
         executorService.scheduleAtFixedRate(() -> {
             try{
-        logger.info("P2PEventListener called");
+        logger.info("EventListener called");
         Web3j web3j = Web3j.build(new HttpService(RPC_URL));
 
         long latestBlock = web3j.ethBlockNumber().send().getBlockNumber().longValue();
@@ -76,7 +76,7 @@ public class P2PEventListener {
             CONTRACT_ADDRESS
         );
 
-        Stream<P2PEventManager<?>> stream = eventManagerRegistry.getEventManagerStream();
+        Stream<EventManager<?>> stream = eventManagerRegistry.getEventManagerStream();
         // Print existing events
         EthLog ethLog = web3j.ethGetLogs(historicFilter).send();
         for (EthLog.LogResult<?> logResult : ethLog.getLogs()) {
@@ -86,7 +86,7 @@ public class P2PEventListener {
 
         lastProcessedBlock = toBlock;
         } catch (Exception e) {
-            logger.error("Error in P2PEventListener", e);
+            logger.error("Error in EventListener", e);
         }
         }, 0, 5, TimeUnit.SECONDS); 
         /* 
@@ -136,6 +136,6 @@ public class P2PEventListener {
     public void stopPrinter() {
         isRunning = false;
         executorService.shutdown();
-        logger.info("P2PEventListener stopped");
+        logger.info("EventListener stopped");
     }
 }

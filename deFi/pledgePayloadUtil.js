@@ -3,7 +3,7 @@ import * as utils from './utils.js';
 
 const keccak256 = ethers.keccak256;
 const toUtf8Bytes = ethers.toUtf8Bytes;
-const contractAddress = process.env.XRP_LENDING;
+const contractAddress = process.env.XRP_LENDING_POOL;
 
 // --- Selectors ---
 const SELECTOR_LEND = keccak256(toUtf8Bytes("lend"));
