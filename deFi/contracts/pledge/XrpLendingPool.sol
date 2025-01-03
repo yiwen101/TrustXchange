@@ -9,12 +9,12 @@ interface PriceOracle {
     function getPriceXRPUSDT() external view returns (uint256);
 }
 
-contract XrpLending is AxelarExecutableWithToken {
+contract XrpLendingPoolV2 is AxelarExecutableWithToken {
     using PRBMathUD60x18 for uint256;
 
     // --- Constants ---
     bytes32 public constant SELECTOR_LEND = keccak256("contribute");
-    bytes32 public constant SELECTOR_WITHDRAW = keccak256("withdrawPrinciple");
+    bytes32 public constant SELECTOR_WITHDRAW = keccak256("withdraw");
     bytes32 public constant SELECTOR_CLAIM_REWARD = keccak256("claimReward");
     bytes32 public constant SELECTOR_BORROW = keccak256("borrow");
     bytes32 public constant SELECTOR_REPAY_LOAN = keccak256("repayLoan");
@@ -28,7 +28,7 @@ contract XrpLending is AxelarExecutableWithToken {
     event LiquidityWithdrawn(string indexed user, uint256 amount, uint256 confirmedRewards, uint256 contributionBalance, uint256 rewardDebt);
     event RewardsClaimed(string indexed user, uint256 rewardsToClaim, uint256 confirmedRewards, uint256 contributionBalance, uint256 rewardDebt);
     event LoanCreated(uint256 indexed loanId, string indexed borrower, uint256 borrowAmountUSD, uint256 collateralAmountXRP, uint256 lastInterestUpdateTime);
-    event LoanUpdated(uint256 indexed loanId, string indexed borrower, uint256 borrowAmountUSD, uint256 collateralAmountXRP);
+    event LoanUpdated(uint256 indexed loanId, string indexed borrower, uint256 borrowAmountUSD, uint256 collateralAmountXRP, uint256 lastInterestUpdateTime);
     event LoanRepaid(uint256 indexed loanId, uint256 repaidAmountUSD, uint256 remainingAmountPayableUSD);
     event LoanLiquidated(uint256 indexed loanId, uint256 collateralValueUSD, uint256 amountPayableUSD, uint256 currentPriceUSD);
     event RewardsDistributed(uint256 rewardAmount, uint256 accRewardPerShareE18);
@@ -39,7 +39,7 @@ contract XrpLending is AxelarExecutableWithToken {
         uint256 borrowAmountUSD;
         uint256 amountPayableUSD;
         uint256 collateralAmountXRP;
-        uint256 lastInterestUpdateTime;
+        uint256 lastPayableUpdateTime;
         uint256 repaidUSD;
         bool isLiquidated;
     }
@@ -56,10 +56,13 @@ contract XrpLending is AxelarExecutableWithToken {
     address private ownerAddress;
     // eg: currentXRPPriceUSD = 21164 means 1 XRP = 2.1164 USD
     uint256 public currentXRPPriceUSDE4;
+    uint256 public lastPriceUpdateTimestamp = 0;
     
 
     // for managing borrowing
-    uint256 public dailyRateE18;
+    
+    // eg: 1.00026116 means daily rate is 0.026116%, means 10% annual rate as  1.00026116^365 = 1.1
+    uint256 public dailyInterestFactorE18;
     uint256 public collateralRatioPc = 150; // Percentage
     uint256 public interestRatePc = 10; // Annual percentage
     uint256 public liquidationThresholdPc = 120; 
@@ -82,9 +85,9 @@ contract XrpLending is AxelarExecutableWithToken {
     mapping(string => UserInfo) public userInfo;
 
     // --- Constructor ---
-    constructor(address gateway_, address priceOracle_, uint256 dailyRateE18_;) AxelarExecutableWithToken(gateway_) {
+    constructor(address gateway_, address priceOracle_, uint256 dailyInterestFactorE18_) AxelarExecutableWithToken(gateway_) {
         priceOracle = PriceOracle(priceOracle_);
-        dailyRateE18 = dailyRateE18_;
+        dailyInterestFactorE18 = dailyInterestFactorE18_;
         lastRewardTimeStamp = block.timestamp;
 
         ownerAddress = msg.sender;
@@ -139,7 +142,7 @@ contract XrpLending is AxelarExecutableWithToken {
         (command, params) = abi.decode(payload, (string, bytes));
         bytes32 commandHash = keccak256(abi.encodePacked(command));
         if (commandHash == SELECTOR_LEND) {
-            lend(sourceChain, sourceAddress, tokenSymbol, amount);
+            contribute(sourceChain, sourceAddress, tokenSymbol, amount);
         } else if (commandHash == SELECTOR_BORROW) {
             (uint256 borrowAmountUSD) = abi.decode(params, (uint256));
             borrow(sourceChain, sourceAddress, tokenSymbol, amount, borrowAmountUSD);
@@ -171,7 +174,7 @@ contract XrpLending is AxelarExecutableWithToken {
         emit LiquidityAdded(sourceAddress, lendingAmount, user.confirmedRewards, user.contributionBalance, user.rewardDebt);
     }
 
-    function withdrawPrinciple(string calldata sourceChain, string calldata sourceAddress, uint256 withdrawAmount) internal {
+    function withdraw(string calldata sourceChain, string calldata sourceAddress, uint256 withdrawAmount) internal {
         distributeRewards();
 
         UserInfo storage user = userInfo[sourceAddress];
@@ -197,8 +200,8 @@ contract XrpLending is AxelarExecutableWithToken {
         require(user.confirmedRewards > 0, "No rewards to claim");
 
         try gateway().sendToken(sourceChain, sourceAddress, "USD", user.confirmedRewards) {
-             user.confirmedRewards = 0;
-            emit RewardsClaimed(sourceAddress, rewardsToClaim, user.confirmedRewards, user.contributionBalance, user.rewardDebt);
+            emit RewardsClaimed(sourceAddress, user.confirmedRewards, user.confirmedRewards, user.contributionBalance, user.rewardDebt);
+            user.confirmedRewards = 0;
         } catch {
             revert("Failed to send USD to user");
         }
@@ -225,7 +228,6 @@ contract XrpLending is AxelarExecutableWithToken {
             try gateway().sendToken(sourceChain, sourceAddress, "USD", _borrowAmountUSD) {
                 existingLoan.borrowAmountUSD += _borrowAmountUSD;
                 existingLoan.collateralAmountXRP += xrpAmount;
-                existingLoan.lastInterestUpdateTime = block.timestamp;
                 emit LoanUpdated(existingLoanId, sourceAddress, existingLoan.borrowAmountUSD, existingLoan.collateralAmountXRP, existingLoan.amountPayableUSD);
             } catch {
                 revert("Failed to send USD to user");
@@ -241,14 +243,14 @@ contract XrpLending is AxelarExecutableWithToken {
                     borrowAmountUSD: _borrowAmountUSD,
                     amountPayableUSD: _borrowAmountUSD,
                     collateralAmountXRP: xrpAmount,
-                    lastInterestUpdateTime: block.timestamp,
+                    lastPayableUpdateTime: block.timestamp,
                     repaidUSD: 0,
-                    isLiquidated: false,
+                    isLiquidated: false
                 });
 
                 userLoan[sourceAddress] = loanCounter;
 
-                emit LoanCreated(loanCounter, sourceAddress, _borrowAmountUSD, xrpAmount,lastInterestUpdateTime);
+                emit LoanCreated(loanCounter, sourceAddress, _borrowAmountUSD, xrpAmount, block.timestamp);
             } catch {
                 revert("Failed to send USD to user");
             }
@@ -280,6 +282,8 @@ contract XrpLending is AxelarExecutableWithToken {
             try gateway().sendToken(sourceChain, sourceAddress, "XRP", loan.collateralAmountXRP) {
                 loan.isLiquidated = true;
                 userLoan[sourceAddress] = 0;
+                retainedEarning += loan.repaidUSD - loan.borrowAmountUSD;
+            } catch {
                 revert("Failed to send XRP to user");
             }
         } else {
@@ -309,8 +313,8 @@ contract XrpLending is AxelarExecutableWithToken {
         require(currentCollateralValueUSD < liquidationThresholdPcValue, "Cannot liquidate yet");
         require(keccak256(bytes(tokenSymbol)) == keccak256(bytes("USD")), "Invalid token symbol");
         require(_repayAmountUSD >= loan.amountPayableUSD, "Repayment amount must be greater than total owed");
-        try gateway().sendToken(sourceChain, sourceAddress, "XRP", loan.collateralAmountXRP)
-            retainedEarning += _repayAmountUSD - totalOwed;
+        try gateway().sendToken(sourceChain, sourceAddress, "XRP", loan.collateralAmountXRP) {
+            retainedEarning += _repayAmountUSD - loan.amountPayableUSD;
             loan.isLiquidated = true;
             userLoan[loan.borrower] = 0;
             emit LoanLiquidated(_loanId, currentCollateralValueUSD, loan.amountPayableUSD, currentXRPPriceUSDE4);
@@ -321,7 +325,8 @@ contract XrpLending is AxelarExecutableWithToken {
     }
 
     // --- Internal Functions ---
-    function updateRewardClaimable(userInfo storage user) internal {
+    // if user is not init. contributionBalance is 0, this also serves as a way to initialize user
+    function updateRewardClaimable(UserInfo storage user) internal {
         uint256 updatedRewardDebt = (user.contributionBalance * accRewardPerShareE18) / 1e18;
         uint256 pending =updatedRewardDebt - user.rewardDebt;
         user.rewardDebt = updatedRewardDebt;
@@ -331,14 +336,14 @@ contract XrpLending is AxelarExecutableWithToken {
     function updateAmountPayable(Loan storage loan) internal {
         if (loan.isLiquidated) return;
 
-        uint256 timeElapsed = block.timestamp - loan.lastInterestUpdateTime;
+        uint256 timeElapsed = block.timestamp - loan.lastPayableUpdateTime;
         uint256 daysElapsed = timeElapsed / 1 days;
        
         if (daysElapsed == 0) return;
 
-        uint256 factor = (1e18 + dailyRateE18).pow(daysElapsed);
+        uint256 factor = (dailyInterestFactorE18).pow(daysElapsed);
         loan.amountPayableUSD = loan.amountPayableUSD.mul(factor) / 1e18;
-        loan.lastInterestUpdateTime += daysElapsed * 1 days;
+        loan.lastPayableUpdateTime = block.timestamp;
     }
 
     function distributeRewards() internal {
@@ -351,16 +356,19 @@ contract XrpLending is AxelarExecutableWithToken {
 
         // Update accumulated reward per share
         accRewardPerShareE18 += (retainedEarning * 1e18) / totalLiquidity;
-        uint 256 rewardAmount = retainedEarning;
+        uint256 rewardAmount = retainedEarning;
         retainedEarning = 0;
         lastRewardTimeStamp = block.timestamp;
 
         emit RewardsDistributed(rewardAmount,accRewardPerShareE18);
     }
 
-    function calculatedailyRateE18(uint256 _annualRate) internal pure returns (uint256) {
-        uint256 annualRateFixed = (_annualRate * 1e18) / 100;
-        return annualRateFixed / 365;
+    function updatePrice() internal {
+        // Update price no more frequently than once every hour
+        if (block.timestamp - lastPriceUpdateTimestamp >= 3600) {
+            currentXRPPriceUSDE4 = priceOracle.getPriceXRPUSDT();
+            lastPriceUpdateTimestamp = block.timestamp;
+        }
     }
 
     // --- View Functions ---
@@ -372,14 +380,7 @@ contract XrpLending is AxelarExecutableWithToken {
         return userLoan[_user];
     }
 
-    function calculateInterestAfterDays(uint256 _loanId, uint256 _days) external view returns (uint256) {
-        return calculateInterestAfterDaysInternal(_loanId, _days);
+    function getUserInfo(string memory _user) public view returns (UserInfo memory) {
+        return userInfo[_user];
     }
-
-    function updatePrice() internal {
-        // Update price no more frequently than once every hour
-        if (block.timestamp - lastPriceUpdateTimestamp >= 3600) {
-            currentXRPPriceUSDE4 = priceOracle.getPriceXRPUSDT();
-            lastPriceUpdateTimestamp = block.timestamp;
-        }
-    }
+}

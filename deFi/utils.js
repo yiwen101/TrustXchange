@@ -96,7 +96,7 @@ function createExecutePayload(message) {
     );
 }
 
-export const getGMPInputs = (contractAddress,payloadBytes, tokenSymbol, tokenAmount) => {
+export const getGMPInputs = (contractAddress,payloadBytes, tokenSymbol=undefined, tokenAmount=undefined) => {
     const tokenDenom = 1;
     const chainId = 1;  // Example Chain ID
     const payloadHash = keccak256(payloadBytes);
@@ -105,8 +105,10 @@ export const getGMPInputs = (contractAddress,payloadBytes, tokenSymbol, tokenAmo
     const sourceTxHash = keccak256(toUtf8Bytes("ignored"));
     const sourceEventIndex = 0;
 
-    // Command 2: Approve Contract Call With Mint
-    const param = createGatewayCallWithMintParams(
+    const isWithMint = tokenSymbol && tokenAmount;
+    
+    const param = isWithMint
+    ? createGatewayCallWithMintParams(
         sourceChain,
         sourceAddress,
         contractAddress,
@@ -114,11 +116,19 @@ export const getGMPInputs = (contractAddress,payloadBytes, tokenSymbol, tokenAmo
         tokenSymbol,
         tokenAmount,
         sourceTxHash,
+        sourceEventIndex)
+    : createGatewayCallParams(
+        sourceChain,
+        sourceAddress,
+        contractAddress,
+        payloadHash,
+        sourceTxHash,
         sourceEventIndex
-        );
-    const commandId = createCommandId("approveContractCallWithMint", param);
+    );
+    const commandName = isWithMint ? "approveContractCallWithMint" : "approveContractCall";
+    const commandId = createCommandId(commandName, param);
     const commandIds = [commandId];
-    const commands = ["approveContractCallWithMint"];
+    const commands = [commandName];
     const params = [param];
 
     const data = prepareCommandData(chainId, commandIds, commands, params);

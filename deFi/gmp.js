@@ -13,7 +13,7 @@ const authModule = process.env.PUBLIC_ADDRESS;
 const signer = new ethers.Wallet(privateKey, provider);
 
 // Function to call the emitMessage function on the contract
-async function approveContractCall(input) {
+async function approveContractCallWithMint(input) {
   const gatewayAbi = [
     "function execute(bytes calldata input) external"
   ];
@@ -65,7 +65,7 @@ async function callContract(params, contract_address) {
 async function main() {
   //const {inputData,executeWithTokenParams} = utils.getPocMockInputs(51)
   const {inputData,executeWithTokenParams} = p2pUtils.getP2PBorrowingRequestGMPParams(100);
-  await approveContractCall(inputData);
+  await approveContractCallWithMint(inputData);
   //await callPocContract(executeWithTokenParams);
   await callP2PCallContract(executeWithTokenParams);
 }
