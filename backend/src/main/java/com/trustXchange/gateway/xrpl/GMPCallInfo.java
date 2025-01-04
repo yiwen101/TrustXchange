@@ -1,4 +1,4 @@
-package com.trustXchange;
+package com.trustXchange.gateway.xrpl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -6,6 +6,8 @@ import java.util.Optional;
 import org.xrpl.xrpl4j.model.transactions.Address;
 import org.xrpl.xrpl4j.model.transactions.CurrencyAmount;
 import org.xrpl.xrpl4j.model.transactions.Payment;
+
+import com.trustXchange.DestinationChainNotSupportException;
 public class GMPCallInfo {
     public String destinationAddress;
     public String destinationChainHex;
@@ -54,6 +56,7 @@ public class GMPCallInfo {
         if (!destinationChainHex.equals(XRPL_EVM_SIDECHAIN_HEX)) {
             throw new DestinationChainNotSupportException();
         }
+        
         CurrencyAmount amount = payment.amount();
 
         return Optional.of(new GMPCallInfo(destinationAddress, destinationChainHex, payloadHash, amount, from));

@@ -1,4 +1,4 @@
-package com.trustXchange;
+package com.trustXchange.gateway.xrpl;
 
 import okhttp3.HttpUrl;
 import org.xrpl.xrpl4j.client.XrplClient;
@@ -15,6 +15,9 @@ import org.xrpl.xrpl4j.model.transactions.Transaction;
 import org.xrpl.xrpl4j.model.transactions.TransactionMetadata;
 import org.xrpl.xrpl4j.model.transactions.TransactionType;
 import org.xrpl.xrpl4j.model.transactions.XAddress;
+
+import com.trustXchange.DestinationChainNotSupportException;
+
 import org.xrpl.xrpl4j.client.JsonRpcClientErrorException;
 
 import java.time.Duration;
@@ -38,10 +41,7 @@ public class GMPListener
         // Specify the address to monitor
         String classicAddressString = "rfv9EskzSdWEsZsyBrujtidD2qdgiz8v7W";
         Address classicAddress = Address.of(classicAddressString);
-        XAddress xAddress = AddressCodec.getInstance().classicAddressToXAddress(classicAddress, true);
-        System.out.println("Monitoring Address: " + classicAddress);
-        System.out.println("X-Address: " + xAddress);
-
+        
         // Optional: Fund the account using the testnet Faucet (if needed)
         /*
         FaucetClient faucetClient = FaucetClient.construct(HttpUrl.get("https://faucet.altnet.rippletest.net"));
