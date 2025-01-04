@@ -23,7 +23,7 @@ import BigNumber from 'bignumber.js';
 const COLLATERAL_MULTIPLIER = 1.5; // Example multiplier
 const INTEREST_RATE = 0.12;  // 12% as a decimal
 const INTEREST_TERM = "Annual interest, compounding daily";
-const dailyInterestBn = BigNumber(1.12).exponentiatedBy(new BigNumber(1).dividedBy(365)).minus(1);
+const dailyInterestBn = BigNumber(0.00026115787); // 0.026115787% as a decimal
 function getPayableAfterDays(loanAmount:number, days:number) {
   return dailyInterestBn.exponentiatedBy(days).times(loanAmount).toNumber();
 }
