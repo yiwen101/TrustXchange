@@ -1,7 +1,11 @@
 package com.trustXchange.service.p2p.eventManager;
 
+import com.trustXchange.entities.p2p.P2pBorrowingRequestEvent;
+import com.trustXchange.entities.p2p.P2pLendingRequestEvent;
 import com.trustXchange.entities.p2p.P2pLoan;
 import com.trustXchange.entities.p2p.P2pLoanEvent;
+import com.trustXchange.repository.p2p.P2pBorrowingRequestEventRepository;
+import com.trustXchange.repository.p2p.P2pLendingRequestEventRepository;
 import com.trustXchange.repository.p2p.P2pLoanEventRepository;
 import com.trustXchange.repository.p2p.P2pLoanRepository;
 import com.trustXchange.service.p2p.P2PEventManagerRegistry;
@@ -31,6 +35,12 @@ public class LoanEventManager  extends P2PEventManager<LoanEventData> {
 
     @Autowired
     private P2pLoanEventRepository p2pLoanEventRepository;
+
+    @Autowired
+    private P2pLendingRequestEventRepository p2pLendingRequestEventRepository;
+
+    @Autowired
+    private P2pBorrowingRequestEventRepository p2pBorrowingRequestEventRepository;
 
     public static final Event LOAN_EVENT = new Event(
         "LoanEvent",
@@ -94,9 +104,25 @@ public class LoanEventManager  extends P2PEventManager<LoanEventData> {
              p2pLoan.setBorrowRequestId(null);
             p2pLoan.setLendRequestId(null);
              if (eventData.getEventName().equals("acceptBorrowingRequest")) {
-                 p2pLoan.setBorrowRequestId(eventData.getAmount().intValue());
+                int borrowRequestId = eventData.getAmount().intValue();
+                P2pBorrowingRequestEvent p2pBorrowingRequestEvent = new P2pBorrowingRequestEvent();
+                p2pBorrowingRequestEvent.setTransactionHash(eventData.getTransactionHash());
+                p2pBorrowingRequestEvent.setTransactionUrl(eventData.getTransactionUrl());
+                p2pBorrowingRequestEvent.setRequestId(borrowRequestId);
+                p2pBorrowingRequestEvent.setEventName(eventData.getEventName());
+                p2pBorrowingRequestEventRepository.save(p2pBorrowingRequestEvent);
+                
+                p2pLoan.setBorrowRequestId(borrowRequestId);
              } else if (eventData.getEventName().equals("acceptLendingRequest")) {
-                 p2pLoan.setLendRequestId(eventData.getAmount().intValue());
+                int lendRequestId = eventData.getAmount().intValue();
+                P2pLendingRequestEvent p2pLendingRequestEvent = new P2pLendingRequestEvent();
+                p2pLendingRequestEvent.setTransactionHash(eventData.getTransactionHash());
+                p2pLendingRequestEvent.setTransactionUrl(eventData.getTransactionUrl());
+                p2pLendingRequestEvent.setRequestId(lendRequestId);
+                p2pLendingRequestEvent.setEventName(eventData.getEventName());
+                p2pLendingRequestEventRepository.save(p2pLendingRequestEvent);
+                
+                p2pLoan.setLendRequestId(lendRequestId);
              }
 
         p2pLoanRepository.save(p2pLoan);
