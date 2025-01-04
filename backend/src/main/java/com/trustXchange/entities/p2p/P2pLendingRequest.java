@@ -1,9 +1,23 @@
 package com.trustXchange.entities.p2p;
 
+import java.sql.Timestamp;
+
 import javax.persistence.*;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "p2p_lending_requests")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class P2pLendingRequest {
 
     @Id
@@ -40,99 +54,11 @@ public class P2pLendingRequest {
     @Column(name = "canceled_by_system")
     private Boolean canceledBySystem;
 
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private Timestamp createdAt;
 
-    // Default constructor
-    public P2pLendingRequest() {
-    }
-
-    // Getters and setters
-
-
-    public Integer getRequestId() {
-        return requestId;
-    }
-
-    public void setRequestId(Integer requestId) {
-        this.requestId = requestId;
-    }
-
-    public String getLender() {
-        return lender;
-    }
-
-    public void setLender(String lender) {
-        this.lender = lender;
-    }
-
-    public Long getAmountToLendUsd() {
-        return amountToLendUsd;
-    }
-
-    public void setAmountToLendUsd(Long amountToLendUsd) {
-        this.amountToLendUsd = amountToLendUsd;
-    }
-
-    public Long getAmountLendedUsd() {
-        return amountLendedUsd;
-    }
-
-    public void setAmountLendedUsd(Long amountLendedUsd) {
-        this.amountLendedUsd = amountLendedUsd;
-    }
-
-    public Long getMinCollateralRatio() {
-        return minCollateralRatio;
-    }
-
-    public void setMinCollateralRatio(Long minCollateralRatio) {
-        this.minCollateralRatio = minCollateralRatio;
-    }
-
-    public Long getLiquidationThreshold() {
-        return liquidationThreshold;
-    }
-
-    public void setLiquidationThreshold(Long liquidationThreshold) {
-        this.liquidationThreshold = liquidationThreshold;
-    }
-
-    public Long getDesiredInterestRate() {
-        return desiredInterestRate;
-    }
-
-    public void setDesiredInterestRate(Long desiredInterestRate) {
-        this.desiredInterestRate = desiredInterestRate;
-    }
-
-    public Long getPaymentDuration() {
-        return paymentDuration;
-    }
-
-    public void setPaymentDuration(Long paymentDuration) {
-        this.paymentDuration = paymentDuration;
-    }
-
-    public Long getMinimalPartialFill() {
-        return minimalPartialFill;
-    }
-
-    public void setMinimalPartialFill(Long minimalPartialFill) {
-        this.minimalPartialFill = minimalPartialFill;
-    }
-
-    public Boolean getCanceled() {
-        return canceled;
-    }
-
-    public void setCanceled(Boolean canceled) {
-        this.canceled = canceled;
-    }
-
-    public Boolean getCanceledBySystem() {
-        return canceledBySystem;
-    }
-
-    public void setCanceledBySystem(Boolean canceledBySystem) {
-        this.canceledBySystem = canceledBySystem;
-    }
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private Timestamp updatedAt;
 }

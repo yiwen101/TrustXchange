@@ -93,66 +93,56 @@ contract XrpLendingP2PV4 is AxelarExecutableWithToken {
 
     // no indexed as https://github.com/hyperledger-web3j/web3j/issues/1109
     // --- Events ---
-    event LoanCreatedFromLendingRequest(
+    event LoanEvent(
+        string eventName,
+        uint256 amount1,
         uint256 loanId, 
-        uint256 requestId,
-        string lender, 
-        string borrower, 
-        uint256 amountBorrowedUSD, 
-        uint256 collateralAmountXRP,
+        string lender,          
+        string borrower,        
+        uint256 amountBorrowedUSD,   
         uint256 amountPayableToLender,
         uint256 amountPayableToPlatform,
-        uint256 repayBy,
-        uint256 liquidationThreshold
-    );
-    event LoanCreatedFromBorrowingRequest(
-        uint256 loanId, 
-        uint256 requestId,
-        string lender, 
-        string borrower, 
-        uint256 amountBorrowedUSD, 
-        uint256 collateralAmountXRP,
-        uint256 amountPayableToLender,
-        uint256 amountPayableToPlatform,
-        uint256 repayBy,
-        uint256 liquidationThreshold
-    );
-    event LoanUpdated(
-        uint256 loanId, 
-        string  borrower, 
-        uint256 newAmountBorrowedUSD, 
-        uint256 newCollateralAmountXRP,
-        uint256 newAmountPayableToLender
-    );
-    event LoanRepaid(uint256 loanId, uint256 amountRepaid, uint256 totalPaid);
-    event LoanLiquidated(uint256 loanId, string liquidator, uint256 collateralLiquidated);
-    event PriceUpdated(uint256 newPrice);
-    event LendingRequestCreated(
-        uint256 requestId, 
-        string lender, 
-        uint256 amountToLendUSD,
-        uint256 minCollateralRatio,
-        uint256 liquidationThreshold,
-        uint256 desiredInterestRate, 
-        uint256 paymentDuration,
-        uint256 minimalPartialFill
-    );
-    event BorrowingRequestCreated(
-        uint256 requestId, 
-        string borrower, 
-        uint256 amountToBorrowUSD,
+        uint256 amountPaidUSD,
         uint256 collateralAmountXRP, 
-        uint256 maxCollateralRatio, 
+        uint256 repayBy,         
+        uint256 liquidationThreshold,  
+        bool isLiquidated  
+    );
+
+    event PriceUpdated(uint256 newPrice);
+    
+    event LendingRequestEvent(
+        string eventName,
+        uint256 requestId,
+        string lender,
+        uint256 amountToLendUSD,
+        uint256 amountLendedUSD,
+        uint256 minCollateralRatio,
         uint256 liquidationThreshold,
         uint256 desiredInterestRate,
         uint256 paymentDuration,
-        uint256 minimalPartialFill
+        uint256 minimalPartialFill,
+        bool canceled,
+        bool autoCanceled
     );
-    event LendingRequestCanceled(uint256 requestId, string canceller);
-    event BorrowingRequestCanceled(uint256 requestId, string canceller);
-    event LendingRequestAutoCanceled(uint256 requestId);
-    event BorrowingRequestAutoCanceled(uint256 requestId);
-
+   
+    event BorrowingRequestEvent(
+        string eventName,
+        uint256 requestId,
+        string borrower,
+        uint256 amountToBorrowUSD,
+        uint256 amountBorrowedUSD,
+        uint256 initialCollateralAmountXRP,
+        uint256 existingCollateralAmountXRP,
+        uint256 maxCollateralRatio,
+        uint256 liquidationThreshold,
+        uint256 desiredInterestRate,
+        uint256 paymentDuration,
+        uint256 minimalPartialFill,
+        bool canceled,
+        bool autoCanceled
+    );
+    
     // --- Constructor ---
     constructor(address gateway_, address priceOracle_) 
         AxelarExecutableWithToken(gateway_) 
@@ -307,15 +297,20 @@ contract XrpLendingP2PV4 is AxelarExecutableWithToken {
             autoCanceled: false
         });
         userLendingRequests[lender].push(lendingRequestCounter);
-        emit LendingRequestCreated(
+        
+        emit LendingRequestEvent(
+            "createLendingRequest",
             lendingRequestCounter, 
             lender, 
-            _amountToLendUSD, 
-            _minCollateralRatio,
-            _liquidationThreshold, 
-            _desiredInterestRate, 
+            _amountToLendUSD,
+            0, 
+            _minCollateralRatio, 
+            _liquidationThreshold,
+            _desiredInterestRate,
             _paymentDuration,
-            _minimalPartialFill
+            _minimalPartialFill,
+            false,
+            false
         );
     }
 
@@ -349,16 +344,21 @@ contract XrpLendingP2PV4 is AxelarExecutableWithToken {
             autoCanceled: false
         });
         userBorrowingRequests[borrower].push(borrowingRequestCounter);
-        emit BorrowingRequestCreated(
+        emit BorrowingRequestEvent (
+            "createBorrowingRequest",
             borrowingRequestCounter, 
             borrower, 
             _amountToBorrowUSD,
-            _collateralAmountXRP, 
+            0, 
+            _collateralAmountXRP,
+            _collateralAmountXRP,
             _maxCollateralRatio, 
             _liquidationThreshold,
             _desiredInterestRate,
             _paymentDuration,
-            _minimalPartialFill
+            _minimalPartialFill,
+            false,
+            false
         );
     }
 
@@ -427,18 +427,20 @@ contract XrpLendingP2PV4 is AxelarExecutableWithToken {
             if (request.amountLendedUSD - request.amountToLendUSD < request.minimalPartialFill) {
                 mustCancelLendingRequest(_requestId);
             }
-
-            emit LoanCreatedFromLendingRequest(
-                loanCounter,
+            emit LoanEvent(
+                "acceptLendingRequest",
                 _requestId,
+                loanCounter,
                 request.lender,
                 borrower,
                 _borrowAmountUSD,
-                _collateralAmountXRP,
                 amountPayableToLender,
                 amountPayableToPlatform,
+                0,
+                _collateralAmountXRP,
                 block.timestamp + request.paymentDuration,
-                request.liquidationThreshold
+                request.liquidationThreshold,
+                false
             );
         } catch {
             revert("Failed to send USD to borrower");
@@ -512,18 +514,21 @@ contract XrpLendingP2PV4 is AxelarExecutableWithToken {
             if (request.existingCollateralAmountXRP < calculateCollateralAt(request.minimalPartialFill, request.maxCollateralRatio)) {
                 mustCancelBorrowingRequest(_requestId);
             }
-
-            emit LoanCreatedFromBorrowingRequest(
-                loanCounter, 
+    
+            emit LoanEvent(
+                "acceptBorrowingRequest",
                 _requestId,
-                lender, 
-                request.borrower, 
+                loanCounter,
+                lender,
+                request.borrower,
                 _amountToLendUSD,
-                _collateralAmountXRP,
                 _amountToLendUSD + interestReceivedByLender,
                 interestReceivedByPlatform,
+                0,
+                _collateralAmountXRP,
                 block.timestamp + request.paymentDuration,
-                request.liquidationThreshold
+                request.liquidationThreshold,
+                false
             );
         } catch {
             revert("Failed to send USD to borrower");
@@ -542,8 +547,21 @@ contract XrpLendingP2PV4 is AxelarExecutableWithToken {
         require(keccak256(bytes(request.lender)) == keccak256(bytes(canceller)), "Not the request creator");
         require(!request.canceled, "Request is already canceled");
         request.canceled = true;
-
-        emit LendingRequestCanceled(_requestId, canceller);
+    
+        emit LendingRequestEvent(
+            "cancelLendingRequest",
+            _requestId,
+            request.lender,
+            request.amountToLendUSD,
+            request.amountLendedUSD,
+            request.minCollateralRatio,
+            request.liquidationThreshold,
+            request.desiredInterestRate,
+            request.paymentDuration,
+            request.minimalPartialFill,
+            true,
+            false
+        );
     }
 
     function cancelBorrowingRequest(
@@ -558,7 +576,22 @@ contract XrpLendingP2PV4 is AxelarExecutableWithToken {
         require(!request.canceled, "Request is already canceled");
         request.canceled = true;
 
-        emit BorrowingRequestCanceled(_requestId, canceller);
+        emit BorrowingRequestEvent(
+            "cancelBorrowingRequest",
+            _requestId,
+            request.borrower,
+            request.amountToBorrowUSD,
+            request.amountBorrowedUSD,
+            request.initialCollateralAmountXRP,
+            request.existingCollateralAmountXRP,
+            request.maxCollateralRatio,
+            request.liquidationThreshold,
+            request.desiredInterestRate,
+            request.paymentDuration,
+            request.minimalPartialFill,
+            true,
+            false
+        );
     }
 
     function mustCancelLendingRequest(uint256 _requestId) internal {
@@ -566,7 +599,20 @@ contract XrpLendingP2PV4 is AxelarExecutableWithToken {
         require(!request.canceled, "Request is already canceled");
         request.canceled = true;
         request.autoCanceled = true;
-        emit LendingRequestAutoCanceled(_requestId);
+        emit LendingRequestEvent(
+            "autoCancelLendingRequest",
+            _requestId,
+            request.lender,
+            request.amountToLendUSD,
+            request.amountLendedUSD,
+            request.minCollateralRatio,
+            request.liquidationThreshold,
+            request.desiredInterestRate,
+            request.paymentDuration,
+            request.minimalPartialFill,
+            true,
+            true
+        );
     }
 
     function mustCancelBorrowingRequest(uint256 _requestId) internal {
@@ -574,7 +620,22 @@ contract XrpLendingP2PV4 is AxelarExecutableWithToken {
         require(!request.canceled, "Request is already canceled");
         request.canceled = true;
         request.autoCanceled = true;
-        emit BorrowingRequestAutoCanceled(_requestId);
+        emit BorrowingRequestEvent(
+            "autoCancelBorrowingRequest",
+            _requestId,
+            request.borrower,
+            request.amountToBorrowUSD,
+            request.amountBorrowedUSD,
+            request.initialCollateralAmountXRP,
+            request.existingCollateralAmountXRP,
+            request.maxCollateralRatio,
+            request.liquidationThreshold,
+            request.desiredInterestRate,
+            request.paymentDuration,
+            request.minimalPartialFill,
+            true,
+            true
+        );
     }
 
     // --- Repay Function ---
@@ -611,23 +672,37 @@ contract XrpLendingP2PV4 is AxelarExecutableWithToken {
             gateway().sendToken(sourceChain, borrower, tokenSymbol, _repayAmountUSD-1);
             revert(errorMesg);
         }
+
         try gateway().sendToken(sourceChain, borrower, "USD", _repayAmountUSD) {
-            // Update loan state
             loan.amountPaidUSD += _repayAmountUSD;
-            emit LoanRepaid(_loanId, _repayAmountUSD, loan.amountPaidUSD);
         } catch {
             revert("Failed to send USD to borrower");
         }
-        // Check if loan is completely paid, then send back collateral.
+        
         if (loan.amountPaidUSD >= loan.amountPayableToLender) {
             // Transfer collateral back to borrower via Axelar
             try gateway().sendToken(sourceChain, borrower, "XRP", loan.collateralAmountXRP) {
                 // Emit event
-                emit LoanRepaid(_loanId, _repayAmountUSD, loan.amountPaidUSD);
             } catch {
                 revert("Failed to send XRP to borrower");
             }
         }
+
+        emit  LoanEvent (
+                "repayLoan",
+                _repayAmountUSD,
+                _loanId,
+                loan.lender,
+                borrower,
+                loan.amountBorrowedUSD,
+                loan.amountPayableToLender,
+                loan.amountPayableToPlatform,
+                loan.amountPaidUSD,
+                loan.collateralAmountXRP,
+                loan.repayBy,
+                loan.liquidationThreshold,
+                loan.isLiquidated
+            );
     }
 
     // --- Liquidate Function ---
@@ -646,7 +721,22 @@ contract XrpLendingP2PV4 is AxelarExecutableWithToken {
 
         try gateway().sendToken(supportedSourceChain, loan.lender, "XRP", loan.collateralAmountXRP) {
             loan.isLiquidated = true;
-            emit LoanLiquidated(_loanId, caller, loan.collateralAmountXRP);
+            
+            emit LoanEvent(
+                "liquidateLoan",
+                0,
+                _loanId,
+                loan.lender,
+                loan.borrower,
+                loan.amountBorrowedUSD,
+                loan.amountPayableToLender,
+                loan.amountPayableToPlatform,
+                loan.amountPaidUSD,
+                loan.collateralAmountXRP,
+                loan.repayBy,
+                loan.liquidationThreshold,
+                true
+            );
         } catch {
             revert("Failed to send XRP to lender");
         }

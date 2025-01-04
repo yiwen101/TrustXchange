@@ -11,7 +11,9 @@ CREATE TABLE p2p_borrowing_requests (
     payment_duration BIGINT,
     minimal_partial_fill BIGINT,
     canceled BOOLEAN,
-    canceled_by_system BOOLEAN
+    canceled_by_system BOOLEAN,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE p2p_lending_requests (
@@ -25,7 +27,9 @@ CREATE TABLE p2p_lending_requests (
     payment_duration BIGINT,
     minimal_partial_fill BIGINT,
     canceled BOOLEAN,
-    canceled_by_system BOOLEAN
+    canceled_by_system BOOLEAN,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE p2p_loans (
@@ -39,20 +43,39 @@ CREATE TABLE p2p_loans (
     collateral_amount_xrp BIGINT,
     repay_by TIMESTAMP,
     liquidation_threshold BIGINT,
-    is_liquidated BOOLEAN
+    is_liquidated BOOLEAN,
+    lend_request_id INT,  
+    borrow_request_id INT, 
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE p2p_loan_to_lender_request (
-    loan_id INT PRIMARY KEY,
-    lend_request_id INT,
-    FOREIGN KEY (lend_request_id) REFERENCES p2p_lending_requests(request_id),
-    FOREIGN KEY (loan_id) REFERENCES p2p_loans(loan_id)
+
+CREATE TABLE p2p_lending_request_events (
+    transaction_hash VARCHAR(255) PRIMARY KEY NOT NULL,
+    transaction_url VARCHAR(255) NOT NULL,
+    event_name VARCHAR(255) NOT NULL,
+    request_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (request_id) REFERENCES p2p_lending_requests(request_id)
 );
 
-CREATE TABLE p2p_loan_to_borrower_request (
-    loan_id INT PRIMARY KEY,
-    borrow_request_id INT,
-    FOREIGN KEY (borrow_request_id) REFERENCES p2p_borrowing_requests(request_id),
+CREATE TABLE p2p_borrowing_request_events (
+    transaction_hash VARCHAR(255) PRIMARY KEY NOT NULL,
+    transaction_url VARCHAR(255) NOT NULL,
+    event_name VARCHAR(255) NOT NULL,
+    request_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (request_id) REFERENCES p2p_borrowing_requests(request_id)
+);
+
+CREATE TABLE p2p_loan_events (
+    transaction_hash VARCHAR(255) PRIMARY KEY NOT NULL,
+    transaction_url VARCHAR(255) NOT NULL,
+    event_name VARCHAR(255) NOT NULL,
+    amount BIGINT,
+    loan_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (loan_id) REFERENCES p2p_loans(loan_id)
 );
 
@@ -60,5 +83,3 @@ CREATE INDEX idx_p2p_borrowing_requests_borrower ON p2p_borrowing_requests (borr
 CREATE INDEX idx_p2p_lending_requests_lender ON p2p_lending_requests (lender);
 CREATE INDEX idx_p2p_loans_lender ON p2p_loans (lender);
 CREATE INDEX idx_p2p_loans_borrower ON p2p_loans (borrower);
-CREATE INDEX idx_p2p_borrowing_request_filled_request_id ON p2p_loan_to_lender_request(lend_request_id);
-CREATE INDEX idx_p2p_lending_request_filled_request_id ON p2p_loan_to_borrower_request(borrow_request_id);

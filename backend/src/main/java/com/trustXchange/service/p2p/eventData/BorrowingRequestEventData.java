@@ -1,18 +1,22 @@
 package com.trustXchange.service.p2p.eventData;
 
+import lombok.Value;
 import java.math.BigInteger;
 
-import lombok.Value;
-
 @Value
-public class BorrowingRequestCreatedEventData  extends  P2PEventData {
-    int requestId;
+public class BorrowingRequestEventData  extends P2PEventData {
+    String eventName;
+    BigInteger requestId;
     String borrower;
     BigInteger amountToBorrowUSD;
-    BigInteger collateralAmountXRP;
+    BigInteger amountBorrowedUSD;
+    BigInteger initialCollateralAmountXRP;
+    BigInteger existingCollateralAmountXRP;
     BigInteger maxCollateralRatio;
     BigInteger liquidationThreshold;
     BigInteger desiredInterestRate;
     BigInteger paymentDuration;
     BigInteger minimalPartialFill;
+    boolean canceled;
+    boolean autoCanceled;
 }
