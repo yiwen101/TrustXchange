@@ -19,7 +19,8 @@ CREATE TABLE pool_lending_borrower (
 );
 
 CREATE TABLE pool_lending_borrower_events (
-    id SERIAL PRIMARY KEY,
+    transaction_hash VARCHAR(255) PRIMARY KEY NOT NULL,
+    transaction_url VARCHAR(255) NOT NULL,
     event_name VARCHAR(255) NOT NULL,
     amount BIGINT,
     borrower_address VARCHAR(255) NOT NULL,
@@ -27,11 +28,11 @@ CREATE TABLE pool_lending_borrower_events (
      FOREIGN KEY (borrower_address) REFERENCES pool_lending_borrower(borrower_address)
 );
 
-
 CREATE TABLE pool_lending_contributor_events (
-    id SERIAL PRIMARY KEY,
+    transaction_hash VARCHAR(255) PRIMARY KEY NOT NULL,
+    transaction_url VARCHAR(255) NOT NULL,
     event_name VARCHAR(255) NOT NULL,
-     amount BIGINT,
+    amount BIGINT,
     contributor_address VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (contributor_address) REFERENCES pool_lending_contributor(address)
@@ -39,7 +40,8 @@ CREATE TABLE pool_lending_contributor_events (
 
 
 CREATE TABLE pool_lending_pool_events (
-   id SERIAL PRIMARY KEY,
+   transaction_hash VARCHAR(255) PRIMARY KEY NOT NULL,
+    transaction_url VARCHAR(255) NOT NULL,
    reward_distributed BIGINT,
    acc_reward_per_share_e18 BIGINT,
    equity BIGINT,

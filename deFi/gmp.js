@@ -73,7 +73,7 @@ async function callContract(params, contract_address) {
 async function main() {
   //const {inputData,executeWithTokenParams} = utils.getPocMockInputs(51)
   //const {inputData,executeWithTokenParams} = p2pUtils.getP2PBorrowingRequestGMPParams(100);
-  const {inputData,executeWithTokenParams} = pledgeUtils.getLendGMPParams(107);
+  const {inputData,executeWithTokenParams} = pledgeUtils.getLendGMPParams(108);
   await approveContractCallWithMint(inputData);
   //await callPocContract(executeWithTokenParams);
   await callPoolContract(executeWithTokenParams);

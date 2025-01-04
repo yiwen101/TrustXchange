@@ -44,10 +44,13 @@ public abstract class EventManager<T extends EventData> {
         String logEventHash = log.getTopics().get(0);
         if (logEventHash.equals(eventHash)) {
             T eventData = decode(log);
+            eventData.setTransactionHash(log.getTransactionHash());
             System.out.println("Event data: " + eventData);
             handle(eventData);
         }
     }
+
+    
     
       public Event getEvent() {
         return event;

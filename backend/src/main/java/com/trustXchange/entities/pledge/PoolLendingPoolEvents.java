@@ -19,8 +19,11 @@ import java.sql.Timestamp;
 public class PoolLendingPoolEvents  {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    @Column(name = "transaction_hash", nullable = false)
+    private String transactionHash;
+
+    @Column(name = "transaction_url", nullable = false)
+    private String transactionUrl;
 
     @Column(name = "reward_distributed")
     private Long rewardDistributed;

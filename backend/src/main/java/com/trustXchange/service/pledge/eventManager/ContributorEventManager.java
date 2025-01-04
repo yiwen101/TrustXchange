@@ -88,6 +88,8 @@ public class ContributorEventManager  extends PledgeEventManager<ContributorEven
 
 
         PoolLendingContributorEvents poolLendingContributorEvents = new PoolLendingContributorEvents();
+        poolLendingContributorEvents.setTransactionHash(eventData.getTransactionHash());
+        poolLendingContributorEvents.setTransactionUrl(eventData.getTransactionUrl());
         poolLendingContributorEvents.setEventName(eventData.getEventName());
         poolLendingContributorEvents.setAmount(eventData.getAmount().longValue());
         poolLendingContributorEvents.setContributorAddress(eventData.getUser());

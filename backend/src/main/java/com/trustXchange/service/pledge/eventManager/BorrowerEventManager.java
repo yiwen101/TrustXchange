@@ -99,6 +99,8 @@ public class BorrowerEventManager  extends PledgeEventManager<BorrowerEventData>
 
 
         PoolLendingBorrowerEvents poolLendingBorrowerEvents = new PoolLendingBorrowerEvents();
+        poolLendingBorrowerEvents.setTransactionHash(eventData.getTransactionHash());
+        poolLendingBorrowerEvents.setTransactionUrl(eventData.getTransactionUrl());
         poolLendingBorrowerEvents.setEventName(eventData.getEventName());
         poolLendingBorrowerEvents.setAmount(eventData.getAmount().longValue());
         poolLendingBorrowerEvents.setBorrowerAddress(eventData.getBorrower());

@@ -62,6 +62,8 @@ public class PoolRewardEventManager  extends PledgeEventManager<PoolRewardEventD
      @Override
     public void handle(PoolRewardEventData eventData) {
         PoolLendingPoolEvents poolLendingPoolEvents = new PoolLendingPoolEvents();
+        poolLendingPoolEvents.setTransactionHash(eventData.getTransactionHash());
+        poolLendingPoolEvents.setTransactionUrl(eventData.getTransactionUrl());
         poolLendingPoolEvents.setRewardDistributed(eventData.getRewardDistributed().longValue());
         poolLendingPoolEvents.setAccRewardPerShareE18(eventData.getAccRewardPerShareE18().longValue());
          poolLendingPoolEvents.setEquity(eventData.getEquity().longValue());
