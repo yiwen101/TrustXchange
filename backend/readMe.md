@@ -16,3 +16,11 @@ Preliminary result: temBAD_SIGNER
 */
 
 It is not due to time out or network issue. It means something wrong with your transection  such that the "autofill" method failed. Modify code instead.
+
+`createdb truxtXchange_db`
+if failed, do 
+``` shell
+psql -U postgres
+postgres=# CREATE ROLE <you laptop logged in user name> WITH LOGIN SUPERUSER;
+\q
+```

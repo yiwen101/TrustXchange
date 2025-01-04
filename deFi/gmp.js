@@ -1,59 +1,9 @@
 import { ethers } from "ethers";
 import dotenv from "dotenv";
 import * as utils from "./utils.js"
+import * as p2pUtils from "./p2pPayloadUtil.js"
+import * as pledgeUtils from "./pledgePayloadUtil.js"
 dotenv.config();
-
-/*
-    function execute(bytes calldata input) external onlyAuthModule {
-        (bytes memory data, bytes memory proof) = abi.decode(input, (bytes, bytes));
-
-        //bytes32 messageHash = ECDSA.toEthSignedMessageHash(keccak256(data));
-
-        //bool allowOperatorshipTransfer = IAxelarAuth(authModule).validateProof(messageHash, proof);
-
-        uint256 chainId;
-        bytes32[] memory commandIds;
-        string[] memory commands;
-        bytes[] memory params;
-
-        (chainId, commandIds, commands, params) = abi.decode(data, (uint256, bytes32[], string[], bytes[]));
-
-        //if (chainId != block.chainid) revert InvalidChainId();
-
-        uint256 commandsLength = commandIds.length;
-
-        if (commandsLength != commands.length || commandsLength != params.length) revert InvalidCommands();
-
-        for (uint256 i; i < commandsLength; ++i) {
-            bytes32 commandId = commandIds[i];
-
-            // Ignore if duplicate commandId received
-            if (isCommandExecuted(commandId)) continue;
-
-            bytes4 commandSelector;
-            bytes32 commandHash = keccak256(abi.encodePacked(commands[i]));
-            if (commandHash == SELECTOR_APPROVE_CONTRACT_CALL) {
-                commandSelector = MyAxelarGatewayImpl.approveContractCall.selector;
-            } else if (commandHash == SELECTOR_APPROVE_CONTRACT_CALL_WITH_MINT) {
-                commandSelector = MyAxelarGatewayImpl.approveContractCallWithMint.selector;
-            }  else {
-                // Ignore unknown commands
-                continue;
-            }
-
-            // Prevent a re-entrancy from executing this command before it can be marked as successful.
-            _setCommandExecuted(commandId, true);
-
-            // slither-disable-next-line calls-loop,reentrancy-no-eth
-            (bool success, ) = address(this).call(abi.encodeWithSelector(commandSelector, params[i], commandId));
-
-            // slither-disable-next-line reentrancy-events
-            if (success) emit Executed(commandId);
-            else _setCommandExecuted(commandId, false);
-        }
-    }
-*/
-
 
 // Define the provider (XRPL EVM endpoint)
 const provider = new ethers.JsonRpcProvider("https://rpc-evm-sidechain.xrpl.org");
@@ -64,7 +14,7 @@ const authModule = process.env.PUBLIC_ADDRESS;
 const signer = new ethers.Wallet(privateKey, provider);
 
 // Function to call the emitMessage function on the contract
-async function approveContractCall(input) {
+async function approveContractCallWithMint(input) {
   const gatewayAbi = [
     "function execute(bytes calldata input) external"
   ];
@@ -80,33 +30,30 @@ async function approveContractCall(input) {
   }
 }
 
+async function callPocContract(params) {
+  await callContract(params, process.env.GMS_EXECUTABLE_ADDRESS);
+}
 
-/*
-function _execute(
-        bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes calldata payload
-    ) internal override {
-        (string memory tokenDenom, uint256 tokenAmount) = abi.decode(payload, (string, uint256));
-        if(tokenAmount > 1) {
-            gateway().sendToken(sourceChain, sourceAddress, tokenDenom, tokenAmount - 1);
-            emit Executed(sourceChain, sourceAddress, tokenDenom, tokenAmount-1);
-        } else {
-            emit Executed(sourceChain, sourceAddress, tokenDenom, 0);
-        }
-    }
-*/
-async function callContract(params) {
+async function callP2PContract(params) {
+  console.log("Calling P2P Contract with address:", process.env.XRP_LENDING_P2P);
+  await callContract(params, process.env.XRP_LENDING_P2P);
+}
+
+async function callPoolContract(params) {
+  console.log("Calling P2P Contract with address:", process.env.XRP_LENDING_POOL);
+  await callContract(params, process.env.XRP_LENDING_POOL);
+}
+
+
+
+async function callContract(params, contract_address) {
   const gmsExecutableAbi = [
     "error DecodingError(string reason)",
     "error AmountCheckFailed(uint256 amount)",
     "error SendTokenFailed(string reason)",
     "function executeWithToken(bytes32 commandId,string calldata sourceChain,string calldata sourceAddress,bytes calldata payload,string calldata tokenSymbol,uint256 amount) external"
   ];
-  const gmsExecutableAddress = process.env.GMS_EXECUTABLE_ADDRESS;
-  console.log('gmsExecutableAddress: ', gmsExecutableAddress);
-  const gmsExecutableContract = new ethers.Contract(gmsExecutableAddress,  gmsExecutableAbi, signer)
+  const gmsExecutableContract = new ethers.Contract(contract_address,  gmsExecutableAbi, signer)
   try {
      const commandId = params.commandId;
       const sourceChain = params.sourceChain;
@@ -124,9 +71,12 @@ async function callContract(params) {
 }
 
 async function main() {
-  const {inputData,executeWithTokenParams} = utils.getMockInputs(50)
-  await approveContractCall(inputData);
-  await callContract(executeWithTokenParams);
+  //const {inputData,executeWithTokenParams} = utils.getPocMockInputs(51)
+  //const {inputData,executeWithTokenParams} = p2pUtils.getP2PBorrowingRequestGMPParams(100);
+  const {inputData,executeWithTokenParams} = pledgeUtils.getLendGMPParams(108);
+  await approveContractCallWithMint(inputData);
+  //await callPocContract(executeWithTokenParams);
+  await callPoolContract(executeWithTokenParams);
 }
 
 main().catch((error) => {

@@ -96,44 +96,39 @@ function createExecutePayload(message) {
     );
 }
 
-export function getMockInputs(mintAmount = 100) {
+export const getGMPInputs = (contractAddress,payloadBytes, tokenSymbol=undefined, tokenAmount=undefined) => {
     const tokenDenom = 1;
     const chainId = 1;  // Example Chain ID
-    const contractAddress = process.env.GMS_EXECUTABLE_ADDRESS;
-    const payloadBytes = createExecutePayload("hello world")
     const payloadHash = keccak256(payloadBytes);
-    const sourceChain = "xrp testnet string";
+    const sourceChain = "XRPL_testnet";
     const sourceAddress = "source chain address string";
     const sourceTxHash = keccak256(toUtf8Bytes("ignored"));
     const sourceEventIndex = 0;
 
-    /*
-    const commandName1 = "approveContractCall";
-    const params1 = createGatewayCallParams(
+    const isWithMint = tokenSymbol && tokenAmount;
+    
+    const param = isWithMint
+    ? createGatewayCallWithMintParams(
+        sourceChain,
+        sourceAddress,
+        contractAddress,
+        payloadHash,
+        tokenSymbol,
+        tokenAmount,
+        sourceTxHash,
+        sourceEventIndex)
+    : createGatewayCallParams(
         sourceChain,
         sourceAddress,
         contractAddress,
         payloadHash,
         sourceTxHash,
         sourceEventIndex
-        );
-    const commandId1 = createCommandId(commandName1, params1);
-    */
-
-    // Command 2: Approve Contract Call With Mint
-    const param = createGatewayCallWithMintParams(
-        sourceChain,
-        sourceAddress,
-        contractAddress,
-        payloadHash,
-        "USD",
-        mintAmount,
-        sourceTxHash,
-        sourceEventIndex
-        );
-    const commandId = createCommandId("approveContractCallWithMint", param);
+    );
+    const commandName = isWithMint ? "approveContractCallWithMint" : "approveContractCall";
+    const commandId = createCommandId(commandName, param);
     const commandIds = [commandId];
-    const commands = ["approveContractCallWithMint"];
+    const commands = [commandName];
     const params = [param];
 
     const data = prepareCommandData(chainId, commandIds, commands, params);
@@ -146,8 +141,12 @@ export function getMockInputs(mintAmount = 100) {
         sourceChain: sourceChain,
         sourceAddress: sourceAddress,
         payload: payloadBytes,
-        tokenSymbol: "USD",
-        amount: mintAmount
+        tokenSymbol: tokenSymbol,
+        amount: tokenAmount
      }
     return {inputData,executeWithTokenParams}
+}
+
+export function getPocMockInputs(mintAmount = 100) {
+    return getGMPInputs(process.env.GMS_EXECUTABLE_ADDRESS,createExecutePayload("hello world"), "USD", mintAmount)
 }
