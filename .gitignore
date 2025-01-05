@@ -20,3 +20,4 @@
 /backend/target
 /backend/src/target
 /backend/src/target
+backend/src/main/resources/application.properties
