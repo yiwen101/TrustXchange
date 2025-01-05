@@ -1,9 +1,11 @@
--- Modified SQL Schema
+-- Define ENUM types
+CREATE TYPE option_type AS ENUM ('call', 'put');
+CREATE TYPE action_type AS ENUM ('issue', 'exercise', 'collect_collateral');
 
 -- Create the options table
 CREATE TABLE options (
-    id BIGINT BIGSERIAL PRIMARY KEY,
-    option_type ENUM('call', 'put') NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    option_type option_type NOT NULL,
     strike_price BIGINT NOT NULL,
     expiry_date TIMESTAMP NOT NULL,
     late_deal_price BIGINT DEFAULT NULL,
@@ -16,31 +18,14 @@ CREATE TABLE options (
 
 -- Create the option_events table
 CREATE TABLE option_events (
-    id BIGINT BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     transaction_hash VARCHAR(255) NOT NULL,
     transaction_url VARCHAR(255) NOT NULL,
     address VARCHAR(255) NOT NULL,
     option_id BIGINT NOT NULL,
-    action ENUM('issue', 'exercise', 'collect_collateral') NOT NULL,
+    action action_type NOT NULL,
     amount BIGINT NOT NULL,
     FOREIGN KEY (option_id) REFERENCES options(id)
-);
-
--- Create the trade_events table
-CREATE TABLE trade_events (
-    id BIGINT BIGSERIAL PRIMARY KEY,
-    transaction_hash VARCHAR(255) NOT NULL,
-    transaction_url VARCHAR(255) NOT NULL,
-    buyer_address VARCHAR(255) NOT NULL,
-    seller_address VARCHAR(255) NOT NULL,
-    deal_price BIGINT NOT NULL,
-    amount BIGINT NOT NULL,
-    option_id BIGINT NOT NULL,
-    sell_order_id BIGINT NOT NULL,
-    buy_order_id BIGINT NOT NULL,
-    FOREIGN KEY (option_id) REFERENCES options(id)
-    FOREIGN KEY (sell_order_id) REFERENCES sell_orders(id)
-    FOREIGN KEY (buy_order_id) REFERENCES buy_orders(id)
 );
 
 -- Create the sell_orders table
@@ -67,9 +52,28 @@ CREATE TABLE buy_orders (
     FOREIGN KEY (option_id) REFERENCES options(id)
 );
 
+-- Create the trade_events table
+CREATE TABLE trade_events (
+    id BIGSERIAL PRIMARY KEY,
+    transaction_hash VARCHAR(255) NOT NULL,
+    transaction_url VARCHAR(255) NOT NULL,
+    buyer_address VARCHAR(255) NOT NULL,
+    seller_address VARCHAR(255) NOT NULL,
+    deal_price BIGINT NOT NULL,
+    amount BIGINT NOT NULL,
+    option_id BIGINT NOT NULL,
+    sell_order_id BIGINT NOT NULL,
+    buy_order_id BIGINT NOT NULL,
+    FOREIGN KEY (option_id) REFERENCES options(id),
+    FOREIGN KEY (sell_order_id) REFERENCES sell_orders(id),
+    FOREIGN KEY (buy_order_id) REFERENCES buy_orders(id)
+);
+
+
+
 -- Create the user_option_balances table
 CREATE TABLE user_option_balances (
-    id BIGINT BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     user_address VARCHAR(255) NOT NULL,
     option_id BIGINT NOT NULL,
     owned_amount BIGINT NOT NULL,
