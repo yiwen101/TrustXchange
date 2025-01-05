@@ -16,35 +16,34 @@ public class OptionExercisedEventHandler  {
       @Autowired
     private OptionEventRepository optionEventRepository;
      @Autowired
-    private UserOptionBalanceRepository userOptionBalanceRepository;
+    private OptionUserBalanceRepository OptionUserBalanceRepository;
 
     public void handle(OptionExercisedEventData event) {
 
-      String optionType = event.isCall() ? "call": "put";
-        Option option =  optionRepository.findByOptionTypeAndStrikePriceAndExpiryDate(optionType, event.getStrikePrice(), OptionContractMeta.getExpiryDate(event.getExpiryWeeks()));
+      OptionType optionType = event.isCall() ? OptionType.CALL : OptionType.PUT;
+      Optional<Option> maybyOption =  optionRepository.findByOptionTypeAndStrikePriceAndExpiryDate(optionType, event.getStrikePrice(), OptionContractMeta.getExpiryDate(event.getExpiryWeeks()));
 
-          if (option.getId() == null) {
-             option.setOptionType(optionType);
-             option.setStrikePrice(event.getStrikePrice());
-             option.setExpiryDate(OptionContractMeta.getExpiryDate(event.getExpiryWeeks()));
-             option = optionRepository.save(option);
-        }
+
+      if (!maybyOption.isPresent()) {
+          return;
+      }
+        Option option = maybyOption.get();
 
          OptionEvent optionEvent = new OptionEvent();
           optionEvent.setTransactionHash(event.getTransactionHash());
           optionEvent.setTransactionUrl(event.getTransactionUrl());
-         optionEvent.setAction("exercise");
+         optionEvent.setAction(OptionActionType.EXERCISE);
          optionEvent.setOptionId(option.getId());
          optionEvent.setAddress(event.getSourceAddress());
          optionEvent.setAmount(event.getAmount());
           optionEventRepository.save(optionEvent);
 
-        Optional<UserOptionBalance> existingUserBalance = userOptionBalanceRepository.findByOptionIdAndUserAddress(option.getId(), event.getSourceAddress());
+        Optional<OptionUserBalance> existingUserBalance = OptionUserBalanceRepository.findByOptionIdAndUserAddress(option.getId(), event.getSourceAddress());
         if(existingUserBalance.isPresent()) {
-            UserOptionBalance userOptionBalance = existingUserBalance.get();
-            userOptionBalance.setOwnedAmount(userOptionBalance.getOwnedAmount() - event.getAmount());
-            userOptionBalance.setExercisedAmount(userOptionBalance.getExercisedAmount() + event.getAmount());
-            userOptionBalanceRepository.save(userOptionBalance);
+            OptionUserBalance OptionUserBalance = existingUserBalance.get();
+            OptionUserBalance.setOwnedAmount(OptionUserBalance.getOwnedAmount() - event.getAmount());
+            OptionUserBalance.setExercisedAmount(OptionUserBalance.getExercisedAmount() + event.getAmount());
+            OptionUserBalanceRepository.save(OptionUserBalance);
         }
 
     }

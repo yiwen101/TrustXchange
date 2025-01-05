@@ -6,6 +6,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
+
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.sql.Timestamp;
 
 @Entity
@@ -29,6 +32,7 @@ public class P2pBorrowingRequestEvent  {
     @Column(name = "request_id")
     private Integer requestId;
 
+    @CreationTimestamp
     @Column(name = "created_at")
     private Timestamp createdAt;
 

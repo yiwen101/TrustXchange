@@ -4,91 +4,74 @@ import com.trustXchange.entities.option.*;
 import com.trustXchange.service.option.eventData.OptionTradeExecutedEventData;
 import com.trustXchange.repository.option.*;
 
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.sql.Timestamp;
 import java.util.Optional;
 
 @Component
 public class OptionTradeExecutedEventHandler  {
-     @Autowired
-    private OptionRepository optionRepository;
       @Autowired
-    private TradeEventRepository tradeEventRepository;
+    private OptionOrderEventRepository OptionTradeEventRepository;
       @Autowired
-    private SellOrderRepository sellOrderRepository;
-      @Autowired
-    private BuyOrderRepository buyOrderRepository;
+    private OptionOrderRepository OptionOrderRepository;
     @Autowired
-    private UserOptionBalanceRepository userOptionBalanceRepository;
+    private OptionUserBalanceRepository OptionUserBalanceRepository;
 
     public void handle(OptionTradeExecutedEventData event) {
+      Long sellOrderId = event.getSellOrderId();
+      Long buyOrderId = event.getBuyOrderId();
 
-       String optionType =  (event.getOptionId() == 1 || event.getOptionId() == 2)? "call": "put";
-        Option option =  optionRepository.findByOptionTypeAndStrikePriceAndExpiryDate(optionType, event.getStrikePrice(), new Timestamp(event.getExpiryWeeks() *  7* 24 * 60 * 60 * 1000 + 1704508800000L));
+      Optional<OptionOrder> maybeSellOrder = OptionOrderRepository.findById(sellOrderId);
+      Optional<OptionOrder> maybeBuyOrder = OptionOrderRepository.findById(buyOrderId);
+      if (!maybeSellOrder.isPresent() || !maybeBuyOrder.isPresent()) {
+          return;
+      }
+      OptionOrder sellOrder = maybeSellOrder.get();
+      OptionOrder buyOrder = maybeBuyOrder.get();
 
-        if (option.getId() == null) {
-             option.setOptionType(optionType);
-             option.setStrikePrice(event.getStrikePrice());
-            option.setExpiryDate(new Timestamp(event.getExpiryWeeks() *  7* 24 * 60 * 60 * 1000 + 1704508800000L));
-            option = optionRepository.save(option);
-        }
+      Optional<OptionUserBalance> maybeSeller = OptionUserBalanceRepository.findByOptionIdAndUserAddress(sellOrder.getOptionId(), sellOrder.getPosterAddress());
+      Optional<OptionUserBalance> maybeBuyer = OptionUserBalanceRepository.findByOptionIdAndUserAddress(buyOrder.getOptionId(), buyOrder.getPosterAddress());
+      if (!maybeSeller.isPresent() || !maybeBuyer.isPresent()) {
+          return;
+      }
 
-           TradeEvent tradeEvent = new TradeEvent();
-          tradeEvent.setTransactionHash(event.getTransactionHash());
-          tradeEvent.setTransactionUrl(event.getTransactionUrl());
-          tradeEvent.setOptionId(option.getId());
-          tradeEvent.setSellOrderId(event.getSellOrderId());
-          tradeEvent.setBuyOrderId(event.getBuyOrderId());
-           tradeEvent.setBuyerAddress(event.getBuyerAddress());
-          tradeEvent.setSellerAddress(event.getSellerAddress());
-          tradeEvent.setDealPrice(event.getPrice());
-          tradeEvent.setAmount(event.getAmount());
-          tradeEventRepository.save(tradeEvent);
+      // handle sell order, create event, update order, update user balance
+      OptionOrderEvent OptionTradeEvent = new OptionOrderEvent();
+      OptionTradeEvent.setTransactionHash(event.getTransactionHash());
+      OptionTradeEvent.setTransactionUrl(event.getTransactionUrl());
+      OptionTradeEvent.setOptionId(sellOrder.getOptionId());
+      OptionTradeEvent.setOrderId(sellOrderId);;
+      OptionTradeEvent.setPosterAddress(event.getSellerAddress());
+      OptionTradeEvent.setDealPrice(event.getPrice());
+      OptionTradeEvent.setAmount(event.getAmount());
+      OptionTradeEvent.setAction(OptionTradeEventType.FILL);
+      OptionTradeEventRepository.save(OptionTradeEvent);
 
-          Long buyOrderId = event.getBuyOrderId().longValue();
-          Long sellOrderId = event.getSellOrderId().longValue();
+      sellOrder.setFilledAmount(sellOrder.getFilledAmount() + event.getAmount());
+      OptionOrderRepository.save(sellOrder);
+      
+      OptionUserBalance seller = maybeSeller.get();
+      seller.setSellingAmount(seller.getSellingAmount() - event.getAmount());
+      OptionUserBalanceRepository.save(seller);
 
-           Optional<SellOrder> sellOrderOptional = sellOrderRepository.findById(sellOrderId);
+      // update buy order, create event, update order, update user balance
+      OptionOrderEvent buyOrderFilledEvent = new OptionOrderEvent();
+      buyOrderFilledEvent.setTransactionHash(event.getTransactionHash());
+      buyOrderFilledEvent.setTransactionUrl(event.getTransactionUrl());
+      buyOrderFilledEvent.setOptionId(buyOrder.getOptionId());
+      buyOrderFilledEvent.setOrderId(buyOrderId);
+      buyOrderFilledEvent.setPosterAddress(event.getBuyerAddress());
+      buyOrderFilledEvent.setDealPrice(event.getPrice());
+      buyOrderFilledEvent.setAmount(event.getAmount());
+      buyOrderFilledEvent.setAction(OptionTradeEventType.FILL);
+      OptionTradeEventRepository.save(buyOrderFilledEvent);
 
-          if (sellOrderOptional.isPresent()){
-              SellOrder sellOrder = sellOrderOptional.get();
-              sellOrder.setFilledAmount(sellOrder.getFilledAmount() + event.getAmount());
-              sellOrderRepository.save(sellOrder);
+      buyOrder.setFilledAmount(buyOrder.getFilledAmount() + event.getAmount());
+      OptionOrderRepository.save(buyOrder);
 
-              Optional<UserOptionBalance> existingUserBalance = userOptionBalanceRepository.findByOptionIdAndUserAddress(sellOrder.getOptionId(), sellOrder.getSellerAddress());
-              if(existingUserBalance.isPresent()) {
-                  UserOptionBalance userOptionBalance = existingUserBalance.get();
-                  userOptionBalance.setSellingAmount(userOptionBalance.getSellingAmount() - event.getAmount());
-                  userOptionBalance.setOwnedAmount(userOptionBalance.getOwnedAmount() + event.getAmount());
-                  userOptionBalanceRepository.save(userOptionBalance);
-              }
-          }
-
-          Optional<BuyOrder> buyOrderOptional =  buyOrderRepository.findById(buyOrderId);
-
-          if (buyOrderOptional.isPresent()) {
-              BuyOrder buyOrder = buyOrderOptional.get();
-              buyOrder.setFilledAmount(buyOrder.getFilledAmount() + event.getAmount());
-              buyOrderRepository.save(buyOrder);
-              
-              Optional<UserOptionBalance> existingUserBalance = userOptionBalanceRepository.findByOptionIdAndUserAddress(buyOrder.getOptionId(), buyOrder.getBuyerAddress());
-              UserOptionBalance buyerProfile;
-              if(existingUserBalance.isPresent()) {
-                  buyerProfile = existingUserBalance.get();
-                  buyerProfile.setOwnedAmount(buyerProfile.getOwnedAmount() + event.getAmount());
-              } else {
-                  buyerProfile = new UserOptionBalance();
-                  buyerProfile.setOptionId(buyOrder.getOptionId());
-                  buyerProfile.setUserAddress(buyOrder.getBuyerAddress());
-                  buyerProfile.setOwnedAmount(event.getAmount());
-                  buyerProfile.setSellingAmount(0L);
-                  buyerProfile.setIssuedAmount(0L);
-                  buyerProfile.setExercisedAmount(0L);
-              }
-              userOptionBalanceRepository.save(buyerProfile);
-          }
+      OptionUserBalance buyer = maybeBuyer.get();
+      buyer.setOwnedAmount(buyer.getOwnedAmount() + event.getAmount());
+      OptionUserBalanceRepository.save(buyer);
     }
 }

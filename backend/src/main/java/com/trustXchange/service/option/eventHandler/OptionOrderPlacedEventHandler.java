@@ -16,48 +16,49 @@ public class OptionOrderPlacedEventHandler  {
     @Autowired
     private OptionRepository optionRepository;
       @Autowired
-    private SellOrderRepository sellOrderRepository;
-        @Autowired
-    private BuyOrderRepository buyOrderRepository;
+    private OptionOrderRepository OptionOrderRepository;
     @Autowired
-    private UserOptionBalanceRepository userOptionBalanceRepository;
+    private OptionUserBalanceRepository OptionUserBalanceRepository;
 
     public void handle(OptionOrderPlacedEventData event) {
-        String optionType = event.getOrderType() == 1 || event.getOrderType() == 2? "call": "put";
-        Option option =  optionRepository.findByOptionTypeAndStrikePriceAndExpiryDate(optionType, event.getStrikePrice(), OptionContractMeta.getExpiryDate(event.getExpiryWeeks()));
+        OptionType optionType = event.getOrderType() == 1 || event.getOrderType() == 2? OptionType.CALL : OptionType.PUT;
+        Optional<Option> maybyOption =  optionRepository.findByOptionTypeAndStrikePriceAndExpiryDate(optionType, event.getStrikePrice(), OptionContractMeta.getExpiryDate(event.getExpiryWeeks()));
 
-        if (option.getId() == null) {
-             option.setOptionType(optionType);
-             option.setStrikePrice(event.getStrikePrice());
-             option.setExpiryDate(OptionContractMeta.getExpiryDate(event.getExpiryWeeks()));
-             option = optionRepository.save(option);
+        if (!maybyOption.isPresent()) {
+            Option option = new Option();
+            option.setOptionType(optionType);
+            option.setStrikePrice(event.getStrikePrice());
+            option.setExpiryDate(OptionContractMeta.getExpiryDate(event.getExpiryWeeks()));
+            option = optionRepository.save(option);
         }
+        Option option = maybyOption.get();
 
 
         if (event.getOrderType() == OptionContractMeta.TYPE_SELL_CALL || event.getOrderType() == OptionContractMeta.TYPE_SELL_PUT) {
-          SellOrder sellOrder = new SellOrder();
-           sellOrder.setOptionId(option.getId());
-           sellOrder.setSellerAddress(event.getPosterAddress());
-           sellOrder.setPrice(event.getPrice());
-            sellOrder.setAmount(event.getAmount());
-            sellOrder.setFilledAmount(0L);
-            sellOrderRepository.save(sellOrder);
-            Optional<UserOptionBalance> existingUserBalance = userOptionBalanceRepository.findByOptionIdAndUserAddress(option.getId(), event.getPosterAddress());
+          OptionOrder OptionOrder = new OptionOrder();
+           OptionOrder.setOptionId(option.getId());
+           OptionOrder.setPosterAddress(event.getPosterAddress());
+           OptionOrder.setPrice(event.getPrice());
+            OptionOrder.setAmount(event.getAmount());
+            OptionOrder.setFilledAmount(0L);
+            OptionOrderRepository.save(OptionOrder);
+            
+            Optional<OptionUserBalance> existingUserBalance = OptionUserBalanceRepository.findByOptionIdAndUserAddress(option.getId(), event.getPosterAddress());
             if(existingUserBalance.isPresent()) {
-                UserOptionBalance userOptionBalance = existingUserBalance.get();
-                 userOptionBalance.setSellingAmount(userOptionBalance.getSellingAmount() + event.getAmount());
-                 userOptionBalance.setOwnedAmount(userOptionBalance.getOwnedAmount() - event.getAmount());
-                userOptionBalanceRepository.save(userOptionBalance);
+                OptionUserBalance OptionUserBalance = existingUserBalance.get();
+                 OptionUserBalance.setSellingAmount(OptionUserBalance.getSellingAmount() + event.getAmount());
+                 OptionUserBalance.setOwnedAmount(OptionUserBalance.getOwnedAmount() - event.getAmount());
+                OptionUserBalanceRepository.save(OptionUserBalance);
             }
 
         }  else  {
-            BuyOrder buyOrder = new BuyOrder();
-            buyOrder.setOptionId(option.getId());
-           buyOrder.setBuyerAddress(event.getPosterAddress());
-           buyOrder.setPrice(event.getPrice());
-            buyOrder.setAmount(event.getAmount());
-           buyOrder.setFilledAmount(0L);
-           buyOrderRepository.save(buyOrder);
+            OptionOrder OptionOrder = new OptionOrder();
+            OptionOrder.setOptionId(option.getId());
+           OptionOrder.setPosterAddress(event.getPosterAddress());
+           OptionOrder.setPrice(event.getPrice());
+            OptionOrder.setAmount(event.getAmount());
+           OptionOrder.setFilledAmount(0L);
+           OptionOrderRepository.save(OptionOrder);
         }
 
     }

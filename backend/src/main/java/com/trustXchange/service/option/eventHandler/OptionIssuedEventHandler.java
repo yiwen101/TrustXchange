@@ -17,42 +17,44 @@ public class OptionIssuedEventHandler  {
       @Autowired
     private OptionEventRepository optionEventRepository;
       @Autowired
-    private UserOptionBalanceRepository userOptionBalanceRepository;
+    private OptionUserBalanceRepository OptionUserBalanceRepository;
 
     public void handle(OptionIssuedEventData event) {
-        String optionType = event.isCall() ? "call": "put";
+      OptionType optionType = event.isCall() ? OptionType.CALL : OptionType.PUT;
+      Optional<Option> maybyOption =  optionRepository.findByOptionTypeAndStrikePriceAndExpiryDate(optionType, event.getStrikePrice(), OptionContractMeta.getExpiryDate(event.getExpiryWeeks()));
 
-        Option option =  optionRepository.findByOptionTypeAndStrikePriceAndExpiryDate(optionType, event.getStrikePrice(), OptionContractMeta.getExpiryDate(event.getExpiryWeeks()));
 
-        if (option.getId() == null) {
-             option.setOptionType(optionType);
-             option.setStrikePrice(event.getStrikePrice());
-             option.setExpiryDate(OptionContractMeta.getExpiryDate(event.getExpiryWeeks()));
-             option = optionRepository.save(option);
-        }
+      if (!maybyOption.isPresent()) {
+          Option option = new Option();
+          option.setOptionType(optionType);
+          option.setStrikePrice(event.getStrikePrice());
+          option.setExpiryDate(OptionContractMeta.getExpiryDate(event.getExpiryWeeks()));
+          option = optionRepository.save(option);
+      }
+      Option option = maybyOption.get();
 
         OptionEvent optionEvent = new OptionEvent();
         optionEvent.setTransactionHash(event.getTransactionHash());
         optionEvent.setTransactionUrl(event.getTransactionUrl());
-        optionEvent.setAction("issue");
+        optionEvent.setAction(OptionActionType.ISSUE);
         optionEvent.setOptionId(option.getId());
         optionEvent.setAddress(event.getSourceAddress());
         optionEvent.setAmount(event.getAmount());
         optionEventRepository.save(optionEvent);
 
-        Optional<UserOptionBalance> existingUserBalance = userOptionBalanceRepository.findByOptionIdAndUserAddress(option.getId(), event.getSourceAddress());
-            UserOptionBalance userOptionBalance = existingUserBalance.orElse(new UserOptionBalance());
-            if (userOptionBalance.getId() == null) {
-                userOptionBalance.setOptionId(option.getId());
-                userOptionBalance.setUserAddress(event.getSourceAddress());
-                userOptionBalance.setOwnedAmount(event.getAmount());
-                userOptionBalance.setSellingAmount(0L);
-                userOptionBalance.setIssuedAmount(event.getAmount());
-                userOptionBalance.setExercisedAmount(0L);
+        Optional<OptionUserBalance> existingUserBalance = OptionUserBalanceRepository.findByOptionIdAndUserAddress(option.getId(), event.getSourceAddress());
+            OptionUserBalance OptionUserBalance = existingUserBalance.orElse(new OptionUserBalance());
+            if (OptionUserBalance.getId() == null) {
+                OptionUserBalance.setOptionId(option.getId());
+                OptionUserBalance.setUserAddress(event.getSourceAddress());
+                OptionUserBalance.setOwnedAmount(event.getAmount());
+                OptionUserBalance.setSellingAmount(0L);
+                OptionUserBalance.setIssuedAmount(event.getAmount());
+                OptionUserBalance.setExercisedAmount(0L);
             } else {
-              userOptionBalance.setIssuedAmount(userOptionBalance.getIssuedAmount() + event.getAmount());
-              userOptionBalance.setOwnedAmount(userOptionBalance.getOwnedAmount() + event.getAmount());
+              OptionUserBalance.setIssuedAmount(OptionUserBalance.getIssuedAmount() + event.getAmount());
+              OptionUserBalance.setOwnedAmount(OptionUserBalance.getOwnedAmount() + event.getAmount());
             }
-         userOptionBalanceRepository.save(userOptionBalance);
+         OptionUserBalanceRepository.save(OptionUserBalance);
     }
 }

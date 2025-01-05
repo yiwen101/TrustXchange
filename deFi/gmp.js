@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import * as utils from "./utils.js"
 import * as p2pUtils from "./p2pPayloadUtil.js"
 import * as pledgeUtils from "./pledgePayloadUtil.js"
+import * as optionUtils from "./optionPayloadUtil.js"
 dotenv.config();
 
 // Define the provider (XRPL EVM endpoint)
@@ -44,6 +45,11 @@ async function callPoolContract(params) {
   await callContract(params, process.env.XRP_LENDING_POOL);
 }
 
+async function callOptionContract(params) {
+  console.log("Calling Option Contract with address:", process.env.OPTION_TRADING);
+  await callContract(params, process.env.OPTION_TRADING);
+}
+
 
 
 async function callContract(params, contract_address) {
@@ -73,10 +79,12 @@ async function callContract(params, contract_address) {
 async function main() {
   //const {inputData,executeWithTokenParams} = utils.getPocMockInputs(51)
   //const {inputData,executeWithTokenParams} = p2pUtils.getP2PBorrowingRequestGMPParams(100);
-  const {inputData,executeWithTokenParams} = pledgeUtils.getLendGMPParams(108);
+  //const {inputData,executeWithTokenParams} = pledgeUtils.getLendGMPParams(108);
+  const {inputData,executeWithTokenParams} = optionUtils.getIssueCallOptionGMPParams(300,100,100);
   await approveContractCallWithMint(inputData);
   //await callPocContract(executeWithTokenParams);
-  await callPoolContract(executeWithTokenParams);
+  //await callPoolContract(executeWithTokenParams);
+  await callOptionContract(executeWithTokenParams);
 }
 
 main().catch((error) => {

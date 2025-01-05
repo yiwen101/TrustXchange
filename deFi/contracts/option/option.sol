@@ -50,10 +50,10 @@ contract OptionTrading is AxelarExecutableWithToken {
      uint256 public orderCount;
 
     mapping(uint256 => OrderInfo) public orders; // Changed to OrderInfo storage type
-    mapping(uint256 => mapping(uint256 => uint256)) public CallOptionSellOrderChainHead;
-    mapping(uint256 => mapping(uint256 => uint256)) public CallOptionBuyOrderChainHead;
-    mapping(uint256 => mapping(uint256 => uint256)) public PutOptionSellOrderChainHead;
-    mapping(uint256 => mapping(uint256 => uint256)) public PutOptionBuyOrderChainHead;
+    mapping(uint256 => mapping(uint256 => uint256)) public CallOptionOptionOrderChainHead;
+    mapping(uint256 => mapping(uint256 => uint256)) public CallOptionOptionOrderChainHead;
+    mapping(uint256 => mapping(uint256 => uint256)) public PutOptionOptionOrderChainHead;
+    mapping(uint256 => mapping(uint256 => uint256)) public PutOptionOptionOrderChainHead;
 
     // address => strickPrice => expiryWeeks => amount
     mapping(string => mapping(uint256 => mapping(uint256 => uint256))) public callOptionIssuers;
@@ -110,8 +110,8 @@ contract OptionTrading is AxelarExecutableWithToken {
         uint256 expiryWeeks,
         uint256 price,
         uint256 amount,
-        uint256 buyOrderId,
-        uint256 sellOrderId
+        uint256 OptionOrderId,
+        uint256 OptionOrderId
      );
 
     event OptionCollateralWithdrawn(
@@ -228,7 +228,7 @@ contract OptionTrading is AxelarExecutableWithToken {
         require(callOptionOwners[posterAddress][strikePrice][expiryWeeks] >= amount, "Not enough call options owned");
         callOptionOwners[posterAddress][strikePrice][expiryWeeks] -= amount;
         uint256 newId = _createOrder(posterAddress, strikePrice, expiryWeeks, price, amount, TYPE_SELL_CALL);
-        _addOrderToChain(newId, CallOptionSellOrderChainHead, true);
+        _addOrderToChain(newId, CallOptionOptionOrderChainHead, true);
        
         emit OptionOrderPlaced(newId, posterAddress, strikePrice, expiryWeeks, price, amount, TYPE_SELL_CALL);
         _matchCallOptionOrders(strikePrice, expiryWeeks);
@@ -244,7 +244,7 @@ contract OptionTrading is AxelarExecutableWithToken {
         require(putOptionOwners[posterAddress][strikePrice][expiryWeeks] >= amount, "Not enough put options owned");
         putOptionOwners[posterAddress][strikePrice][expiryWeeks] -= amount;
         uint256 newId = _createOrder(posterAddress, strikePrice, expiryWeeks, price, amount, TYPE_SELL_PUT);
-        _addOrderToChain(newId, PutOptionSellOrderChainHead, true);
+        _addOrderToChain(newId, PutOptionOptionOrderChainHead, true);
 
         emit OptionOrderPlaced(newId, posterAddress, strikePrice, expiryWeeks, price, amount, TYPE_SELL_PUT);
         _matchPutOptionOrders(strikePrice, expiryWeeks);
@@ -262,7 +262,7 @@ contract OptionTrading is AxelarExecutableWithToken {
         require(keccak256(bytes(symbol)) == keccak256(bytes("USD")), "Invalid token symbol");
         require(transferedAmount >= price * amount, "Not enough USD to buy call options");
         uint256 newId = _createOrder(buyerAddress, strikePrice, expiryWeeks, price, amount, TYPE_BUY_CALL);
-        _addOrderToChain(newId, CallOptionBuyOrderChainHead, false);
+        _addOrderToChain(newId, CallOptionOptionOrderChainHead, false);
 
        emit OptionOrderPlaced(newId, buyerAddress, strikePrice, expiryWeeks, price, amount, TYPE_BUY_CALL);
         _matchCallOptionOrders(strikePrice, expiryWeeks);
@@ -280,7 +280,7 @@ contract OptionTrading is AxelarExecutableWithToken {
         require(keccak256(bytes(symbol)) == keccak256(bytes("USD")), "Invalid token symbol");
         require(transferedAmount >= price * amount, "Not enough USD to buy put options");
          uint256 newId = _createOrder(buyerAddress, strikePrice, expiryWeeks, price, amount, TYPE_BUY_PUT);
-        _addOrderToChain(newId, PutOptionBuyOrderChainHead, false);
+        _addOrderToChain(newId, PutOptionOptionOrderChainHead, false);
 
          emit OptionOrderPlaced(newId, buyerAddress, strikePrice, expiryWeeks, price, amount, TYPE_BUY_PUT);
         _matchPutOptionOrders(strikePrice, expiryWeeks);
@@ -293,7 +293,7 @@ contract OptionTrading is AxelarExecutableWithToken {
         OrderInfo storage order = orders[orderId];
         require(keccak256(bytes(order.posterAddress)) == keccak256(bytes(posterAddress)), "Not the owner of the order");
         require(order.orderType == TYPE_SELL_CALL, "Not a sell call option order");
-        uint256 unfilledAmount = _removeFromSortedList(order, CallOptionSellOrderChainHead);
+        uint256 unfilledAmount = _removeFromSortedList(order, CallOptionOptionOrderChainHead);
          emit OptionOrderCancelled(orderId, posterAddress, order.strikePrice, order.expiryWeeks, unfilledAmount, TYPE_SELL_CALL);
          callOptionOwners[posterAddress][order.strikePrice][order.expiryWeeks] += unfilledAmount;
     }
@@ -305,7 +305,7 @@ contract OptionTrading is AxelarExecutableWithToken {
         OrderInfo storage order = orders[orderId];
         require(keccak256(bytes(order.posterAddress)) == keccak256(bytes(posterAddress)), "Not the owner of the order");
         require(order.orderType == TYPE_SELL_PUT, "Not a sell put option order");
-        uint256 unfilledAmount = _removeFromSortedList(order, PutOptionSellOrderChainHead);
+        uint256 unfilledAmount = _removeFromSortedList(order, PutOptionOptionOrderChainHead);
          emit OptionOrderCancelled(orderId, posterAddress, order.strikePrice, order.expiryWeeks, unfilledAmount, TYPE_SELL_PUT);
          putOptionOwners[posterAddress][order.strikePrice][order.expiryWeeks] += unfilledAmount;
     }
@@ -317,7 +317,7 @@ contract OptionTrading is AxelarExecutableWithToken {
          OrderInfo storage order = orders[orderId];
         require(keccak256(bytes(order.posterAddress)) == keccak256(bytes(buyerAddress)), "Not the owner of the order");
         require(order.orderType == TYPE_BUY_CALL, "Not a buy call option order");
-          uint256 unfilledAmount = _removeFromSortedList(order, CallOptionBuyOrderChainHead);
+          uint256 unfilledAmount = _removeFromSortedList(order, CallOptionOptionOrderChainHead);
             emit OptionOrderCancelled(orderId, buyerAddress, order.strikePrice, order.expiryWeeks, unfilledAmount, TYPE_BUY_CALL);
     }
 
@@ -328,7 +328,7 @@ contract OptionTrading is AxelarExecutableWithToken {
          OrderInfo storage order = orders[orderId];
         require(keccak256(bytes(order.posterAddress)) == keccak256(bytes(buyerAddress)), "Not the owner of the order");
         require(order.orderType == TYPE_BUY_PUT, "Not a buy put option order");
-         uint256 unfilledAmount = _removeFromSortedList(order, PutOptionBuyOrderChainHead);
+         uint256 unfilledAmount = _removeFromSortedList(order, PutOptionOptionOrderChainHead);
         emit OptionOrderCancelled(orderId, buyerAddress, order.strikePrice, order.expiryWeeks, unfilledAmount, TYPE_BUY_PUT);
     }
 
@@ -549,52 +549,52 @@ contract OptionTrading is AxelarExecutableWithToken {
     function _matchOrders(
         uint256 strikePrice,
         uint256 expiryWeeks,
-        mapping(uint256 => mapping(uint256 => uint256)) storage sellOrderChainHead,
-        mapping(uint256 => mapping(uint256 => uint256)) storage buyOrderChainHead
+        mapping(uint256 => mapping(uint256 => uint256)) storage OptionOrderChainHead,
+        mapping(uint256 => mapping(uint256 => uint256)) storage OptionOrderChainHead
     ) private {
-        uint256 sellId = sellOrderChainHead[strikePrice][expiryWeeks];
-        uint256 buyId = buyOrderChainHead[strikePrice][expiryWeeks];
+        uint256 sellId = OptionOrderChainHead[strikePrice][expiryWeeks];
+        uint256 buyId = OptionOrderChainHead[strikePrice][expiryWeeks];
            while (sellId != MAX_ORDER_INDEX && buyId != MAX_ORDER_INDEX) {
-              OrderInfo storage sellOrder = orders[sellId];
-            OrderInfo storage buyOrder = orders[buyId];
-              if (sellOrder.price > buyOrder.price) {
+              OrderInfo storage OptionOrder = orders[sellId];
+            OrderInfo storage OptionOrder = orders[buyId];
+              if (OptionOrder.price > OptionOrder.price) {
                  break;
               }
-            uint256 amount = sellOrder.amount < buyOrder.amount ? sellOrder.amount : buyOrder.amount;
-            uint256 priceDiff = buyOrder.price - sellOrder.price;
+            uint256 amount = OptionOrder.amount < OptionOrder.amount ? OptionOrder.amount : OptionOrder.amount;
+            uint256 priceDiff = OptionOrder.price - OptionOrder.price;
 
-            gateway().sendToken(supportedSourceChain, sellOrder.posterAddress, "USD", sellOrder.price * amount);
-            gateway().sendToken(supportedSourceChain, buyOrder.posterAddress, "USD", priceDiff * amount);
-            sellOrder.amount -= amount;
-            buyOrder.amount -= amount;
-             emit OptionTradeExecuted(buyOrder.posterAddress, sellOrder.posterAddress, sellOrder.strikePrice, strikePrice, expiryWeeks, sellOrder.price, amount, buyId, sellId);
+            gateway().sendToken(supportedSourceChain, OptionOrder.posterAddress, "USD", OptionOrder.price * amount);
+            gateway().sendToken(supportedSourceChain, OptionOrder.posterAddress, "USD", priceDiff * amount);
+            OptionOrder.amount -= amount;
+            OptionOrder.amount -= amount;
+             emit OptionTradeExecuted(OptionOrder.posterAddress, OptionOrder.posterAddress, OptionOrder.strikePrice, strikePrice, expiryWeeks, OptionOrder.price, amount, buyId, sellId);
 
-              if(sellOrder.amount == 0) {
-                _removeFromSortedList(sellOrder, sellOrderChainHead);
-                 sellId = sellOrderChainHead[strikePrice][expiryWeeks];
+              if(OptionOrder.amount == 0) {
+                _removeFromSortedList(OptionOrder, OptionOrderChainHead);
+                 sellId = OptionOrderChainHead[strikePrice][expiryWeeks];
                 }
 
-                if(buyOrder.amount == 0) {
-                      _removeFromSortedList(buyOrder, buyOrderChainHead);
-                      buyId = buyOrderChainHead[strikePrice][expiryWeeks];
+                if(OptionOrder.amount == 0) {
+                      _removeFromSortedList(OptionOrder, OptionOrderChainHead);
+                      buyId = OptionOrderChainHead[strikePrice][expiryWeeks];
                  }
         }
-        sellOrderChainHead[strikePrice][expiryWeeks] = sellId;
-         buyOrderChainHead[strikePrice][expiryWeeks] = buyId;
+        OptionOrderChainHead[strikePrice][expiryWeeks] = sellId;
+         OptionOrderChainHead[strikePrice][expiryWeeks] = buyId;
     }
 
     function _matchCallOptionOrders(
         uint256 strikePrice,
         uint256 expiryWeeks
     ) internal {
-        _matchOrders(strikePrice, expiryWeeks, CallOptionSellOrderChainHead, CallOptionBuyOrderChainHead);
+        _matchOrders(strikePrice, expiryWeeks, CallOptionOptionOrderChainHead, CallOptionOptionOrderChainHead);
     }
 
     function _matchPutOptionOrders(
         uint256 strikePrice,
         uint256 expiryWeeks
     ) internal {
-        _matchOrders(strikePrice, expiryWeeks, PutOptionSellOrderChainHead, PutOptionBuyOrderChainHead);
+        _matchOrders(strikePrice, expiryWeeks, PutOptionOptionOrderChainHead, PutOptionOptionOrderChainHead);
     }
 
     function _handleWithdrawal(

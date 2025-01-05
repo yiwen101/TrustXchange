@@ -275,13 +275,13 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "buyOrderId",
+          "name": "OptionOrderId",
           "type": "uint256"
         },
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "sellOrderId",
+          "name": "OptionOrderId",
           "type": "uint256"
         }
       ],
@@ -379,7 +379,7 @@
           "type": "uint256"
         }
       ],
-      "name": "CallOptionBuyOrderChainHead",
+      "name": "CallOptionOptionOrderChainHead",
       "outputs": [
         {
           "internalType": "uint256",
@@ -403,7 +403,7 @@
           "type": "uint256"
         }
       ],
-      "name": "CallOptionSellOrderChainHead",
+      "name": "CallOptionOptionOrderChainHead",
       "outputs": [
         {
           "internalType": "uint256",
@@ -505,7 +505,7 @@
           "type": "uint256"
         }
       ],
-      "name": "PutOptionBuyOrderChainHead",
+      "name": "PutOptionOptionOrderChainHead",
       "outputs": [
         {
           "internalType": "uint256",
@@ -529,7 +529,7 @@
           "type": "uint256"
         }
       ],
-      "name": "PutOptionSellOrderChainHead",
+      "name": "PutOptionOptionOrderChainHead",
       "outputs": [
         {
           "internalType": "uint256",

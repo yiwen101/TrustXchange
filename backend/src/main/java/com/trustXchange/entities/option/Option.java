@@ -2,6 +2,10 @@ package com.trustXchange.entities.option;
 
 import java.sql.Timestamp;
 import javax.persistence.*;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,15 +17,16 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Option  {
+public class Option   {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "option_type", nullable = false)
-    private String optionType;
+    private OptionType optionType;
 
     @Column(name = "strike_price", nullable = false)
     private Long strikePrice;
@@ -46,5 +51,13 @@ public class Option  {
 
     @Column(name = "daily_volume")
     private Long dailyVolume;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @CreationTimestamp
+    private Timestamp createdAt;
+
+    @Column(name = "modified_at")
+    @UpdateTimestamp
+    private Timestamp modifiedAt;
 
 }

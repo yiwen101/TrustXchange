@@ -24,13 +24,13 @@ public class OptionController {
     @Autowired
     private OptionRepository optionRepository;
     @Autowired
-    private TradeEventRepository tradeEventRepository;
+    private OptionTradeEventRepository OptionTradeEventRepository;
     @Autowired
-    private SellOrderRepository sellOrderRepository;
+    private OptionOrderRepository OptionOrderRepository;
     @Autowired
-    private BuyOrderRepository buyOrderRepository;
+    private OptionOrderRepository OptionOrderRepository;
     @Autowired
-    private UserOptionBalanceRepository userOptionBalanceRepository;
+    private OptionUserBalanceRepository OptionUserBalanceRepository;
     @Autowired
     private OptionEventRepository optionEventRepository;
 
@@ -42,7 +42,7 @@ public class OptionController {
 
     // Get the last day, week, month, year's trade events for an option
     @GetMapping("/{optionId}/trade-events")
-    public ResponseEntity<List<TradeEvent>> getTradeEvents(
+    public ResponseEntity<List<OptionTradeEvent>> getOptionTradeEvents(
             @PathVariable Long optionId,
             @RequestParam(name = "period", defaultValue = "day") String period) {
              LocalDateTime now = LocalDateTime.now();
@@ -64,60 +64,60 @@ public class OptionController {
             }
 
 
-        List<TradeEvent> tradeEvents = tradeEventRepository.findByOptionIdAndDealPriceAfter(optionId, startTime);
-        return ResponseEntity.ok(tradeEvents);
+        List<OptionTradeEvent> OptionTradeEvents = OptionTradeEventRepository.findByOptionIdAndDealPriceAfter(optionId, startTime);
+        return ResponseEntity.ok(OptionTradeEvents);
     }
 
     // Get the top 5 unfilled, uncanceled buy and sell orders for a particular option
     @GetMapping("/{optionId}/orders")
     public ResponseEntity<?> getTop5Orders(@PathVariable Long optionId) {
-        List<SellOrder> top5SellOrders = sellOrderRepository.findTop5ByOptionIdOrderByPriceAsc(optionId);
-        List<BuyOrder> top5BuyOrders = buyOrderRepository.findTop5ByOptionIdOrderByPriceDesc(optionId);
+        List<OptionOrder> top5OptionOrders = OptionOrderRepository.findTop5ByOptionIdOrderByPriceAsc(optionId);
+        List<OptionOrder> top5OptionOrders = OptionOrderRepository.findTop5ByOptionIdOrderByPriceDesc(optionId);
          return ResponseEntity.ok(
-                new TopOrdersResponse(top5SellOrders, top5BuyOrders)
+                new TopOrdersResponse(top5OptionOrders, top5OptionOrders)
         );
     }
 
 
     // Get the number of available, selling, exercised, issued amount a user(address) to an option
      @GetMapping("/{optionId}/user/{address}/balances")
-    public ResponseEntity<UserOptionBalanceResponse> getUserBalances(
+    public ResponseEntity<OptionUserBalanceResponse> getUserBalances(
         @PathVariable Long optionId,
         @PathVariable String address)
      {
-         Optional<UserOptionBalance> userOptionBalanceOptional = userOptionBalanceRepository.findByOptionIdAndUserAddress(optionId, address);
-           UserOptionBalance userOptionBalance = userOptionBalanceOptional.orElse(null);
-        if(userOptionBalance == null) {
+         Optional<OptionUserBalance> OptionUserBalanceOptional = OptionUserBalanceRepository.findByOptionIdAndUserAddress(optionId, address);
+           OptionUserBalance OptionUserBalance = OptionUserBalanceOptional.orElse(null);
+        if(OptionUserBalance == null) {
                 return ResponseEntity.notFound().build();
            }
 
-        UserOptionBalanceResponse userOptionBalanceResponse = new UserOptionBalanceResponse(
-                userOptionBalance.getOwnedAmount(),
-                userOptionBalance.getIssuedAmount(),
-                userOptionBalance.getSellingAmount()
+        OptionUserBalanceResponse OptionUserBalanceResponse = new OptionUserBalanceResponse(
+                OptionUserBalance.getOwnedAmount(),
+                OptionUserBalance.getIssuedAmount(),
+                OptionUserBalance.getSellingAmount()
 
         );
-       return ResponseEntity.ok(userOptionBalanceResponse);
+       return ResponseEntity.ok(OptionUserBalanceResponse);
     }
 
     
     @GetMapping("/{optionId}/user/{address}/sell-orders")
-    public ResponseEntity<List<SellOrder>> getSellOrdersByUser(
+    public ResponseEntity<List<OptionOrder>> getOptionOrdersByUser(
              @PathVariable Long optionId,
              @PathVariable String address)
         {
-            List<SellOrder> sellOrders = sellOrderRepository.findByOptionIdAndUserAddressOrderByTimeDesc(optionId, address);
-          return ResponseEntity.ok(sellOrders);
+            List<OptionOrder> OptionOrders = OptionOrderRepository.findByOptionIdAndUserAddressOrderByTimeDesc(optionId, address);
+          return ResponseEntity.ok(OptionOrders);
         }
 
         
       @GetMapping("/{optionId}/user/{address}/buy-orders")
-      public ResponseEntity<List<BuyOrder>> getBuyOrdersByUser(
+      public ResponseEntity<List<OptionOrder>> getOptionOrdersByUser(
                @PathVariable Long optionId,
                 @PathVariable String address)
       {
-          List<BuyOrder> buyOrders = buyOrderRepository.findByOptionIdAndUserAddressOrderByTimeDesc(optionId, address);
-          return ResponseEntity.ok(buyOrders);
+          List<OptionOrder> OptionOrders = OptionOrderRepository.findByOptionIdAndUserAddressOrderByTimeDesc(optionId, address);
+          return ResponseEntity.ok(OptionOrders);
         }
 
 
@@ -133,12 +133,12 @@ public class OptionController {
 
      // Get all trade events related to an option by an user
        @GetMapping("/{optionId}/user/{address}/trade-events")
-        public ResponseEntity<List<TradeEvent>> getTradeEventsByUser(
+        public ResponseEntity<List<OptionTradeEvent>> getOptionTradeEventsByUser(
                 @PathVariable Long optionId,
                 @PathVariable String address)
          {
-             List<TradeEvent> tradeEvents = tradeEventRepository.findByOptionIdAndUserAddress(optionId, address);
-              return ResponseEntity.ok(tradeEvents);
+             List<OptionTradeEvent> OptionTradeEvents = OptionTradeEventRepository.findByOptionIdAndUserAddress(optionId, address);
+              return ResponseEntity.ok(OptionTradeEvents);
          }
 }
 
@@ -146,14 +146,14 @@ public class OptionController {
 @Setter
 @AllArgsConstructor
  class TopOrdersResponse {
-      List<SellOrder> sellOrders;
-       List<BuyOrder> buyOrders;
+      List<OptionOrder> OptionOrders;
+       List<OptionOrder> OptionOrders;
  }
 
 @Getter
 @Setter
 @AllArgsConstructor
- class UserOptionBalanceResponse {
+ class OptionUserBalanceResponse {
     Long ownedAmount;
     Long issuedAmount;
      Long sellingAmount;

@@ -55,8 +55,8 @@ public class OptionTradeExecutedEventManager extends OptionEventManager<OptionTr
          BigInteger expiryWeeks = (BigInteger) nonIndexedValues.get(4);
          BigInteger price = (BigInteger) nonIndexedValues.get(5);
         BigInteger amount = (BigInteger) nonIndexedValues.get(6);
-        BigInteger buyOrderId = (BigInteger) nonIndexedValues.get(7);
-        BigInteger sellOrderId = (BigInteger) nonIndexedValues.get(8);
+        BigInteger OptionOrderId = (BigInteger) nonIndexedValues.get(7);
+        BigInteger OptionOrderId = (BigInteger) nonIndexedValues.get(8);
 
        return new OptionTradeExecutedEventData(
                 buyerAddress,
@@ -66,8 +66,8 @@ public class OptionTradeExecutedEventManager extends OptionEventManager<OptionTr
                 expiryWeeks.longValue(),
                 price.longValue(),
                 amount.longValue(),
-                buyOrderId.longValue(),
-                sellOrderId.longValue()
+                OptionOrderId.longValue(),
+                OptionOrderId.longValue()
         );
     }
 

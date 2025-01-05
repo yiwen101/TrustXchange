@@ -13,35 +13,34 @@ import java.util.Optional;
 @Component
 public class OptionOrderCancelledEventHandler  {
     @Autowired
-    private SellOrderRepository sellOrderRepository;
-     @Autowired
-    private BuyOrderRepository buyOrderRepository;
+    private OptionOrderRepository OptionOrderRepository;
     @Autowired
-    private UserOptionBalanceRepository userOptionBalanceRepository;
+    private OptionUserBalanceRepository OptionUserBalanceRepository;
 
+    // todo, add event
     public void handle(OptionOrderCancelledEventData event) {
          if (event.getOrderType() == OptionContractMeta.TYPE_SELL_CALL || event.getOrderType() == OptionContractMeta.TYPE_SELL_PUT) {
-                Optional<SellOrder> maybeSellOrder = sellOrderRepository.findById(event.getOrderId());
-                if (maybeSellOrder.isPresent()) {
-                    SellOrder sellOrder = maybeSellOrder.get();
-                    sellOrder.setIsCancelled(true);
-                    sellOrderRepository.save(sellOrder);
-                    Long optionId = sellOrder.getOptionId();
+                Optional<OptionOrder> maybeOptionOrder = OptionOrderRepository.findById(event.getOrderId());
+                if (maybeOptionOrder.isPresent()) {
+                    OptionOrder OptionOrder = maybeOptionOrder.get();
+                    OptionOrder.setCancelled(true);
+                    OptionOrderRepository.save(OptionOrder);
+                    Long optionId = OptionOrder.getOptionId();
                     
-                    Optional<UserOptionBalance> existingUserBalance = userOptionBalanceRepository.findByOptionIdAndUserAddress(optionId, event.getPosterAddress());
+                    Optional<OptionUserBalance> existingUserBalance = OptionUserBalanceRepository.findByOptionIdAndUserAddress(optionId, event.getPosterAddress());
                     if(existingUserBalance.isPresent()) {
-                        UserOptionBalance userOptionBalance = existingUserBalance.get();
-                        userOptionBalance.setSellingAmount(userOptionBalance.getSellingAmount() - event.getAmount());
-                        userOptionBalance.setOwnedAmount(userOptionBalance.getOwnedAmount() + event.getAmount());
-                        userOptionBalanceRepository.save(userOptionBalance);
+                        OptionUserBalance OptionUserBalance = existingUserBalance.get();
+                        OptionUserBalance.setSellingAmount(OptionUserBalance.getSellingAmount() - event.getAmount());
+                        OptionUserBalance.setOwnedAmount(OptionUserBalance.getOwnedAmount() + event.getAmount());
+                        OptionUserBalanceRepository.save(OptionUserBalance);
                     } 
                 }
             } else if (event.getOrderType() == OptionContractMeta.TYPE_BUY_CALL || event.getOrderType() == OptionContractMeta.TYPE_BUY_PUT) {
-                Optional<BuyOrder> maybeBuyOrder = buyOrderRepository.findById(event.getOrderId());
-                if (maybeBuyOrder.isPresent()) {
-                    BuyOrder buyOrder = maybeBuyOrder.get();
-                    buyOrder.setIsCancelled(true);
-                    buyOrderRepository.save(buyOrder);
+                Optional<OptionOrder> maybeOptionOrder = OptionOrderRepository.findById(event.getOrderId());
+                if (maybeOptionOrder.isPresent()) {
+                    OptionOrder OptionOrder = maybeOptionOrder.get();
+                    OptionOrder.setCancelled(true);
+                    OptionOrderRepository.save(OptionOrder);
                 }
             } 
 
