@@ -4,7 +4,9 @@ import com.trustXchange.GmpUtil.GMPInputs;
 
 public class App {
     public static void main(String[] args) {
-        GMPInputs inputs = GmpUtil.getPocMockInputs(100);
+        ContractService service = new ContractService();
+        GMPInputs inputs = GmpUtil.getPocMockInputs(202);
+        service.approveContractCallWithMint(inputs.getInputData());
         //System.out.println(inputs.getInputData());
     }
     
