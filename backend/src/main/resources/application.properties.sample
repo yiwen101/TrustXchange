@@ -18,3 +18,4 @@ flyway.locations=classpath:db/migration
 
 # Server Port (optional)
 server.port=8080
+application.privateKey=your_private_key_without_quotes

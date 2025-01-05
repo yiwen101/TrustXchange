@@ -36,7 +36,6 @@ public class EventListener {
     private PledgeEventManagerRegistry pledgeEventManagerRegistry;
     @Autowired
     private OptionEventManagerRegistry optionEventManagerRegistry;
-
     @Autowired
     private BlockExamedRepo blockExamedRepo;
 
@@ -50,12 +49,12 @@ public class EventListener {
 
     @PostConstruct
     public void listenFor()  {
-        //executorService.scheduleAtFixedRate(() -> temp(pledgeEventManagerRegistry,PLEDGE_CONTRACT_ADDRESS, "pledge"), 0, 1, TimeUnit.SECONDS);
-        //executorService.scheduleAtFixedRate(() -> temp(p2pEventManagerRegistry,P2P_CONTRACT_ADDRESS,"p2p"), 0, 1, TimeUnit.SECONDS);
-        executorService.scheduleAtFixedRate(() -> temp(optionEventManagerRegistry,OPTION_CONTRACT_ADDRESS,"option"), 0, 1, TimeUnit.SECONDS);
+        //executorService.scheduleAtFixedRate(() -> manageEventForContract(pledgeEventManagerRegistry,PLEDGE_CONTRACT_ADDRESS, "pledge"), 0, 1, TimeUnit.SECONDS);
+        //executorService.scheduleAtFixedRate(() -> manageEventForContract(p2pEventManagerRegistry,P2P_CONTRACT_ADDRESS,"p2p"), 0, 1, TimeUnit.SECONDS);
+        //executorService.scheduleAtFixedRate(() -> manageEventForContract(optionEventManagerRegistry,OPTION_CONTRACT_ADDRESS,"option"), 0, 1, TimeUnit.SECONDS);
         }
 
-        private void temp(EventManagerRegistry eventManagerRegistry,String contractAddress, String contractName) {
+    private void manageEventForContract(EventManagerRegistry eventManagerRegistry,String contractAddress, String contractName) {
                 try{
             logger.info("EventListener called");
             Web3j web3j = Web3j.build(new HttpService(RPC_URL));

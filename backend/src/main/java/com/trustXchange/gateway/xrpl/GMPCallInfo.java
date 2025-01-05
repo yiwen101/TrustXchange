@@ -9,18 +9,22 @@ import org.xrpl.xrpl4j.model.transactions.Payment;
 
 import com.trustXchange.DestinationChainNotSupportException;
 public class GMPCallInfo {
+
     public String destinationAddress;
     public String destinationChainHex;
     public String payloadHash;
     public CurrencyAmount amount;
     public Address from;
 
-    public GMPCallInfo(String destinationAddress, String destinationChainHex, String payloadHash, CurrencyAmount amount, Address from) {
+    public String payload;
+
+    public GMPCallInfo(String destinationAddress, String destinationChainHex, String payloadHash, CurrencyAmount amount, Address from, String payload) {
         this.destinationAddress = destinationAddress;
         this.destinationChainHex = destinationChainHex;
         this.payloadHash = payloadHash;
         this.amount = amount;
         this.from = from;
+        this.payload = payload;
     }
 
     private static final String DESTINATION_ADDRESS_HEX = "64657374696E6174696F6E5F61646472657373";
@@ -51,6 +55,8 @@ public class GMPCallInfo {
         String destinationAddress = datas.get(0);
         String destinationChainHex = datas.get(1);
         String payloadHash = datas.get(2);
+        // particular to my gmp call
+        String payload = datas.get(3);
         Address from = payment.account();
 
         if (!destinationChainHex.equals(XRPL_EVM_SIDECHAIN_HEX)) {
@@ -59,7 +65,7 @@ public class GMPCallInfo {
         
         CurrencyAmount amount = payment.amount();
 
-        return Optional.of(new GMPCallInfo(destinationAddress, destinationChainHex, payloadHash, amount, from));
+        return Optional.of(new GMPCallInfo(destinationAddress, destinationChainHex, payloadHash, amount, from, payload));
     }
 
     public String toString() {
