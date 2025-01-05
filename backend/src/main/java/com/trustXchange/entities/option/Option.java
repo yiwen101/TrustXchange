@@ -14,10 +14,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Option  {
-
+    
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "option_seq")
-    @SequenceGenerator(name = "option_seq", sequenceName = "option_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
 

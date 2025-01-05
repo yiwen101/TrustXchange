@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "trade_events")
+@Table(name = "option_trade_events")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,8 +15,7 @@ import lombok.Setter;
 public class TradeEvent  {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "trade_event_seq")
-    @SequenceGenerator(name = "trade_event_seq", sequenceName = "trade_event_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
 

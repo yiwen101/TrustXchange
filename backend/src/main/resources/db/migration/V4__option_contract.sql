@@ -29,8 +29,8 @@ CREATE TABLE option_events (
 );
 
 -- Create the sell_orders table
-CREATE TABLE sell_orders (
-    id BIGINT PRIMARY KEY,
+CREATE TABLE option_sell_orders (
+    id BIGSERIAL PRIMARY KEY,
     option_id BIGINT NOT NULL,
     seller_address VARCHAR(255) NOT NULL,
     price BIGINT NOT NULL,
@@ -41,8 +41,8 @@ CREATE TABLE sell_orders (
 );
 
 -- Create the buy_orders table
-CREATE TABLE buy_orders (
-    id BIGINT PRIMARY KEY,
+CREATE TABLE option_buy_orders (
+    id BIGSERIAL PRIMARY KEY,
     option_id BIGINT NOT NULL,
     buyer_address VARCHAR(255) NOT NULL,
     price BIGINT NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE buy_orders (
 );
 
 -- Create the trade_events table
-CREATE TABLE trade_events (
+CREATE TABLE option_trade_events (
     id BIGSERIAL PRIMARY KEY,
     transaction_hash VARCHAR(255) NOT NULL,
     transaction_url VARCHAR(255) NOT NULL,
@@ -65,14 +65,12 @@ CREATE TABLE trade_events (
     sell_order_id BIGINT NOT NULL,
     buy_order_id BIGINT NOT NULL,
     FOREIGN KEY (option_id) REFERENCES options(id),
-    FOREIGN KEY (sell_order_id) REFERENCES sell_orders(id),
-    FOREIGN KEY (buy_order_id) REFERENCES buy_orders(id)
+    FOREIGN KEY (sell_order_id) REFERENCES option_sell_orders(id),
+    FOREIGN KEY (buy_order_id) REFERENCES option_buy_orders(id)
 );
 
-
-
 -- Create the user_option_balances table
-CREATE TABLE user_option_balances (
+CREATE TABLE option_user_balances (
     id BIGSERIAL PRIMARY KEY,
     user_address VARCHAR(255) NOT NULL,
     option_id BIGINT NOT NULL,

@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "user_option_balances")
+@Table(name = "option_user_balances")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,8 +15,7 @@ import lombok.Setter;
 public class UserOptionBalance  {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_option_balance_seq")
-    @SequenceGenerator(name = "user_option_balance_seq", sequenceName = "user_option_balance_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
 

@@ -196,6 +196,7 @@
                 <artifactId>flyway-maven-plugin</artifactId>
                 <version>8.5.13</version>
                 <configuration>
+                    <baselineOnMigrate>true</baselineOnMigrate>
                     <url>jdbc:postgresql://localhost:5432/truxtXchange_db</url>
                     <user>softmark</user>
                     <password></password>

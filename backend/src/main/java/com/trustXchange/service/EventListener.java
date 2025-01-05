@@ -67,9 +67,10 @@ public class EventListener {
             if (fromBlock > latestBlock) {
                 return;
             }
+            long toBlock = latestBlock - fromBlock >= 3000 ? fromBlock + 2999 : latestBlock;
             EthFilter historicFilter = new EthFilter(
                 DefaultBlockParameter.valueOf(BigInteger.valueOf(fromBlock)),
-                DefaultBlockParameter.valueOf(BigInteger.valueOf(latestBlock)),
+                DefaultBlockParameter.valueOf(BigInteger.valueOf(toBlock)),
                 contractAddress
             );
             List<EventManager> eventManagers = eventManagerRegistry.getEventManagers();
@@ -79,7 +80,7 @@ public class EventListener {
                 eventManagers.forEach(eventManager -> eventManager.manage(log));
                 };
 
-            blockExamedEntity.setLastExamedBlockNumber(latestBlock);
+            blockExamedEntity.setLastExamedBlockNumber(toBlock);
             blockExamedRepo.save(blockExamedEntity);
             } catch (Exception e) {
                 logger.error("Error in EventListener", e);
