@@ -1,6 +1,8 @@
 package com.trustXchange.service.option.eventHandler;
 
 import com.trustXchange.entities.option.*;
+import com.trustXchange.entities.option.type.OptionActionType;
+import com.trustXchange.entities.option.type.OptionType;
 import com.trustXchange.service.option.OptionContractMeta;
 import com.trustXchange.service.option.eventData.OptionCollateralWithdrawnEventData;
 import com.trustXchange.repository.option.*;
@@ -21,13 +23,19 @@ public class OptionCollateralWithdrawnEventHandler  {
 
 
     public void handle(OptionCollateralWithdrawnEventData event) {
-
         OptionType optionType = event.isCall() ? OptionType.CALL : OptionType.PUT;
         Optional<Option> maybyOption =  optionRepository.findByOptionTypeAndStrikePriceAndExpiryDate(optionType, event.getStrikePrice(), OptionContractMeta.getExpiryDate(event.getExpiryWeeks()));
         if (!maybyOption.isPresent()) {
             return;
         }
         Option option = maybyOption.get();
+        Optional<OptionUserBalance> existingUserBalance = OptionUserBalanceRepository.findByOptionIdAndUserAddress(option.getId(), event.getSourceAddress());
+        if(!existingUserBalance.isPresent()) {
+            return;
+        }
+        OptionUserBalance OptionUserBalance = existingUserBalance.get();
+            OptionUserBalance.setCollateralCollectedAmount(OptionUserBalance.getCollateralCollectedAmount() + event.getAmount());
+            OptionUserBalanceRepository.save(OptionUserBalance);
 
 
         OptionEvent optionEvent = new OptionEvent();
@@ -38,12 +46,5 @@ public class OptionCollateralWithdrawnEventHandler  {
          optionEvent.setAddress(event.getSourceAddress());
          optionEvent.setAmount(event.getAmount());
         optionEventRepository.save(optionEvent);
-
-       Optional<OptionUserBalance> existingUserBalance = OptionUserBalanceRepository.findByOptionIdAndUserAddress(option.getId(), event.getSourceAddress());
-        if(existingUserBalance.isPresent()) {
-            OptionUserBalance OptionUserBalance = existingUserBalance.get();
-            OptionUserBalance.setCollateralCollectedAmount(OptionUserBalance.getCollateralCollectedAmount() + event.getAmount());
-            OptionUserBalanceRepository.save(OptionUserBalance);
-        }
     }
 }

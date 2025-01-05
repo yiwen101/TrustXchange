@@ -1,6 +1,8 @@
 package com.trustXchange.service.option.eventHandler;
 
 import com.trustXchange.entities.option.*;
+import com.trustXchange.entities.option.type.OptionActionType;
+import com.trustXchange.entities.option.type.OptionType;
 import com.trustXchange.service.option.OptionContractMeta;
 import com.trustXchange.service.option.eventData.OptionExercisedEventData;
 import com.trustXchange.repository.option.*;
@@ -28,6 +30,15 @@ public class OptionExercisedEventHandler  {
           return;
       }
         Option option = maybyOption.get();
+        Optional<OptionUserBalance> existingUserBalance = OptionUserBalanceRepository.findByOptionIdAndUserAddress(option.getId(), event.getSourceAddress());
+        if(!existingUserBalance.isPresent()) {
+            return;
+        }
+
+        OptionUserBalance OptionUserBalance = existingUserBalance.get();
+            OptionUserBalance.setOwnedAmount(OptionUserBalance.getOwnedAmount() - event.getAmount());
+            OptionUserBalance.setExercisedAmount(OptionUserBalance.getExercisedAmount() + event.getAmount());
+            OptionUserBalanceRepository.save(OptionUserBalance);
 
          OptionEvent optionEvent = new OptionEvent();
           optionEvent.setTransactionHash(event.getTransactionHash());
@@ -37,14 +48,6 @@ public class OptionExercisedEventHandler  {
          optionEvent.setAddress(event.getSourceAddress());
          optionEvent.setAmount(event.getAmount());
           optionEventRepository.save(optionEvent);
-
-        Optional<OptionUserBalance> existingUserBalance = OptionUserBalanceRepository.findByOptionIdAndUserAddress(option.getId(), event.getSourceAddress());
-        if(existingUserBalance.isPresent()) {
-            OptionUserBalance OptionUserBalance = existingUserBalance.get();
-            OptionUserBalance.setOwnedAmount(OptionUserBalance.getOwnedAmount() - event.getAmount());
-            OptionUserBalance.setExercisedAmount(OptionUserBalance.getExercisedAmount() + event.getAmount());
-            OptionUserBalanceRepository.save(OptionUserBalance);
-        }
 
     }
 }

@@ -1,13 +1,7 @@
--- Define ENUM types
-CREATE TYPE option_type AS ENUM ('call', 'put');
-CREATE TYPE option_action_type AS ENUM ('issue', 'exercise', 'collect_collateral');
-CREATE TYPE option_order_type AS ENUM ('sell', 'buy');
-CREATE TYPE option_trade_event_type AS ENUM ('create', 'fill', 'cancel');
-
 -- Create the options table
 CREATE TABLE options (
     id BIGSERIAL PRIMARY KEY,
-    option_type option_type NOT NULL,
+    option_type VARCHAR(255) NOT NULL,
     strike_price BIGINT NOT NULL,
     expiry_date TIMESTAMP NOT NULL,
     late_deal_price BIGINT DEFAULT NULL,
@@ -27,7 +21,7 @@ CREATE TABLE option_events (
     transaction_url VARCHAR(255) NOT NULL,
     address VARCHAR(255) NOT NULL,
     option_id BIGINT NOT NULL,
-    action action_type NOT NULL,
+    action VARCHAR(255) NOT NULL,
     amount BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (option_id) REFERENCES options(id)
@@ -38,7 +32,7 @@ CREATE TABLE option_orders (
     id BIGSERIAL PRIMARY KEY,
     option_id BIGINT NOT NULL,
     poster_address VARCHAR(255) NOT NULL,
-    order_type option_order_type NOT NULL,
+    order_type VARCHAR(255) NOT NULL,
     price BIGINT NOT NULL,
     amount BIGINT NOT NULL,
     filled_amount BIGINT NOT NULL,
@@ -57,11 +51,10 @@ CREATE TABLE option_order_events (
     order_id BIGINT NOT NULL,
     deal_price BIGINT NOT NULL,
     amount BIGINT NOT NULL,
-    action option_trade_event_type NOT NULL,
+    action VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (option_id) REFERENCES options(id),
-    FOREIGN KEY (sell_order_id) REFERENCES option_sell_orders(id),
-    FOREIGN KEY (buy_order_id) REFERENCES option_buy_orders(id)
+    FOREIGN KEY (order_id) REFERENCES option_orders(id)
 );
 
 -- Create the user_option_balances table

@@ -3,6 +3,10 @@ package com.trustXchange.entities.option;
 import java.sql.Timestamp;
 import javax.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+
+import com.trustXchange.entities.option.type.OptionActionType;
+import com.trustXchange.entities.option.typeConvert.OptionActionTypeConverter;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,6 +37,7 @@ public class OptionEvent  {
     private Long optionId;
 
     @Enumerated(EnumType.STRING)
+    @Convert(converter = OptionActionTypeConverter.class)
     @Column(name = "action", nullable = false)
     private OptionActionType action;
 

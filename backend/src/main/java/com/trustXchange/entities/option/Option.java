@@ -6,6 +6,9 @@ import javax.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.trustXchange.entities.option.type.OptionType;
+import com.trustXchange.entities.option.typeConvert.OptionTypeConverter;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,6 +28,7 @@ public class Option   {
     private Long id;
 
     @Enumerated(EnumType.STRING)
+    @Convert(converter = OptionTypeConverter.class)
     @Column(name = "option_type", nullable = false)
     private OptionType optionType;
 

@@ -1,6 +1,7 @@
 package com.trustXchange.service.option.eventHandler;
 
 import com.trustXchange.entities.option.*;
+import com.trustXchange.entities.option.type.OptionTradeEventType;
 import com.trustXchange.service.option.eventData.OptionTradeExecutedEventData;
 import com.trustXchange.repository.option.*;
 

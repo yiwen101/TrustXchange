@@ -3,6 +3,10 @@ package com.trustXchange.entities.option;
 import java.sql.Timestamp;
 import javax.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+
+import com.trustXchange.entities.option.type.OptionOrderType;
+import com.trustXchange.entities.option.typeConvert.OptionOrderTypeConverter;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,6 +31,7 @@ public class OptionOrder  {
     private String posterAddress;
     
     @Enumerated(EnumType.STRING)
+    @Convert(converter = OptionOrderTypeConverter.class)
     @Column(name = "order_type", nullable = false)
     private OptionOrderType orderType;
 

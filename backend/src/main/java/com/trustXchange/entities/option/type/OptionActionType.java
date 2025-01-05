@@ -1,4 +1,4 @@
-package com.trustXchange.entities.option;
+package com.trustXchange.entities.option.type;
 
 public enum OptionActionType  {
     ISSUE,

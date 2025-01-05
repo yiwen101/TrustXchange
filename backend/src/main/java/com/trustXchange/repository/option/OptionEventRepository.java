@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface OptionEventRepository  extends JpaRepository<OptionEvent, Long> {
-    List<OptionEvent> findByOptionIdAndUserAddress(Long optionId, String userAddress);
+    List<OptionEvent> findByOptionIdAndAddress(Long optionId, String userAddress);
 }

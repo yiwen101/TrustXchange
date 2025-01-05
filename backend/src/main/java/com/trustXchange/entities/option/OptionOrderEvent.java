@@ -3,6 +3,10 @@ package com.trustXchange.entities.option;
 import java.sql.Timestamp;
 import javax.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
+
+import com.trustXchange.entities.option.type.OptionTradeEventType;
+import com.trustXchange.entities.option.typeConvert.OptionTradeEventTypeConverter;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -29,7 +33,7 @@ public class OptionOrderEvent  {
     @Column(name = "option_id", nullable = false)
     private Long optionId;
 
-      @Column(name = "poster_address", nullable = false)
+    @Column(name = "poster_address", nullable = false)
     private String posterAddress;
 
 
@@ -43,6 +47,7 @@ public class OptionOrderEvent  {
     private Long amount;
 
     @Enumerated(EnumType.STRING)
+    @Convert(converter = OptionTradeEventTypeConverter.class)
     @Column(name = "action", nullable = false)
     private OptionTradeEventType action;
 

@@ -50,8 +50,8 @@ public class EventListener {
 
     @PostConstruct
     public void listenFor()  {
-        executorService.scheduleAtFixedRate(() -> temp(pledgeEventManagerRegistry,PLEDGE_CONTRACT_ADDRESS, "pledge"), 0, 1, TimeUnit.SECONDS);
-        executorService.scheduleAtFixedRate(() -> temp(p2pEventManagerRegistry,P2P_CONTRACT_ADDRESS,"p2p"), 0, 1, TimeUnit.SECONDS);
+        //executorService.scheduleAtFixedRate(() -> temp(pledgeEventManagerRegistry,PLEDGE_CONTRACT_ADDRESS, "pledge"), 0, 1, TimeUnit.SECONDS);
+        //executorService.scheduleAtFixedRate(() -> temp(p2pEventManagerRegistry,P2P_CONTRACT_ADDRESS,"p2p"), 0, 1, TimeUnit.SECONDS);
         executorService.scheduleAtFixedRate(() -> temp(optionEventManagerRegistry,OPTION_CONTRACT_ADDRESS,"option"), 0, 1, TimeUnit.SECONDS);
         }
 
@@ -61,13 +61,14 @@ public class EventListener {
             Web3j web3j = Web3j.build(new HttpService(RPC_URL));
 
             long latestBlock = web3j.ethBlockNumber().send().getBlockNumber().longValue();
-            Optional<BlockExamed> blockExamed = blockExamedRepo.findByContractName(contractAddress);
+            Optional<BlockExamed> blockExamed = blockExamedRepo.findById(contractName);
             BlockExamed blockExamedEntity = blockExamed.orElse(new BlockExamed(contractName, latestBlock - 3000));
             long fromBlock = blockExamedEntity.getLastExamedBlockNumber() + 1;
             if (fromBlock > latestBlock) {
                 return;
             }
             long toBlock = latestBlock - fromBlock >= 3000 ? fromBlock + 2999 : latestBlock;
+            logger.info("fromBlock: " + fromBlock + " toBlock: " + toBlock);
             EthFilter historicFilter = new EthFilter(
                 DefaultBlockParameter.valueOf(BigInteger.valueOf(fromBlock)),
                 DefaultBlockParameter.valueOf(BigInteger.valueOf(toBlock)),

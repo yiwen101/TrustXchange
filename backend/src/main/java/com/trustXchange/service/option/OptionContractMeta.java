@@ -4,7 +4,7 @@ import java.sql.Timestamp;
 
 import org.apache.commons.lang3.text.translate.NumericEntityUnescaper.OPTION;
 
-import com.trustXchange.entities.option.OptionType;
+import com.trustXchange.entities.option.type.OptionType;
 
 public class OptionContractMeta {
     public static final int TYPE_SELL_CALL = 1;
@@ -18,7 +18,7 @@ public class OptionContractMeta {
     public static Timestamp getExpiryDate(Long expiryWeeks) {
         return new Timestamp(expiryWeeks * WEEK_IN_SECONDS * 1000 + START_TIMESTAMP.getTime());
     }
-    public OptionType getOptionType(int orderType) {
+    public static OptionType getOptionType(int orderType) {
         if (orderType == TYPE_SELL_CALL || orderType == TYPE_BUY_CALL) {
             return OptionType.CALL;
         } else {
