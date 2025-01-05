@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import { AxelarExecutableWithToken } from '../common/abstract/AxelarExecutableWithToken.sol';
 import { IMyAxelarGateway } from '../common/interfaces/IMyAxelarGateway.sol';
 
-contract OptionsTrading is AxelarExecutableWithToken {
+contract OptionTrading is AxelarExecutableWithToken {
     // --- Constants for Command Identifiers ---
     bytes32 public constant BUY_CALL_OPTION = keccak256("buyCallOption");
     bytes32 public constant BUY_PUT_OPTION = keccak256("buyPutOption");
@@ -25,6 +25,8 @@ contract OptionsTrading is AxelarExecutableWithToken {
     // --- Constants for Time Conversion ---
     uint256 public constant START_TIMESTAMP = 1704508800; // Timestamp of 2024-01-06 00:00:00 UTC
     uint256 public constant SECONDS_IN_WEEK = 7 * 24 * 60 * 60;
+    string public constant supportedSourceChain = "XRPL_testnet";
+    bytes32 public constant SUPPORTED_SOURCE_CHAIN_HASH = keccak256(bytes(supportedSourceChain));
 
     // --- Data Structures ---
     struct OrderInfo {
@@ -121,7 +123,7 @@ contract OptionsTrading is AxelarExecutableWithToken {
     );
 
 
-    constructor(address gateway_, address priceOracle_) AxelarExecutableWithToken(gateway_) {
+    constructor(address gateway_) AxelarExecutableWithToken(gateway_) {
         init();
     }
 
@@ -188,11 +190,11 @@ contract OptionsTrading is AxelarExecutableWithToken {
         (command, params) = abi.decode(payload, (string, bytes));
         bytes32 commandHash = keccak256(abi.encodePacked(command));
         if (commandHash == BUY_CALL_OPTION) {
-            (uint256 strikePrice, uint256 expiryWeeks, uint256 price, uint256 amount) = abi.decode(params, (uint256, uint256, uint256, uint256));
-            buyCallOption(sourceAddress, tokenSymbol, amount, strikePrice, expiryWeeks, price, amount);
+            (uint256 strikePrice, uint256 expiryWeeks, uint256 price, uint256 _amount) = abi.decode(params, (uint256, uint256, uint256, uint256));
+            buyCallOption(sourceAddress, tokenSymbol, amount, strikePrice, expiryWeeks, price, _amount);
         } else if (commandHash == BUY_PUT_OPTION) {
-            (uint256 strikePrice, uint256 expiryWeeks, uint256 price, uint256 amount) = abi.decode(params, (uint256, uint256, uint256, uint256));
-            buyPutOption(sourceAddress, tokenSymbol, amount, strikePrice, expiryWeeks, price, amount);
+            (uint256 strikePrice, uint256 expiryWeeks, uint256 price, uint256 _amount) = abi.decode(params, (uint256, uint256, uint256, uint256));
+            buyPutOption(sourceAddress, tokenSymbol, amount, strikePrice, expiryWeeks, price, _amount);
         } else if (commandHash == ISSUE_CALL_OPTION) {
             (uint256 strikePrice, uint256 expiryWeeks) = abi.decode(params, (uint256, uint256));
             issueCallOption(sourceAddress, tokenSymbol, amount, strikePrice, expiryWeeks);
@@ -229,7 +231,7 @@ contract OptionsTrading is AxelarExecutableWithToken {
         _addOrderToChain(newId, CallOptionSellOrderChainHead, true);
        
         emit OptionOrderPlaced(newId, posterAddress, strikePrice, expiryWeeks, price, amount, TYPE_SELL_CALL);
-        matchCallOptionOrders(strikePrice, expiryWeeks);
+        _matchCallOptionOrders(strikePrice, expiryWeeks);
     }
 
     function sellPutOption(
@@ -245,7 +247,7 @@ contract OptionsTrading is AxelarExecutableWithToken {
         _addOrderToChain(newId, PutOptionSellOrderChainHead, true);
 
         emit OptionOrderPlaced(newId, posterAddress, strikePrice, expiryWeeks, price, amount, TYPE_SELL_PUT);
-        matchPutOptionOrders(strikePrice, expiryWeeks);
+        _matchPutOptionOrders(strikePrice, expiryWeeks);
     }
 
     function buyCallOption(
@@ -263,7 +265,7 @@ contract OptionsTrading is AxelarExecutableWithToken {
         _addOrderToChain(newId, CallOptionBuyOrderChainHead, false);
 
        emit OptionOrderPlaced(newId, buyerAddress, strikePrice, expiryWeeks, price, amount, TYPE_BUY_CALL);
-        matchCallOptionOrders(strikePrice, expiryWeeks);
+        _matchCallOptionOrders(strikePrice, expiryWeeks);
     }
 
     function buyPutOption(
@@ -281,7 +283,7 @@ contract OptionsTrading is AxelarExecutableWithToken {
         _addOrderToChain(newId, PutOptionBuyOrderChainHead, false);
 
          emit OptionOrderPlaced(newId, buyerAddress, strikePrice, expiryWeeks, price, amount, TYPE_BUY_PUT);
-        matchPutOptionOrders(strikePrice, expiryWeeks);
+        _matchPutOptionOrders(strikePrice, expiryWeeks);
     }
 
     function cancelSellCallOptionOrder(
@@ -289,7 +291,7 @@ contract OptionsTrading is AxelarExecutableWithToken {
         uint256 orderId
     ) internal {
         OrderInfo storage order = orders[orderId];
-        require(order.posterAddress == posterAddress, "Not the owner of the order");
+        require(keccak256(bytes(order.posterAddress)) == keccak256(bytes(posterAddress)), "Not the owner of the order");
         require(order.orderType == TYPE_SELL_CALL, "Not a sell call option order");
         uint256 unfilledAmount = _removeFromSortedList(order, CallOptionSellOrderChainHead);
          emit OptionOrderCancelled(orderId, posterAddress, order.strikePrice, order.expiryWeeks, unfilledAmount, TYPE_SELL_CALL);
@@ -301,7 +303,7 @@ contract OptionsTrading is AxelarExecutableWithToken {
         uint256 orderId
     ) internal {
         OrderInfo storage order = orders[orderId];
-        require(order.posterAddress == posterAddress, "Not the owner of the order");
+        require(keccak256(bytes(order.posterAddress)) == keccak256(bytes(posterAddress)), "Not the owner of the order");
         require(order.orderType == TYPE_SELL_PUT, "Not a sell put option order");
         uint256 unfilledAmount = _removeFromSortedList(order, PutOptionSellOrderChainHead);
          emit OptionOrderCancelled(orderId, posterAddress, order.strikePrice, order.expiryWeeks, unfilledAmount, TYPE_SELL_PUT);
@@ -313,7 +315,7 @@ contract OptionsTrading is AxelarExecutableWithToken {
         uint256 orderId
     ) internal {
          OrderInfo storage order = orders[orderId];
-        require(order.posterAddress == buyerAddress, "Not the owner of the order");
+        require(keccak256(bytes(order.posterAddress)) == keccak256(bytes(buyerAddress)), "Not the owner of the order");
         require(order.orderType == TYPE_BUY_CALL, "Not a buy call option order");
           uint256 unfilledAmount = _removeFromSortedList(order, CallOptionBuyOrderChainHead);
             emit OptionOrderCancelled(orderId, buyerAddress, order.strikePrice, order.expiryWeeks, unfilledAmount, TYPE_BUY_CALL);
@@ -324,7 +326,7 @@ contract OptionsTrading is AxelarExecutableWithToken {
         uint256 orderId
     ) internal {
          OrderInfo storage order = orders[orderId];
-        require(order.posterAddress == buyerAddress, "Not the owner of the order");
+        require(keccak256(bytes(order.posterAddress)) == keccak256(bytes(buyerAddress)), "Not the owner of the order");
         require(order.orderType == TYPE_BUY_PUT, "Not a buy put option order");
          uint256 unfilledAmount = _removeFromSortedList(order, PutOptionBuyOrderChainHead);
         emit OptionOrderCancelled(orderId, buyerAddress, order.strikePrice, order.expiryWeeks, unfilledAmount, TYPE_BUY_PUT);
@@ -379,7 +381,7 @@ contract OptionsTrading is AxelarExecutableWithToken {
         uint256 usd_transfered,
         uint256 strikePrice,
          uint256 expiryWeeks
-    ) internal payable  {
+    ) internal   {
         require(keccak256(bytes(tokenSymbol)) == keccak256(bytes("USD")), "Invalid token symbol");
         require(usd_transfered > 0, "Amount must be positive");
         require(strikePrice > 0, "Strike price must be positive");
@@ -391,7 +393,7 @@ contract OptionsTrading is AxelarExecutableWithToken {
             amountAsked = amountOwned;
         }
 
-        gateway.sendToken(sourceChain, sourceAddress, "XRP", amountAsked);
+        gateway().sendToken(sourceChain, sourceAddress, "XRP", amountAsked);
         callOptionOwners[sourceAddress][strikePrice][expiryWeeks] -= amountAsked;
          totalCallExercised[strikePrice][expiryWeeks] += amountAsked;
 
@@ -404,8 +406,8 @@ contract OptionsTrading is AxelarExecutableWithToken {
         string calldata tokenSymbol,
         uint256 xrp_transfered,
         uint256 strikePrice,
-         uint256 expiryWeeks
-    ) internal payable  {
+        uint256 expiryWeeks
+    ) internal  {
         require(keccak256(bytes(tokenSymbol)) == keccak256(bytes("XRP")), "Invalid token symbol");
         require(xrp_transfered > 0, "Amount must be positive");
         require(xrp_transfered % 100 == 0, "Amount must be multiple of 100");
@@ -418,7 +420,7 @@ contract OptionsTrading is AxelarExecutableWithToken {
         }
 
         uint256 usdAmount = xrp_transfered * strikePrice;
-        gateway.sendToken(sourceChain, sourceAddress, "USD", usdAmount);
+        gateway().sendToken(sourceChain, sourceAddress, "USD", usdAmount);
         putOptionOwners[sourceAddress][strikePrice][expiryWeeks] -= xrp_transfered;
          totalPutExercised[strikePrice][expiryWeeks] += xrp_transfered;
         
@@ -466,7 +468,8 @@ contract OptionsTrading is AxelarExecutableWithToken {
         uint256 amount,
         int orderType
     ) internal returns (uint256) {
-        require(price > minUnsignedInt256, "Price must be positive");
+        require(price > 0, "Price must be positive");
+        require(price < 999999999999, "Price must be less than 999999999999");
         require(amount > 0, "Amount must be positive");
         require(amount % 100 == 0, "Amount must be multiple of 100");
 
@@ -560,8 +563,8 @@ contract OptionsTrading is AxelarExecutableWithToken {
             uint256 amount = sellOrder.amount < buyOrder.amount ? sellOrder.amount : buyOrder.amount;
             uint256 priceDiff = buyOrder.price - sellOrder.price;
 
-            gateway.sendToken(sellOrder.posterAddress, "USD", sellOrder.price * amount);
-            gateway.sendToken(buyOrder.posterAddress, "USD", priceDiff * amount);
+            gateway().sendToken(supportedSourceChain, sellOrder.posterAddress, "USD", sellOrder.price * amount);
+            gateway().sendToken(supportedSourceChain, buyOrder.posterAddress, "USD", priceDiff * amount);
             sellOrder.amount -= amount;
             buyOrder.amount -= amount;
              emit OptionTradeExecuted(buyOrder.posterAddress, sellOrder.posterAddress, sellOrder.strikePrice, strikePrice, expiryWeeks, sellOrder.price, amount, buyId, sellId);
@@ -587,7 +590,7 @@ contract OptionsTrading is AxelarExecutableWithToken {
         _matchOrders(strikePrice, expiryWeeks, CallOptionSellOrderChainHead, CallOptionBuyOrderChainHead);
     }
 
-    function matchPutOptionOrders(
+    function _matchPutOptionOrders(
         uint256 strikePrice,
         uint256 expiryWeeks
     ) internal {
@@ -604,18 +607,18 @@ contract OptionsTrading is AxelarExecutableWithToken {
     ) private {
          // if less than 20 percent of the options are exercised, assume not profitable to exercise, withdraw XRP
         if(totalExercised * 4 < totalIssued) {
-            gateway.sendToken(sourceChain, sourceAddress, "XRP", amountOwned);
+            gateway().sendToken(sourceChain, sourceAddress, "XRP", amountOwned);
 
         // if more than 80 percent of the options are  exercised, assume profitable to exercise, withdraw USD
         } else if (totalExercised * 5 > totalIssued * 4) {
             uint256 usdAmount = amountOwned * strikePrice;
-            gateway.sendToken(sourceChain, sourceAddress, "USD", usdAmount);
+            gateway().sendToken(sourceChain, sourceAddress, "USD", usdAmount);
 
         // else assume half half (this should be rare); as amount owned is multiple of 100, no need to worry about rounding
         } else {
             uint256 usdAmount = amountOwned * strikePrice / 2;
-            gateway.sendToken(sourceChain, sourceAddress, "USD", usdAmount);
-            gateway.sendToken(sourceChain, sourceAddress, "XRP", amountOwned/2);
+            gateway().sendToken(sourceChain, sourceAddress, "USD", usdAmount);
+            gateway().sendToken(sourceChain, sourceAddress, "XRP", amountOwned/2);
         }
     }
 
