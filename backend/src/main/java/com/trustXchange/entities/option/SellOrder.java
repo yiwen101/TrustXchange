@@ -33,4 +33,7 @@ public class SellOrder  {
     @Column(name = "filled_amount", nullable = false)
     private Long filledAmount;
 
+    @Column(name = "is_cancelled", nullable = false)
+    private Boolean isCancelled = false;
+
 }

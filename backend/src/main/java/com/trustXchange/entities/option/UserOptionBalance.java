@@ -15,8 +15,9 @@ import lombok.Setter;
 public class UserOptionBalance  {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-     @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_option_balance_seq")
+    @SequenceGenerator(name = "user_option_balance_seq", sequenceName = "user_option_balance_sequence", allocationSize = 1)
+    @Column(name = "id")
     private Long id;
 
     @Column(name = "user_address", nullable = false)
@@ -25,12 +26,21 @@ public class UserOptionBalance  {
      @Column(name = "option_id", nullable = false)
     private Long optionId;
 
+    // not selling, not exercised
     @Column(name = "owned_amount", nullable = false)
     private Long ownedAmount;
+
+    @Column(name = "selling_amount", nullable = false)
+    private Long sellingAmount;
+
+    @Column(name = "exercised_amount", nullable = false)
+    private Long exercisedAmount;
 
     @Column(name = "issued_amount", nullable = false)
     private Long issuedAmount;
 
-    @Column(name = "selling_amount", nullable = false)
-    private Long sellingAmount;
+    @Column(name = "collateral_collected_amount", nullable = false)
+    private Long collateralCollectedAmount;
+
+
 }

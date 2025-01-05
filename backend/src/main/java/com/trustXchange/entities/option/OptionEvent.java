@@ -15,7 +15,8 @@ import lombok.Setter;
 public class OptionEvent  {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "option_event_seq")
+    @SequenceGenerator(name = "option_event_seq", sequenceName = "option_event_sequence", allocationSize = 1)
     @Column(name = "id")
     private Long id;
 

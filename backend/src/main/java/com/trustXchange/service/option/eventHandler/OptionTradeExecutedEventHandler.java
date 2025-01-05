@@ -3,6 +3,8 @@ package com.trustXchange.service.option.eventHandler;
 import com.trustXchange.entities.option.*;
 import com.trustXchange.service.option.eventData.OptionTradeExecutedEventData;
 import com.trustXchange.repository.option.*;
+
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +21,8 @@ public class OptionTradeExecutedEventHandler  {
     private SellOrderRepository sellOrderRepository;
       @Autowired
     private BuyOrderRepository buyOrderRepository;
+    @Autowired
+    private UserOptionBalanceRepository userOptionBalanceRepository;
 
     public void handle(OptionTradeExecutedEventData event) {
 
@@ -53,6 +57,14 @@ public class OptionTradeExecutedEventHandler  {
               SellOrder sellOrder = sellOrderOptional.get();
               sellOrder.setFilledAmount(sellOrder.getFilledAmount() + event.getAmount());
               sellOrderRepository.save(sellOrder);
+
+              Optional<UserOptionBalance> existingUserBalance = userOptionBalanceRepository.findByOptionIdAndUserAddress(sellOrder.getOptionId(), sellOrder.getSellerAddress());
+              if(existingUserBalance.isPresent()) {
+                  UserOptionBalance userOptionBalance = existingUserBalance.get();
+                  userOptionBalance.setSellingAmount(userOptionBalance.getSellingAmount() - event.getAmount());
+                  userOptionBalance.setOwnedAmount(userOptionBalance.getOwnedAmount() + event.getAmount());
+                  userOptionBalanceRepository.save(userOptionBalance);
+              }
           }
 
           Optional<BuyOrder> buyOrderOptional =  buyOrderRepository.findById(buyOrderId);
@@ -61,6 +73,22 @@ public class OptionTradeExecutedEventHandler  {
               BuyOrder buyOrder = buyOrderOptional.get();
               buyOrder.setFilledAmount(buyOrder.getFilledAmount() + event.getAmount());
               buyOrderRepository.save(buyOrder);
+              
+              Optional<UserOptionBalance> existingUserBalance = userOptionBalanceRepository.findByOptionIdAndUserAddress(buyOrder.getOptionId(), buyOrder.getBuyerAddress());
+              UserOptionBalance buyerProfile;
+              if(existingUserBalance.isPresent()) {
+                  buyerProfile = existingUserBalance.get();
+                  buyerProfile.setOwnedAmount(buyerProfile.getOwnedAmount() + event.getAmount());
+              } else {
+                  buyerProfile = new UserOptionBalance();
+                  buyerProfile.setOptionId(buyOrder.getOptionId());
+                  buyerProfile.setUserAddress(buyOrder.getBuyerAddress());
+                  buyerProfile.setOwnedAmount(event.getAmount());
+                  buyerProfile.setSellingAmount(0L);
+                  buyerProfile.setIssuedAmount(0L);
+                  buyerProfile.setExercisedAmount(0L);
+              }
+              userOptionBalanceRepository.save(buyerProfile);
           }
     }
 }

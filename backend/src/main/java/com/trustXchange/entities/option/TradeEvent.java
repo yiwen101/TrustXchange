@@ -15,7 +15,8 @@ import lombok.Setter;
 public class TradeEvent  {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "trade_event_seq")
+    @SequenceGenerator(name = "trade_event_seq", sequenceName = "trade_event_sequence", allocationSize = 1)
     @Column(name = "id")
     private Long id;
 

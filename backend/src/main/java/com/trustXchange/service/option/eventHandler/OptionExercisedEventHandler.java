@@ -1,12 +1,12 @@
 package com.trustXchange.service.option.eventHandler;
 
 import com.trustXchange.entities.option.*;
+import com.trustXchange.service.option.OptionContractMeta;
 import com.trustXchange.service.option.eventData.OptionExercisedEventData;
 import com.trustXchange.repository.option.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.sql.Timestamp;
 import java.util.Optional;
 
 @Component
@@ -21,12 +21,12 @@ public class OptionExercisedEventHandler  {
     public void handle(OptionExercisedEventData event) {
 
       String optionType = event.isCall() ? "call": "put";
-        Option option =  optionRepository.findByOptionTypeAndStrikePriceAndExpiryDate(optionType, event.getStrikePrice(), new Timestamp(event.getExpiryWeeks() *  7* 24 * 60 * 60 * 1000 + 1704508800000L));
+        Option option =  optionRepository.findByOptionTypeAndStrikePriceAndExpiryDate(optionType, event.getStrikePrice(), OptionContractMeta.getExpiryDate(event.getExpiryWeeks()));
 
           if (option.getId() == null) {
              option.setOptionType(optionType);
              option.setStrikePrice(event.getStrikePrice());
-             option.setExpiryDate(new Timestamp(event.getExpiryWeeks() *  7* 24 * 60 * 60 * 1000 + 1704508800000L));
+             option.setExpiryDate(OptionContractMeta.getExpiryDate(event.getExpiryWeeks()));
              option = optionRepository.save(option);
         }
 
@@ -43,6 +43,7 @@ public class OptionExercisedEventHandler  {
         if(existingUserBalance.isPresent()) {
             UserOptionBalance userOptionBalance = existingUserBalance.get();
             userOptionBalance.setOwnedAmount(userOptionBalance.getOwnedAmount() - event.getAmount());
+            userOptionBalance.setExercisedAmount(userOptionBalance.getExercisedAmount() + event.getAmount());
             userOptionBalanceRepository.save(userOptionBalance);
         }
 

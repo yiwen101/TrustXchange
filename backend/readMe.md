@@ -24,3 +24,26 @@ psql -U postgres
 postgres=# CREATE ROLE <you laptop logged in user name> WITH LOGIN SUPERUSER;
 \q
 ```
+
+to drop all table created, first connect via
+```shell
+psql -U <your user name> -d truxtXchange_db
+```
+then ensure the tables to drop are correct
+```sql
+SELECT tablename
+FROM pg_tables
+WHERE schemaname = 'public';
+```
+``` sql
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public')
+    LOOP
+        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+    END LOOP;
+END;
+$$;
+```

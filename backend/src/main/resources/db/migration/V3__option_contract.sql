@@ -2,7 +2,7 @@
 
 -- Create the options table
 CREATE TABLE options (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT BIGSERIAL PRIMARY KEY,
     option_type ENUM('call', 'put') NOT NULL,
     strike_price BIGINT NOT NULL,
     expiry_date TIMESTAMP NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE options (
 
 -- Create the option_events table
 CREATE TABLE option_events (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT BIGSERIAL PRIMARY KEY,
     transaction_hash VARCHAR(255) NOT NULL,
     transaction_url VARCHAR(255) NOT NULL,
     address VARCHAR(255) NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE option_events (
 
 -- Create the trade_events table
 CREATE TABLE trade_events (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT BIGSERIAL PRIMARY KEY,
     transaction_hash VARCHAR(255) NOT NULL,
     transaction_url VARCHAR(255) NOT NULL,
     buyer_address VARCHAR(255) NOT NULL,
@@ -51,6 +51,7 @@ CREATE TABLE sell_orders (
     price BIGINT NOT NULL,
     amount BIGINT NOT NULL,
     filled_amount BIGINT NOT NULL,
+    is_cancelled BOOLEAN NOT NULL,
     FOREIGN KEY (option_id) REFERENCES options(id)
 );
 
@@ -62,16 +63,19 @@ CREATE TABLE buy_orders (
     price BIGINT NOT NULL,
     amount BIGINT NOT NULL,
     filled_amount BIGINT NOT NULL,
+    is_cancelled BOOLEAN NOT NULL,
     FOREIGN KEY (option_id) REFERENCES options(id)
 );
 
 -- Create the user_option_balances table
 CREATE TABLE user_option_balances (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT BIGSERIAL PRIMARY KEY,
     user_address VARCHAR(255) NOT NULL,
     option_id BIGINT NOT NULL,
     owned_amount BIGINT NOT NULL,
-    issued_amount BIGINT NOT NULL,
     selling_amount BIGINT NOT NULL,
+    exercised_amount BIGINT NOT NULL,
+    issued_amount BIGINT NOT NULL,
+    collateral_collected_amount BIGINT NOT NULL,
     FOREIGN KEY (option_id) REFERENCES options(id)
 );

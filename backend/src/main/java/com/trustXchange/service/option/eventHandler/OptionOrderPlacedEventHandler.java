@@ -1,6 +1,7 @@
 package com.trustXchange.service.option.eventHandler;
 
 import com.trustXchange.entities.option.*;
+import com.trustXchange.service.option.OptionContractMeta;
 import com.trustXchange.service.option.eventData.OptionOrderPlacedEventData;
 import com.trustXchange.repository.option.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,17 +24,17 @@ public class OptionOrderPlacedEventHandler  {
 
     public void handle(OptionOrderPlacedEventData event) {
         String optionType = event.getOrderType() == 1 || event.getOrderType() == 2? "call": "put";
-        Option option =  optionRepository.findByOptionTypeAndStrikePriceAndExpiryDate(optionType, event.getStrikePrice(), new Timestamp(event.getExpiryWeeks() *  7* 24 * 60 * 60 * 1000 + 1704508800000L));
+        Option option =  optionRepository.findByOptionTypeAndStrikePriceAndExpiryDate(optionType, event.getStrikePrice(), OptionContractMeta.getExpiryDate(event.getExpiryWeeks()));
 
-           if (option.getId() == null) {
+        if (option.getId() == null) {
              option.setOptionType(optionType);
              option.setStrikePrice(event.getStrikePrice());
-             option.setExpiryDate(new Timestamp(event.getExpiryWeeks() *  7* 24 * 60 * 60 * 1000 + 1704508800000L));
+             option.setExpiryDate(OptionContractMeta.getExpiryDate(event.getExpiryWeeks()));
              option = optionRepository.save(option);
         }
 
 
-        if (event.getOrderType() == 1 || event.getOrderType() == 3) {
+        if (event.getOrderType() == OptionContractMeta.TYPE_SELL_CALL || event.getOrderType() == OptionContractMeta.TYPE_SELL_PUT) {
           SellOrder sellOrder = new SellOrder();
            sellOrder.setOptionId(option.getId());
            sellOrder.setSellerAddress(event.getPosterAddress());
@@ -45,6 +46,7 @@ public class OptionOrderPlacedEventHandler  {
             if(existingUserBalance.isPresent()) {
                 UserOptionBalance userOptionBalance = existingUserBalance.get();
                  userOptionBalance.setSellingAmount(userOptionBalance.getSellingAmount() + event.getAmount());
+                 userOptionBalance.setOwnedAmount(userOptionBalance.getOwnedAmount() - event.getAmount());
                 userOptionBalanceRepository.save(userOptionBalance);
             }
 
