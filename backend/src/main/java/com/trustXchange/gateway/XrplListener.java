@@ -56,7 +56,7 @@ public class XrplListener {
             return;
         }
         isInited = true;
-        HttpUrl rippledUrl = HttpUrl.get("https://s.devnet.rippletest.net:51234/");
+        HttpUrl rippledUrl = HttpUrl.get("https://s.altnet.rippletest.net:51234/");
         System.out.println("Connecting to XRPL at " + rippledUrl);
         xrplClient = new XrplClient(rippledUrl);
 

@@ -1,7 +1,7 @@
 import * as xrpl from "xrpl";
 import { ethers } from "ethers";
 
-const XRPL_RPC_URL = "wss://s.devnet.rippletest.net:51233/";
+const XRPL_RPC_URL = "wss://s.altnet.rippletest.net:51233/";
 const DESTINATION_ADDRESS = "rfv9EskzSdWEsZsyBrujtidD2qdgiz8v7W";
 const AMOUNT = "90000000";
 
@@ -13,9 +13,9 @@ async function gmp() {
     const user = xrpl.Wallet.generate();
     await client.fundWallet(user);
     console.log("User address: ", user.address);
-    const abiCoder = new ethers.utils.AbiCoder();
+    const abiCoder = new ethers.AbiCoder();
     const encodedPayload = abiCoder.encode(['string'], ['Hello World by Yiwen']); // Replace with your message
-    const payloadHash = ethers.utils.keccak256(encodedPayload).replace(/^0x/, '');
+    const payloadHash = ethers.keccak256(encodedPayload).replace(/^0x/, '');
     const paymentTx = {
         TransactionType: "Payment",
         Account: user.address,
@@ -40,12 +40,6 @@ async function gmp() {
                     MemoType: "7061796C6F61645F68617368", // hex("payload_hash")
                 },
             },
-            {
-                Memo: {
-                    MemoData: "68656C6C6F5F776F726C64", // hex("hello_world")
-                    MemoType: "6D6573736167655F746F5F776F726C64", // hex("message_to_world")
-                }
-            }
         ],
     };
 
