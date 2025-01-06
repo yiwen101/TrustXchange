@@ -2,7 +2,7 @@ import axios from 'axios';
 import {
     GmpCallRequest,
     GmpCallResponse,
-} from './gmpTypes.ts';
+} from './types/gmpTypes.ts';
 
 const BACKEND_URL = process.env.BACKEND_URL;
 

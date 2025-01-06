@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { PoolLendingBorrower, PoolLendingBorrowerEvents, PoolLendingContributor, PoolLendingContributorEvents, PoolLendingPoolEvents } from './pledgeTypes.ts';
+import { PoolLendingBorrower, PoolLendingBorrowerEvents, PoolLendingContributor, PoolLendingContributorEvents, PoolLendingPoolEvents } from './types/pledgeTypes.ts';
 
 const BACKEND_URL = process.env.BACKEND_URL;
 

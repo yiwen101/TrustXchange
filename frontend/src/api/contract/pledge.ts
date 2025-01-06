@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import * as xrpl from 'xrpl';
-import { gmp_and_call_backend } from '../gmp/util';
+import { gmp_and_call_backend } from '../common/gmpUtil';
 
 const contractAddress = "0x83ABF2594aEDf109E2fD83C94FA23b5d9E38340e"
 

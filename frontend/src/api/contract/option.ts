@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import * as xrpl from 'xrpl';
-import { gmp_and_call_backend } from '../gmp/util';
+import { gmp_and_call_backend } from '../common/gmpUtil';
 
 const contractAddress = process.env.XRP_OPTIONS_POOL as string;
 

@@ -6,7 +6,7 @@ import {
     P2pLendingRequestEvent,
     P2pLoan,
     P2pLoanEvent
-} from './p2pTypes';
+} from './types/p2pTypes';
 
 const BACKEND_URL = process.env.BACKEND_URL;
 
