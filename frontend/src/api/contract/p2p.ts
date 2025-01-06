@@ -105,8 +105,7 @@ function prepareLiquidateLoanPayload(
     return ethers.AbiCoder.defaultAbiCoder().encode(["string", "bytes"], [command, params]);
 }
 
-// Exported API version of prepareLendingRequestPayload
-export async function api_prepareLendingRequestPayload(
+export async function createLendingRequest(
     user: xrpl.Wallet,
     
     minCollateralRatio: number,
@@ -126,8 +125,7 @@ export async function api_prepareLendingRequestPayload(
     await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
 }
 
-// Exported API version of prepareBorrowingRequestPayload
-export async function api_prepareBorrowingRequestPayload(
+export async function createBorrowingRequest(
     user: xrpl.Wallet,
     
     amountToBorrowUSD: number,
@@ -149,8 +147,7 @@ export async function api_prepareBorrowingRequestPayload(
     await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
 }
 
-// Exported API version of prepareAcceptLendingRequestPayload
-export async function api_prepareAcceptLendingRequestPayload(
+export async function acceptLendingRequest(
     user: xrpl.Wallet,
     
     requestId: number,
@@ -161,8 +158,7 @@ export async function api_prepareAcceptLendingRequestPayload(
     await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
 }
 
-// Exported API version of prepareAcceptBorrowingRequestPayload
-export async function api_prepareAcceptBorrowingRequestPayload(
+export async function acceptBorrowingRequest(
     user: xrpl.Wallet,
     
     requestId: number,
@@ -173,8 +169,7 @@ export async function api_prepareAcceptBorrowingRequestPayload(
     await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
 }
 
-// Exported API version of prepareRepayLoanPayload
-export async function api_prepareRepayLoanPayload(
+export async function repayLoan(
     user: xrpl.Wallet,
     
     repayAmountUSD: number,
@@ -185,8 +180,7 @@ export async function api_prepareRepayLoanPayload(
     await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
 }
 
-// Exported API version of prepareCancelLendingRequestPayload
-export async function api_prepareCancelLendingRequestPayload(
+export async function cancelLendingRequest(
     user: xrpl.Wallet,
     
     requestId: number,
@@ -196,8 +190,7 @@ export async function api_prepareCancelLendingRequestPayload(
     await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
 }
 
-// Exported API version of prepareCancelBorrowingRequestPayload
-export async function api_prepareCancelBorrowingRequestPayload(
+export async function cancelBorrowingRequest(
     user: xrpl.Wallet,
     
     requestId: number,
@@ -207,8 +200,7 @@ export async function api_prepareCancelBorrowingRequestPayload(
     await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
 }
 
-// Exported API version of prepareLiquidateLoanPayload
-export async function api_prepareLiquidateLoanPayload(
+export async function liquidateLoan(
     user: xrpl.Wallet,
     
     loanId: number,
