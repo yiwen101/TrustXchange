@@ -15,34 +15,54 @@ export interface AMMInfo {
 /**
  * Swaps a specified amount of USDC for XRP.
  * @param wallet - The wallet initiating the swap.
- * @param usd_amount - The amount of USDC to swap.
- * @param intended_xrp_amount - The intended amount of XRP to receive.
+ * @param usdAmount - The amount of USDC to swap.
+ * @param intendedXrpAmount - The intended amount of XRP to receive.
  */
-export async function swap_usdc_for_XRP(wallet: Wallet, usd_amount: number, intended_xrp_amount: number): Promise<void> {
+export async function swap_usdc_for_XRP(
+    wallet: Wallet, 
+    usdAmount: number, 
+    intendedXrpAmount: number
+): Promise<void> {
     const client = new Client(testnet_url);
     try {
         await client.connect();
-        console.log(`Swapping ${usd_amount} USDC for ${intended_xrp_amount} XRP...`);
+        console.log(`Swapping ${usdAmount} USDC for ${intendedXrpAmount} XRP...`);
 
-        const takerGets = {
-            currency: USDC_currency_code,
-            issuer: USDC_issuer.address,
-            value: usdStrOf(usd_amount),
+        // 构建交易
+        const tx = {
+            TransactionType: "AMMSwap",
+            Account: wallet.address,
+            AmountIn: {
+                currency: USDC_currency_code,
+                issuer: USDC_issuer.address,
+                value: usdAmount.toString()
+            },
+            Asset: {
+                currency: "XRP"
+            },
+            MinimumOut: xrpStrOf(intendedXrpAmount * 0.995), // 0.5% 滑点保护
+            Fee: "10",
+            Flags: {
+                tfLimitQuality: true,
+                tfPartialPayment: false,
+                tfNoRippleDirect: true
+            }
         };
 
-        const takerPays = xrpStrOf(intended_xrp_amount);
+        // 提交交易
+        const prepared = await client.autofill(tx);
+        const signed = wallet.sign(prepared);
+        const result = await client.submitAndWait(signed.tx_blob);
 
-        const offer_result = await client.submitAndWait({
-            TransactionType: "OfferCreate",
-            Account: wallet.address,
-            TakerPays: takerPays,
-            TakerGets: takerGets,
-            Flags: 0x00020000 // Immediate or Cancel
-        }, { autofill: true, wallet: wallet });
+        // 验证交易结果
+        if (result.result.meta.TransactionResult !== "tesSUCCESS") {
+            throw new Error(`Transaction failed: ${result.result.meta.TransactionResult}`);
+        }
 
-        logResponse(offer_result);
+        console.log('Swap successful:', result);
     } catch (error) {
         console.error('Error in swap_usdc_for_XRP:', error);
+        throw error;
     } finally {
         await client.disconnect();
     }
@@ -483,4 +503,173 @@ function swapIn(asset_in_bn: BigNumber, pool_in_bn: BigNumber, pool_out_bn: BigN
         pool_in_bn.multipliedBy(pool_out_bn).dividedBy(newPoolIn)
     );
     return outputAmount;
+}
+
+/**
+ * 获取用户在 AMM 池中的份额信息
+ */
+export async function get_user_amm_share(wallet: Wallet): Promise<{
+    lpTokens: string;
+    xrpShare: number;
+    usdShare: number;
+    sharePercentage: number;
+}> {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+        
+        // 先获取 AMM 信息
+        const ammInfo = await get_amm_info();
+        
+        // 然后使用 ammInfo
+        const lpBalance = await get_account_currency_balance(
+            wallet,
+            ammInfo.lp_token.currency,
+            ammInfo.lp_token.issuer
+        );
+
+        // 2. 获取池子总的 LP 代币数量
+        const totalLpTokens = ammInfo.lp_token.value;
+
+        // 3. 计算份额
+        const shareRatio = Number(lpBalance) / Number(totalLpTokens);
+        const xrpShare = ammInfo.xrp_amount * shareRatio;
+        const usdShare = ammInfo.usd_amount * shareRatio;
+
+        return {
+            lpTokens: lpBalance,
+            xrpShare,
+            usdShare,
+            sharePercentage: shareRatio
+        };
+    } catch (error) {
+        console.error('Failed to get user AMM share:', error);
+        throw error;
+    } finally {
+        await client.disconnect();
+    }
+}
+
+/**
+ * 从 AMM 池中移除流动性
+ */
+export async function remove_liquidity_from_XRP_USDC_AMM(
+    wallet: Wallet,
+    percentage: number
+): Promise<void> {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+
+        // 1. 获取用户的 LP 代币余额
+        const { lpTokens } = await get_user_amm_share(wallet);
+        const amountToRemove = (Number(lpTokens) * percentage) / 100;
+
+        // 2. 构建移除流动性交易
+        const tx = {
+            TransactionType: "AMMWithdraw",
+            Account: wallet.address,
+            Asset: {
+                currency: "XRP"
+            },
+            Asset2: {
+                currency: USDC_currency_code,
+                issuer: USDC_issuer.address
+            },
+            LPTokensIn: amountToRemove.toString(),
+            Fee: "10"
+        };
+
+        // 3. 提交交易
+        const prepared = await client.autofill(tx);
+        const signed = wallet.sign(prepared);
+        const result = await client.submitAndWait(signed.tx_blob);
+
+        // 4. 验证交易结果
+        if (result.result.meta.TransactionResult !== "tesSUCCESS") {
+            throw new Error(`Transaction failed: ${result.result.meta.TransactionResult}`);
+        }
+
+    } catch (error) {
+        console.error('Failed to remove liquidity:', error);
+        throw error;
+    } finally {
+        await client.disconnect();
+    }
+}
+
+/**
+ * 添加流动性到 AMM 池并获取 LP tokens
+ */
+export async function add_liquidity_to_AMM(
+    wallet: Wallet,
+    xrpAmount: number,
+    usdAmount: number
+): Promise<{
+    lpTokens: string;
+    txHash: string;
+}> {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+        
+        // 1. 添加 XRP
+        await add_xrp_to_XRP_USDC_AMM(wallet, xrpAmount);
+        
+        // 2. 添加 USD
+        await add_usd_to_XRP_USDC_AMM(wallet, usdAmount);
+
+        // 3. 获取用户新的 LP token 余额
+        const ammInfo = await get_amm_info();
+        const lpBalance = await get_account_currency_balance(
+            wallet,
+            ammInfo.lp_token.currency,
+            ammInfo.lp_token.issuer
+        );
+
+        return {
+            lpTokens: lpBalance,
+            txHash: '' // 可以返回交易哈希
+        };
+    } finally {
+        await client.disconnect();
+    }
+}
+
+/**
+ * 获取用户的 LP token 余额和对应的池子份额
+ */
+export async function get_user_pool_share(wallet: Wallet): Promise<{
+    lpTokens: string;
+    poolShare: number;
+    xrpAmount: number;
+    usdAmount: number;
+}> {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+        
+        // 1. 获取 AMM 信息
+        const ammInfo = await get_amm_info();
+        
+        // 2. 获取用户的 LP token 余额
+        const lpBalance = await get_account_currency_balance(
+            wallet,
+            ammInfo.lp_token.currency,
+            ammInfo.lp_token.issuer
+        );
+
+        // 3. 计算用户在池子中的份额
+        const totalLpTokens = ammInfo.lp_token.value;
+        const shareRatio = Number(lpBalance) / Number(totalLpTokens);
+        
+        return {
+            lpTokens: lpBalance,
+            poolShare: shareRatio,
+            xrpAmount: ammInfo.xrp_amount * shareRatio,
+            usdAmount: ammInfo.usd_amount * shareRatio
+        };
+    } finally {
+        await client.disconnect();
+    }
 }
