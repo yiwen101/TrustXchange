@@ -1,808 +1,675 @@
-import { Client, Wallet, xrpToDrops } from 'xrpl';
+import { Client, Wallet, dropsToXrp, SubmittableTransaction, AMMInfoResponse, IssuedCurrencyAmount, AMMInfoRequest, AccountSetAsfFlags, AccountInfoRequest, AccountInfoResponse } from 'xrpl';
+import BigNumber from 'bignumber.js';
+import { get_account_currency_balance, logResponse, usdStrOf, xrpStrOf } from './common';
+import { fund_wallet } from './wallet';
+import { get_latest_xrp_price, get_xrp_price_at_ledger } from './xrp_price';
+import {  USDC_issuer,USDC_currency_code,mannnet_Bitstamp_usd_address, mainnet_url, testnet_url } from '../../const';
 
-interface TokenAmount {
-    currency: string;
-    issuer?: string;
-    value: string;
+export interface AMMInfo {
+    usd_amount: number;
+    xrp_amount: number;
+    full_trading_fee: number;
+    lp_token: IssuedCurrencyAmount
 }
 
-interface PoolState {
-    tokens: {
-        token1: TokenAmount;
-        token2: TokenAmount;
-    };
-    lpTokens: TokenAmount;
-    tradingFee: number;
-    totalLiquidity: string;
-}
+/**
+ * Swaps a specified amount of USDC for XRP.
+ * @param wallet - The wallet initiating the swap.
+ * @param usdAmount - The amount of USDC to swap.
+ * @param intendedXrpAmount - The intended amount of XRP to receive.
+ */
+export async function swap_usdc_for_XRP(
+    wallet: Wallet, 
+    usdAmount: number, 
+    intendedXrpAmount: number
+): Promise<void> {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+        console.log(`Swapping ${usdAmount} USDC for ${intendedXrpAmount} XRP...`);
 
-interface SwapProtectionConfig {
-    maxSlippage: number;      // 最大允许滑点
-    maxPriceImpact: number;   // 最大价格影响
-    deadline: number;         // 交易截止时间
-    minOutput: string;        // 最小输出量
-}
-
-interface PriceImpactResult {
-    priceImpact: number;
-    severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'VERY_HIGH';
-    warning?: string;
-}
-
-export class AMMTransaction {
-    private client: Client;
-    private readonly FEE_DENOMINATOR = 10000;
-    
-    constructor(isTestnet: boolean = true) {
-        this.client = new Client(isTestnet 
-            ? 'wss://s.altnet.rippletest.net:51233'
-            : 'wss://xrplcluster.com');
-    }
-
-    async connect() {
-        if (!this.client.isConnected()) {
-            await this.client.connect();
-        }
-    }
-
-    async createPool(
-        wallet: Wallet,
-        token1: TokenAmount,
-        token2: TokenAmount,
-        tradingFee: number = 0.005 // 0.5% default fee
-    ) {
-        try {
-            await this.connect();
-            
-            // 验证输入
-            this.validateTokenAmount(token1);
-            this.validateTokenAmount(token2);
-            
-            const tx = {
-                TransactionType: "AMMCreate",
-                Account: wallet.address,
-                Amount: token1,
-                Amount2: token2,
-                TradingFee: Math.floor(tradingFee * this.FEE_DENOMINATOR),
-                Fee: "10",
-            };
-
-            return await this.submitTransaction(wallet, tx);
-        } catch (error) {
-            console.error('Failed to create AMM pool:', error);
-            throw error;
-        }
-    }
-
-    async addLiquidity(
-        wallet: Wallet,
-        token1: TokenAmount,
-        token2: TokenAmount,
-        slippage: number = 0.01,
-        deadline?: number
-    ) {
-        try {
-            await this.connect();
-
-            // 1. 验证输入
-            this.validateTokenAmount(token1);
-            this.validateTokenAmount(token2);
-            
-            // 2. 获取池状态
-            const poolState = await this.getPoolState(token1, token2);
-            
-            // 3. 计算添加流动性的详情
-            const {
-                token1Amount,
-                token2Amount,
-                lpTokensToMint,
-                shareOfPool
-            } = this.calculateLiquidityDetails(
-                token1,
-                token2,
-                poolState
-            );
-
-            // 4. 验证流动性比例
-            if (poolState.totalLiquidity !== "0") {
-                this.validateLiquidityRatio(
-                    token1Amount,
-                    token2Amount,
-                    poolState
-                );
+        // 构建交易
+        const tx = {
+            TransactionType: "AMMSwap",
+            Account: wallet.address,
+            AmountIn: {
+                currency: USDC_currency_code,
+                issuer: USDC_issuer.address,
+                value: usdAmount.toString()
+            },
+            Asset: {
+                currency: "XRP"
+            },
+            MinimumOut: xrpStrOf(intendedXrpAmount * 0.995), // 0.5% 滑点保护
+            Fee: "10",
+            Flags: {
+                tfLimitQuality: true,
+                tfPartialPayment: false,
+                tfNoRippleDirect: true
             }
-
-            // 5. 计算最小接收量（考虑滑点）
-            const minToken1 = (Number(token1Amount) * (1 - slippage)).toString();
-            const minToken2 = (Number(token2Amount) * (1 - slippage)).toString();
-
-            // 6. 构建交易
-            const tx = {
-                TransactionType: "AMMDeposit",
-                Account: wallet.address,
-                Amount: {
-                    currency: token1.currency,
-                    issuer: token1.issuer,
-                    value: token1Amount
-                },
-                Amount2: {
-                    currency: token2.currency,
-                    issuer: token2.issuer,
-                    value: token2Amount
-                },
-                MinimumToken1: {
-                    currency: token1.currency,
-                    issuer: token1.issuer,
-                    value: minToken1
-                },
-                MinimumToken2: {
-                    currency: token2.currency,
-                    issuer: token2.issuer,
-                    value: minToken2
-                },
-                Fee: "10",
-                Flags: {
-                    tfLimitQuality: true,
-                    tfNoRippleDirect: true
-                },
-                Expiration: deadline ? deadline : Math.floor(Date.now() / 1000) + 300,
-            };
-
-            // 7. 提交交易
-            const result = await this.submitTransaction(wallet, tx);
-
-            // 8. 验证交易结果
-            const actualLPTokens = this.extractLPTokensReceived(result);
-            if (Number(actualLPTokens) < Number(lpTokensToMint) * (1 - slippage)) {
-                throw new Error('Received less LP tokens than expected');
-            }
-
-            return {
-                success: true,
-                transactionHash: result.result.hash,
-                lpTokensReceived: actualLPTokens,
-                shareOfPool,
-                token1Deposited: token1Amount,
-                token2Deposited: token2Amount
-            };
-
-        } catch (error) {
-            console.error('Add liquidity failed:', error);
-            throw error;
-        }
-    }
-
-    async removeLiquidity(
-        wallet: Wallet,
-        lpTokens: TokenAmount,
-        token1: TokenAmount,
-        token2: TokenAmount,
-        minToken1: string,
-        minToken2: string
-    ) {
-        try {
-            await this.connect();
-
-            const tx = {
-                TransactionType: "AMMWithdraw",
-                Account: wallet.address,
-                Asset: token1,
-                Asset2: token2,
-                LPTokens: lpTokens,
-                Fee: "10",
-                Flags: 0,
-                MinimumToken1: {
-                    currency: token1.currency,
-                    issuer: token1.issuer,
-                    value: minToken1
-                },
-                MinimumToken2: {
-                    currency: token2.currency,
-                    issuer: token2.issuer,
-                    value: minToken2
-                }
-            };
-
-            return await this.submitTransaction(wallet, tx);
-        } catch (error) {
-            console.error('Failed to remove liquidity:', error);
-            throw error;
-        }
-    }
-
-    async swap(
-        wallet: Wallet,
-        amountIn: TokenAmount,
-        tokenOut: TokenAmount,
-        slippage: number = 0.01,
-        deadline?: number
-    ) {
-        try {
-            await this.connect();
-
-            // 1. 验证输入
-            this.validateTokenAmount(amountIn);
-            if (amountIn.currency === tokenOut.currency) {
-                throw new Error('Cannot swap same tokens');
-            }
-
-            // 2. 获取池子信息和路径
-            const poolInfo = await this.getPoolInfo(amountIn, tokenOut);
-            if (!poolInfo || !poolInfo.asset || !poolInfo.asset2) {
-                throw new Error('Pool not found');
-            }
-
-            // 3. 检查流动性是否充足
-            if (Number(poolInfo.asset.value) === 0 || Number(poolInfo.asset2.value) === 0) {
-                throw new Error('Insufficient liquidity');
-            }
-
-            // 4. 计算交易详情
-            const {
-                expectedOutput,
-                priceImpact,
-                minimumReceived,
-                path
-            } = await this.calculateSwapDetails(
-                amountIn,
-                tokenOut,
-                poolInfo,
-                slippage
-            );
-
-            // 5. 价格影响检查
-            if (priceImpact > 0.05) { // 5% 价格影响警告
-                console.warn(`High price impact: ${(priceImpact * 100).toFixed(2)}%`);
-            }
-            if (priceImpact > 0.15) { // 15% 价格影响阻止
-                throw new Error('Price impact too high');
-            }
-
-            // 6. 构建交易
-            const tx = {
-                TransactionType: "AMMSwap",
-                Account: wallet.address,
-                AmountIn: {
-                    currency: amountIn.currency,
-                    issuer: amountIn.issuer,
-                    value: amountIn.value
-                },
-                Asset: {
-                    currency: tokenOut.currency,
-                    issuer: tokenOut.issuer
-                },
-                MinimumOut: {
-                    currency: tokenOut.currency,
-                    issuer: tokenOut.issuer,
-                    value: minimumReceived
-                },
-                Fee: "10",
-                Flags: {
-                    tfLimitQuality: true,
-                    tfPartialPayment: false,
-                    tfNoRippleDirect: true
-                },
-                Paths: path,
-                Expiration: deadline ? deadline : Math.floor(Date.now() / 1000) + 300, // 5分钟后过期
-            };
-
-            // 7. 提交交易
-            const result = await this.submitTransaction(wallet, tx);
-
-            // 8. 验证交易结果
-            const finalAmount = this.extractReceivedAmount(result);
-            if (Number(finalAmount) < Number(minimumReceived)) {
-                throw new Error('Received amount less than minimum expected');
-            }
-
-            return {
-                success: true,
-                transactionHash: result.result.hash,
-                amountIn: amountIn.value,
-                amountOut: finalAmount,
-                priceImpact,
-                path: path
-            };
-
-        } catch (error) {
-            console.error('Swap failed:', error);
-            throw error;
-        }
-    }
-
-    async getPoolInfo(token1: TokenAmount, token2: TokenAmount) {
-        try {
-            await this.connect();
-
-            const request = {
-                command: "amm_info",
-                asset: { 
-                    currency: token1.currency,
-                    issuer: token1.issuer
-                },
-                asset2: { 
-                    currency: token2.currency,
-                    issuer: token2.issuer
-                }
-            };
-
-            const response = await this.client.request(request);
-            return response.result;
-        } catch (error) {
-            console.error('Failed to get pool info:', error);
-            throw error;
-        }
-    }
-
-    private calculateExpectedOutput(
-        amountIn: TokenAmount,
-        tokenOut: TokenAmount,
-        poolInfo: any
-    ): string {
-        // 使用恒定乘积公式: x * y = k
-        const reserveIn = poolInfo.asset.value;
-        const reserveOut = poolInfo.asset2.value;
-        const amountInWithFee = Number(amountIn.value) * 0.997; // 0.3% fee
-        const numerator = amountInWithFee * Number(reserveOut);
-        const denominator = Number(reserveIn) + amountInWithFee;
-        return (numerator / denominator).toString();
-    }
-
-    async disconnect() {
-        if (this.client.isConnected()) {
-            await this.client.disconnect();
-        }
-    }
-
-    async getPoolState(token1: TokenAmount, token2: TokenAmount): Promise<PoolState> {
-        try {
-            const poolInfo = await this.getPoolInfo(token1, token2);
-            return this.parsePoolInfo(poolInfo);
-        } catch (error) {
-            console.error('Failed to get pool state:', error);
-            throw error;
-        }
-    }
-
-    // 辅助方法
-    private validateTokenAmount(token: TokenAmount) {
-        if (!token.currency || !token.value) {
-            throw new Error('Invalid token amount');
-        }
-        if (Number(token.value) <= 0) {
-            throw new Error('Token amount must be positive');
-        }
-    }
-
-    private validateLiquidityRatio(
-        token1: TokenAmount,
-        token2: TokenAmount,
-        poolState: PoolState
-    ) {
-        if (poolState.totalLiquidity !== "0") {
-            const currentRatio = Number(poolState.tokens.token1.value) / 
-                               Number(poolState.tokens.token2.value);
-            const newRatio = Number(token1.value) / Number(token2.value);
-            const ratioDeviation = Math.abs(currentRatio - newRatio) / currentRatio;
-            
-            if (ratioDeviation > 0.01) { // 1% 偏差
-                throw new Error('Liquidity ratio mismatch');
-            }
-        }
-    }
-
-    private calculateSwapDetails(
-        amountIn: TokenAmount,
-        tokenOut: TokenAmount,
-        poolInfo: any
-    ) {
-        const reserveIn = poolInfo.asset.value;
-        const reserveOut = poolInfo.asset2.value;
-        const amountInWithFee = Number(amountIn.value) * 0.997;
-        
-        // 计算输出量
-        const expectedOutput = this.calculateExpectedOutput(
-            amountIn,
-            tokenOut,
-            poolInfo
-        );
-        
-        // 计算价格影响
-        const priceImpact = this.calculatePriceImpact(
-            amountInWithFee,
-            expectedOutput,
-            reserveIn,
-            reserveOut
-        );
-
-        return { expectedOutput, priceImpact };
-    }
-
-    private calculatePriceImpact(
-        amountIn: number,
-        amountOut: string,
-        reserveIn: string,
-        reserveOut: string
-    ): number {
-        const midPrice = Number(reserveOut) / Number(reserveIn);
-        const exactQuote = midPrice * amountIn;
-        const priceImpact = (Number(amountOut) - exactQuote) / exactQuote;
-        return Math.abs(priceImpact);
-    }
-
-    private calculateSlippageRate(slippage: number) {
-        return {
-            numerator: Math.floor((1 - slippage) * 100000000),
-            denominator: 100000000
         };
-    }
 
-    private async submitTransaction(wallet: Wallet, tx: any) {
-        const prepared = await this.client.autofill(tx);
+        // 提交交易
+        const prepared = await client.autofill(tx);
         const signed = wallet.sign(prepared);
-        const result = await this.client.submitAndWait(signed.tx_blob);
-        
+        const result = await client.submitAndWait(signed.tx_blob);
+
         // 验证交易结果
         if (result.result.meta.TransactionResult !== "tesSUCCESS") {
             throw new Error(`Transaction failed: ${result.result.meta.TransactionResult}`);
         }
-        
-        return result;
+
+        console.log('Swap successful:', result);
+    } catch (error) {
+        console.error('Error in swap_usdc_for_XRP:', error);
+        throw error;
+    } finally {
+        await client.disconnect();
     }
+}
 
-    private parsePoolInfo(poolInfo: any): PoolState {
-        return {
-            tokens: {
-                token1: poolInfo.asset,
-                token2: poolInfo.asset2
-            },
-            lpTokens: poolInfo.lp_token,
-            tradingFee: Number(poolInfo.trading_fee) / this.FEE_DENOMINATOR,
-            totalLiquidity: poolInfo.total_liquidity
-        };
-    }
+/**
+ * Retrieves the amount required or obtainable for a token swap.
+ * @param token_amount - The amount of the token.
+ * @param token_is_xrp - Indicates if the token is XRP.
+ * @param is_intended_token - Indicates if the token is the intended output.
+ * @param info - AMM information.
+ * @returns The calculated amount as a BigNumber.
+ */
+function _get_amount_for_token(token_amount: number, token_is_xrp: boolean, is_intended_token: boolean, info: AMMInfo): BigNumber {
+        const amm_info = info;
+        const swap_for_xrp = token_is_xrp === is_intended_token;
+        const pool_in_bn = new BigNumber(swap_for_xrp ? amm_info.usd_amount : amm_info.xrp_amount);
+        const pool_out_bn = new BigNumber(swap_for_xrp ? amm_info.xrp_amount : amm_info.usd_amount);
+        const full_trading_fee = amm_info.full_trading_fee;
+        const asset_out_bn = new BigNumber(token_amount);
+        const unrounded_amount = is_intended_token
+            ? swapOut(asset_out_bn, pool_in_bn, pool_out_bn, full_trading_fee)
+            : swapIn(asset_out_bn, pool_in_bn, pool_out_bn, full_trading_fee);
+        return unrounded_amount;
+}
 
-    // 新增：提取实际收到的金额
-    private extractReceivedAmount(txResult: any): string {
-        const changes = txResult.result.meta.AffectedNodes;
-        // 实现从交易结果中提取实际收到的金额的逻辑
-        // ...
-        return "0"; // 替换为实际实现
-    }
+/**
+ * Calculates the amount that can be obtained with a given token amount.
+ * @param token_amount - The amount of the token.
+ * @param token_is_xrp - Indicates if the token is XRP.
+ * @param info - AMM information.
+ * @returns The obtainable amount as a BigNumber.
+ */
+function _get_amount_can_get_with_token(token_amount: number, token_is_xrp: boolean, info: AMMInfo): BigNumber {
+    return _get_amount_for_token(token_amount, token_is_xrp, false, info);
+}
 
-    // 改进：计算交易详情
-    private async calculateSwapDetails(
-        amountIn: TokenAmount,
-        tokenOut: TokenAmount,
-        poolInfo: any,
-        slippage: number
-    ) {
-        const reserveIn = poolInfo.asset.value;
-        const reserveOut = poolInfo.asset2.value;
-        
-        // 计算输出量（考虑手续费）
-        const amountInWithFee = Number(amountIn.value) * 0.997; // 0.3% fee
-        const expectedOutput = this.calculateExpectedOutput(
-            amountIn,
-            tokenOut,
-            poolInfo
-        );
+/**
+ * Calculates the amount needed for a token swap.
+ * @param token_amount - The amount of the token.
+ * @param token_is_xrp - Indicates if the token is XRP.
+ * @param info - AMM information.
+ * @returns The required amount as a BigNumber.
+ */
+function _get_amount_needed_for_token(token_amount: number, token_is_xrp: boolean, info: AMMInfo): BigNumber {
+    return _get_amount_for_token(token_amount, token_is_xrp, true, info);
+}
 
-        // 计算价格影响
-        const priceImpact = this.calculatePriceImpact(
-            amountInWithFee,
-            expectedOutput,
-            reserveIn,
-            reserveOut
-        );
+/**
+ * Gets the USD amount needed to obtain a specified XRP amount.
+ * @param xrp_amount - The desired XRP amount.
+ * @param info - AMM information.
+ * @returns The required USD amount as a BigNumber.
+ */
+export function get_usd_needed_for_xrp(xrp_amount: number, info: AMMInfo): BigNumber {
+    return _get_amount_needed_for_token(xrp_amount, true, info);
+}
 
-        // 计算最小接收量
-        const minimumReceived = (
-            Number(expectedOutput) * (1 - slippage)
-        ).toString();
+/**
+ * Gets the XRP amount needed to obtain a specified USD amount.
+ * @param usd_amount - The desired USD amount.
+ * @param info - AMM information.
+ * @returns The required XRP amount as a BigNumber.
+ */
+export function get_xrp_needed_for_usd(usd_amount: number, info: AMMInfo): BigNumber {
+    return _get_amount_needed_for_token(usd_amount, false, info);
+}
 
-        // 获取最优交易路径
-        const path = await this.findBestTradingPath(
-            amountIn,
-            tokenOut,
-            expectedOutput
-        );
+/**
+ * Gets the USD amount obtainable with a specified XRP amount.
+ * @param xrp_amount - The XRP amount to swap.
+ * @param info - AMM information.
+ * @returns The obtainable USD amount as a BigNumber.
+ */
+export function get_usd_can_get_with_xrp(xrp_amount: number, info: AMMInfo): BigNumber {
+    return _get_amount_can_get_with_token(xrp_amount, true, info);
+}
 
-        return {
-            expectedOutput,
-            priceImpact,
-            minimumReceived,
-            path
-        };
-    }
+/**
+ * Gets the XRP amount obtainable with a specified USD amount.
+ * @param usd_amount - The USD amount to swap.
+ * @param info - AMM information.
+ * @returns The obtainable XRP amount as a BigNumber.
+ */
+export function get_xrp_can_get_with_usd(usd_amount: number, info: AMMInfo): BigNumber {
+    return _get_amount_can_get_with_token(usd_amount, false, info);
+}
 
-    // 新增：查找最优交易路径
-    private async findBestTradingPath(
-        amountIn: TokenAmount,
-        tokenOut: TokenAmount,
-        expectedOutput: string
-    ): Promise<any[]> {
-        // 实现路径查找算法
-        // ...
-        return [];
-    }
-
-    // 新增：计算流动性详情
-    private calculateLiquidityDetails(
-        token1: TokenAmount,
-        token2: TokenAmount,
-        poolState: PoolState
-    ) {
-        let token1Amount = token1.value;
-        let token2Amount = token2.value;
-        let lpTokensToMint = "0";
-        let shareOfPool = 0;
-
-        if (poolState.totalLiquidity === "0") {
-            // 首次添加流动性
-            lpTokensToMint = Math.sqrt(
-                Number(token1Amount) * Number(token2Amount)
-            ).toString();
-            shareOfPool = 1;
-        } else {
-            // 计算应该添加的确切数量
-            const reserve1 = poolState.tokens.token1.value;
-            const reserve2 = poolState.tokens.token2.value;
-            
-            // 确保按照当前池子比例添加
-            const amount2Optimal = (Number(token1Amount) * Number(reserve2)) / Number(reserve1);
-            
-            if (amount2Optimal <= Number(token2Amount)) {
-                token2Amount = amount2Optimal.toString();
-            } else {
-                const amount1Optimal = (Number(token2Amount) * Number(reserve1)) / Number(reserve2);
-                token1Amount = amount1Optimal.toString();
-            }
-            
-            // 计算将获得的LP代币数量
-            lpTokensToMint = Math.min(
-                (Number(token1Amount) * Number(poolState.totalLiquidity)) / Number(reserve1),
-                (Number(token2Amount) * Number(poolState.totalLiquidity)) / Number(reserve2)
-            ).toString();
-            
-            // 计算将拥有的池子份额
-            shareOfPool = Number(lpTokensToMint) / (Number(poolState.totalLiquidity) + Number(lpTokensToMint));
+/**
+ * Creates an XRP-USDC Automated Market Maker (AMM).
+ * @param wallet - The wallet creating the AMM.
+ */
+export async function create_XRP_USDC_AMM(wallet: Wallet): Promise<void> {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+        const ss = await client.request({ "command": "server_state" });
+        if (!ss.result || !ss.result.state || !ss.result.state.validated_ledger || !ss.result.state.validated_ledger.reserve_inc) {
+            throw new Error(`Error getting server state: ${JSON.stringify(ss)}`);
         }
+        const amm_fee_drops = ss.result.state.validated_ledger.reserve_inc.toString();
 
-        return {
-            token1Amount,
-            token2Amount,
-            lpTokensToMint,
-            shareOfPool
-        };
-    }
-
-    // 新增：提取收到的LP代币数量
-    private extractLPTokensReceived(txResult: any): string {
-        const changes = txResult.result.meta.AffectedNodes;
-        // 实现从交易结果中提取LP代币数量的逻辑
-        // ...
-        return "0"; // 替换为实际实现
-    }
-
-    async swapWithProtection(
-        wallet: Wallet,
-        amountIn: TokenAmount,
-        tokenOut: TokenAmount,
-        protectionConfig: Partial<SwapProtectionConfig> = {}
-    ) {
-        try {
-            const config = this.getDefaultProtectionConfig(protectionConfig);
-            
-            // 1. 验证输入
-            await this.validateSwapInput(amountIn, tokenOut);
-
-            // 2. 获取当前市场数据
-            const marketData = await this.getMarketData(amountIn, tokenOut);
-            
-            // 3. 计算价格影响
-            const priceImpactResult = this.calculatePriceImpactWithSeverity(
-                amountIn,
-                marketData
-            );
-
-            // 4. 验证价格影响
-            this.validatePriceImpact(priceImpactResult, config.maxPriceImpact);
-
-            // 5. 计算最小输出量
-            const minOutputAmount = this.calculateMinimumOutput(
-                marketData.expectedOutput,
-                config.maxSlippage
-            );
-
-            // 6. 构建交易
-            const tx = await this.buildProtectedSwapTx(
-                wallet,
-                amountIn,
-                tokenOut,
-                minOutputAmount,
-                config,
-                marketData.path
-            );
-
-            // 7. 执行交易
-            const result = await this.executeProtectedSwap(wallet, tx);
-
-            // 8. 验证交易结果
-            return this.validateAndReturnSwapResult(result, minOutputAmount);
-
-        } catch (error) {
-            console.error('Protected swap failed:', error);
-            throw error;
-        }
-    }
-
-    private getDefaultProtectionConfig(
-        config: Partial<SwapProtectionConfig>
-    ): SwapProtectionConfig {
-        return {
-            maxSlippage: config.maxSlippage || 0.005, // 默认 0.5%
-            maxPriceImpact: config.maxPriceImpact || 0.15, // 默认 15%
-            deadline: config.deadline || Math.floor(Date.now() / 1000) + 300, // 默认5分钟
-            minOutput: config.minOutput || '0'
-        };
-    }
-
-    private async validateSwapInput(amountIn: TokenAmount, tokenOut: TokenAmount) {
-        // 基本验证
-        this.validateTokenAmount(amountIn);
-        if (amountIn.currency === tokenOut.currency) {
-            throw new Error('Cannot swap same tokens');
-        }
-
-        // 检查流动性
-        const poolInfo = await this.getPoolInfo(amountIn, tokenOut);
-        if (!this.hasEnoughLiquidity(poolInfo)) {
-            throw new Error('Insufficient liquidity in pool');
-        }
-    }
-
-    private hasEnoughLiquidity(poolInfo: any): boolean {
-        return poolInfo &&
-               poolInfo.asset &&
-               poolInfo.asset2 &&
-               Number(poolInfo.asset.value) > 0 &&
-               Number(poolInfo.asset2.value) > 0;
-    }
-
-    private calculatePriceImpactWithSeverity(
-        amountIn: TokenAmount,
-        marketData: any
-    ): PriceImpactResult {
-        const priceImpact = this.calculatePriceImpact(
-            Number(amountIn.value),
-            marketData.expectedOutput,
-            marketData.reserveIn,
-            marketData.reserveOut
-        );
-
-        let severity: PriceImpactResult['severity'] = 'LOW';
-        let warning: string | undefined;
-
-        if (priceImpact > 0.15) {
-            severity = 'VERY_HIGH';
-            warning = 'Price impact too high, transaction may be frontrun';
-        } else if (priceImpact > 0.10) {
-            severity = 'HIGH';
-            warning = 'High price impact';
-        } else if (priceImpact > 0.05) {
-            severity = 'MEDIUM';
-            warning = 'Medium price impact';
-        }
-
-        return { priceImpact, severity, warning };
-    }
-
-    private validatePriceImpact(
-        priceImpactResult: PriceImpactResult,
-        maxPriceImpact: number
-    ) {
-        if (priceImpactResult.priceImpact > maxPriceImpact) {
-            throw new Error(
-                `Price impact too high: ${(priceImpactResult.priceImpact * 100).toFixed(2)}% > ${(maxPriceImpact * 100).toFixed(2)}%`
-            );
-        }
-        if (priceImpactResult.warning) {
-            console.warn(priceImpactResult.warning);
-        }
-    }
-
-    private calculateMinimumOutput(
-        expectedOutput: string,
-        maxSlippage: number
-    ): string {
-        const minOutput = Number(expectedOutput) * (1 - maxSlippage);
-        return minOutput.toString();
-    }
-
-    private async buildProtectedSwapTx(
-        wallet: Wallet,
-        amountIn: TokenAmount,
-        tokenOut: TokenAmount,
-        minOutputAmount: string,
-        config: SwapProtectionConfig,
-        path: any[]
-    ) {
-        return {
-            TransactionType: "AMMSwap",
+        // Define AMM parameters
+        const paymentTx = {
+            TransactionType: "AMMCreate",
             Account: wallet.address,
-            AmountIn: {
-                currency: amountIn.currency,
-                issuer: amountIn.issuer,
-                value: amountIn.value
+            Amount: {
+                currency: USDC_currency_code,
+                issuer: USDC_issuer.address,
+                value: "15"
             },
-            Asset: {
-                currency: tokenOut.currency,
-                issuer: tokenOut.issuer
+            Amount2: "100000000",
+            TradingFee: 500, // 0.5%
+            Fee: amm_fee_drops,
+        };
+
+        const prepared = await client.autofill(paymentTx as SubmittableTransaction);
+        const signed = wallet.sign(prepared);
+        console.log("Submitting transaction...");
+        const ammcreate_result = await client.submitAndWait(signed.tx_blob);
+        logResponse(ammcreate_result);
+    } catch (error) {
+        console.error("Error in create_XRP_USDC_AMM:", error);
+    } finally {
+        await client.disconnect();
+    }
+}
+
+/**
+ * Retrieves AMM information.
+ * @param mainnet - Indicates whether to use the mainnet. Defaults to false (testnet).
+ * @param ledger_index - The ledger index to query. Defaults to "validated".
+ * @returns AMM information.
+ */
+export async function get_amm_info(mainnet: boolean = false, ledger_index: number | "validated" = "validated"): Promise<AMMInfo> {
+    const client = new Client(mainnet ? mainnet_url : testnet_url)
+    try {
+        await client.connect();
+        const amm_info_request: AMMInfoRequest = {
+            command: "amm_info",
+            asset: {
+                "currency": mainnet ? 'USD' : USDC_currency_code,
+                "issuer": mainnet ? mannnet_Bitstamp_usd_address : USDC_issuer.address
             },
-            MinimumOut: {
-                currency: tokenOut.currency,
-                issuer: tokenOut.issuer,
-                value: minOutputAmount
+            asset2: {
+                "currency": "XRP",
             },
-            Fee: "10",
-            Flags: {
-                tfLimitQuality: true,        // 确保获得最佳价格
-                tfPartialPayment: false,     // 禁止部分支付
-                tfNoRippleDirect: true       // 使用最直接的路径
+            ledger_index: ledger_index
+        };
+
+        const amm_info_result = await client.request(amm_info_request) as AMMInfoResponse;
+        const usd_amount_info = amm_info_result.result.amm.amount as IssuedCurrencyAmount;
+        const usd_amount = parseInt(usd_amount_info.value);
+        const xrp_amount_drops = amm_info_result.result.amm.amount2;
+        const xrp_amount = dropsToXrp(xrp_amount_drops as BigNumber.Value);
+        const full_trading_fee = amm_info_result.result.amm.trading_fee;
+        const lp_token = amm_info_result.result.amm.lp_token;
+        console.log(`AMM exists with ${usd_amount} USDC and ${xrp_amount} XRP.`);
+        return {
+            usd_amount: usd_amount,
+            xrp_amount: xrp_amount,
+            full_trading_fee: full_trading_fee,
+            lp_token: lp_token
+        };
+    } catch (error) {
+        console.error('Error in get_amm_info in line 220:', error);
+        throw error;
+    } finally {
+        await client.disconnect();
+    }
+}
+
+/**
+ * Enables the Default Ripple flag for the USDC issuer.
+ */
+export async function must_enable_USDC_rippling_flag(): Promise<void> {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+        const issuerAddress = USDC_issuer.address;
+
+        const setFlagTx = {
+            TransactionType: "AccountSet",
+            Account: issuerAddress,
+            SetFlag: AccountSetAsfFlags.asfDefaultRipple,
+        };
+
+        const USDC_issuer_wallet = Wallet.fromSeed(USDC_issuer.secret);
+        const prepared = await client.autofill(setFlagTx as SubmittableTransaction);
+        const signed = USDC_issuer_wallet.sign(prepared);
+        const result = await client.submitAndWait(signed.tx_blob);
+        logResponse(result);
+    } catch (error) {
+        console.error("Error in must_enable_USDC_rippling_flag:", error);
+    } finally {
+        await client.disconnect();
+    }
+}
+
+/**
+ * Adds USD to the XRP-USDC AMM.
+ * @param wallet - The wallet adding USD.
+ * @param usd_amount - The amount of USD to add.
+ */
+export async function add_usd_to_XRP_USDC_AMM(wallet: Wallet, usd_amount: number): Promise<void> {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+        const usd_str = usdStrOf(usd_amount);
+        console.log(`Adding ${usd_str} USDC to the AMM...`);
+
+        const ammdeposit = {
+            "TransactionType": "AMMDeposit",
+            "Asset": {
+                currency: USDC_currency_code,
+                issuer: USDC_issuer.address
             },
-            Paths: path,
-            Expiration: config.deadline
+            "Asset2": {
+                "currency": "XRP"
+            },
+            "Account": wallet.address,
+            "Amount": {
+                currency: USDC_currency_code,
+                issuer: USDC_issuer.address,
+                value: usd_str
+            },
+            "Flags": 0x00080000
+        };
+
+        const prepared = await client.autofill(ammdeposit as SubmittableTransaction);
+        const signed = wallet.sign(prepared);
+        console.log("Submitting transaction...");
+        await client.submitAndWait(signed.tx_blob);
+    } catch (error) {
+        console.error("Error in add_usd_to_XRP_USDC_AMM:", error);
+    } finally {
+        await client.disconnect();
+    }
+}
+
+/**
+ * Adds XRP to the XRP-USDC AMM.
+ * @param wallet - The wallet adding XRP.
+ * @param xrp_amount - The amount of XRP to add.
+ */
+export async function add_xrp_to_XRP_USDC_AMM(wallet: Wallet, xrp_amount: number): Promise<void> {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+        const xrp_str = xrpStrOf(xrp_amount);
+        console.log(`Adding ${xrp_str} XRP to the AMM...`);
+
+        const ammdeposit = {
+            "TransactionType": "AMMDeposit",
+            "Asset": {
+                currency: USDC_currency_code,
+                issuer: USDC_issuer.address
+            },
+            "Asset2": {
+                "currency": "XRP"
+            },
+            "Account": wallet.address,
+            "Amount": xrp_str,
+            "Flags": 0x00080000
+        };
+
+        const prepared = await client.autofill(ammdeposit as SubmittableTransaction);
+        const signed = wallet.sign(prepared);
+        console.log("Submitting transaction...");
+        const ammadd_result = await client.submitAndWait(signed.tx_blob);
+        console.log(ammadd_result);
+    } catch (error) {
+        console.error("Error in add_xrp_to_XRP_USDC_AMM:", error);
+    } finally {
+        await client.disconnect();
+    }
+}
+
+/**
+ * Tops up the AMM with necessary funds.
+ */
+export async function top_up_amm(): Promise<void> {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+        const generation_result = await client.fundWallet();
+        const wallet = generation_result.wallet;
+        console.log(`Created wallet: ${wallet.address}`);
+
+        for (let i = 0; i < 10; i++) {
+            await fund_wallet(wallet, "1000");
+        }
+
+        await get_amm_info(false);
+        await add_xrp_to_XRP_USDC_AMM(wallet, 10000);
+
+        const info = await get_amm_info(false);
+        const amm_xrp_amount = info.xrp_amount;
+        const amm_usd_amount = info.usd_amount;
+        const price = await get_latest_xrp_price();
+        const expected_amm_usd_amount = Math.floor(price * amm_xrp_amount);
+        const amm_usd_amount_to_add = Math.max(0, expected_amm_usd_amount - amm_usd_amount);
+
+        if (amm_usd_amount_to_add > 0) {
+            await add_usd_to_XRP_USDC_AMM(wallet, amm_usd_amount_to_add);
+        }
+
+        await get_amm_info(false);
+    } catch (error) {
+        console.error("Error in top_up_amm:", error);
+    } finally {
+        await client.disconnect();
+    }
+}
+
+export async function even_out_amm(info?:AMMInfo|undefined, market_price?:number|undefined){
+    if (!info) {
+        info = await get_amm_info() as AMMInfo
+    }
+    if (!market_price) {
+        market_price = await get_xrp_price_at_ledger() as number
+    }
+    const xrp_amount = info.xrp_amount;
+    const usd_amount = info.usd_amount;
+    const expected_usd_amount = Math.floor(market_price * xrp_amount);
+    if (expected_usd_amount > usd_amount+100) {
+        add_usd_to_XRP_USDC_AMM(Wallet.fromSeed(USDC_issuer.secret), expected_usd_amount - usd_amount)
+        return true;
+    } else {
+        const expected_xrp_amount = Math.floor(usd_amount / market_price);
+        const xrp_to_add = expected_xrp_amount - xrp_amount;
+        const xrp_to_add_int = Math.floor(xrp_to_add)
+        if (xrp_to_add < 100) {
+            return false
+        }
+        if (xrp_to_add_int < 1000) {
+            const wallet = Wallet.fromSeed(USDC_issuer.secret);
+            await add_xrp_to_XRP_USDC_AMM(wallet, xrp_to_add_int);
+            add_xrp_to_XRP_USDC_AMM(wallet, xrp_to_add_int)
+        } else {
+            const wallet = Wallet.fromSeed(USDC_issuer.secret);
+            await fund_wallet(wallet, '1000')
+            await add_xrp_to_XRP_USDC_AMM(wallet, 1000);
+            info = await get_amm_info() as AMMInfo
+            await even_out_amm(info, market_price);
+        }
+        return true
+    }
+}
+
+export interface userUsdXrpAMMInfo {
+    user_share: number;
+    usd_claimable: number;
+    xrp_claimable: number;
+}
+/**
+ * Retrieves a user's share of the AMM pool, in liquidity provider tokens and the amount of each token they can claim.
+ * @param wallet The wallet of the user
+ * @param mainnet - Indicates whether to use the mainnet. Defaults to false (testnet).
+ * @param ledger_index - The ledger index to query. Defaults to "validated".
+ * @returns The user's liquidity provider token balance and the amount of each token they can claim.
+*/
+
+    export async function get_user_usd_xrp_amm_contribution(
+        user_wallet: Wallet,
+        mainnet: boolean = false,
+        ledger_index: number | "validated" = "validated",
+        amm_info?: AMMInfo
+    ): Promise<userUsdXrpAMMInfo > {
+        const client = new Client(mainnet ? mainnet_url : testnet_url);
+        await client.connect();
+        if (!amm_info) {
+            amm_info = await get_amm_info(mainnet, ledger_index);
+        }
+
+        const lp_token_balance = await get_account_currency_balance(user_wallet, amm_info.lp_token.currency, amm_info.lp_token.issuer);
+        const user_lp_bn = new BigNumber(lp_token_balance);
+        
+        const pool_total_lp_tokens = amm_info.lp_token.value;
+        const pool_lp_bn = new BigNumber(pool_total_lp_tokens);
+        
+        const user_share = user_lp_bn.dividedBy(pool_lp_bn);
+        const user_usd_amount_share = user_lp_bn.multipliedBy(amm_info.usd_amount).dividedBy(pool_lp_bn);
+        const user_xrp_amount_share = user_lp_bn.multipliedBy(amm_info.xrp_amount).dividedBy(pool_lp_bn);
+        return {
+            user_share: user_share.toNumber(),
+            usd_claimable: user_usd_amount_share.toNumber(),
+            xrp_claimable: user_xrp_amount_share.toNumber()
         };
     }
 
-    private async executeProtectedSwap(wallet: Wallet, tx: any) {
-        const prepared = await this.client.autofill(tx);
-        const signed = wallet.sign(prepared);
-        return await this.client.submitAndWait(signed.tx_blob);
-    }
+/**
+ * Swaps out a specified asset.
+ * @param asset_out_bn - The asset to swap out as a BigNumber.
+ * @param pool_in_bn - The input pool amount as a BigNumber.
+ * @param pool_out_bn - The output pool amount as a BigNumber.
+ * @param trading_fee - The trading fee.
+ * @returns The swapped amount as a BigNumber.
+ */
+function swapOut(asset_out_bn: BigNumber, pool_in_bn: BigNumber, pool_out_bn: BigNumber, trading_fee: number): BigNumber {
+    return pool_in_bn.multipliedBy(pool_out_bn)
+        .dividedBy(pool_out_bn.minus(asset_out_bn))
+        .minus(pool_in_bn)
+        .dividedBy(feeMult(trading_fee));
+}
 
-    private validateAndReturnSwapResult(result: any, minOutputAmount: string) {
-        // 验证交易状态
+/**
+ * Converts trading fee to decimal.
+ * @param tFee - The trading fee.
+ * @returns The trading fee as a BigNumber.
+ */
+function feeDecimal(tFee: number): BigNumber {
+    const AUCTION_SLOT_FEE_SCALE_FACTOR = 100000;
+    return new BigNumber(tFee).dividedBy(AUCTION_SLOT_FEE_SCALE_FACTOR);
+}
+
+/**
+ * Calculates the fee multiplier.
+ * @param tFee - The trading fee.
+ * @returns The fee multiplier as a BigNumber.
+ */
+function feeMult(tFee: number): BigNumber {
+    return new BigNumber(1).minus(feeDecimal(tFee));
+}
+
+/**
+ * Swaps in a specified asset.
+ * @param asset_in_bn - The asset to swap in as a BigNumber.
+ * @param pool_in_bn - The input pool amount as a BigNumber.
+ * @param pool_out_bn - The output pool amount as a BigNumber.
+ * @param trading_fee - The trading fee.
+ * @returns The swapped amount as a BigNumber.
+ */
+function swapIn(asset_in_bn: BigNumber, pool_in_bn: BigNumber, pool_out_bn: BigNumber, trading_fee: number): BigNumber {
+    const feeMultiplier = feeMult(trading_fee);
+    const newPoolIn = pool_in_bn.plus(asset_in_bn.multipliedBy(feeMultiplier));
+    const outputAmount = pool_out_bn.minus(
+        pool_in_bn.multipliedBy(pool_out_bn).dividedBy(newPoolIn)
+    );
+    return outputAmount;
+}
+
+/**
+ * 获取用户在 AMM 池中的份额信息
+ */
+export async function get_user_amm_share(wallet: Wallet): Promise<{
+    lpTokens: string;
+    xrpShare: number;
+    usdShare: number;
+    sharePercentage: number;
+}> {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+        
+        // 先获取 AMM 信息
+        const ammInfo = await get_amm_info();
+        
+        // 然后使用 ammInfo
+        const lpBalance = await get_account_currency_balance(
+            wallet,
+            ammInfo.lp_token.currency,
+            ammInfo.lp_token.issuer
+        );
+
+        // 2. 获取池子总的 LP 代币数量
+        const totalLpTokens = ammInfo.lp_token.value;
+
+        // 3. 计算份额
+        const shareRatio = Number(lpBalance) / Number(totalLpTokens);
+        const xrpShare = ammInfo.xrp_amount * shareRatio;
+        const usdShare = ammInfo.usd_amount * shareRatio;
+
+        return {
+            lpTokens: lpBalance,
+            xrpShare,
+            usdShare,
+            sharePercentage: shareRatio
+        };
+    } catch (error) {
+        console.error('Failed to get user AMM share:', error);
+        throw error;
+    } finally {
+        await client.disconnect();
+    }
+}
+
+/**
+ * 从 AMM 池中移除流动性
+ */
+export async function remove_liquidity_from_XRP_USDC_AMM(
+    wallet: Wallet,
+    percentage: number
+): Promise<void> {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+
+        // 1. 获取用户的 LP 代币余额
+        const { lpTokens } = await get_user_amm_share(wallet);
+        const amountToRemove = (Number(lpTokens) * percentage) / 100;
+
+        // 2. 构建移除流动性交易
+        const tx = {
+            TransactionType: "AMMWithdraw",
+            Account: wallet.address,
+            Asset: {
+                currency: "XRP"
+            },
+            Asset2: {
+                currency: USDC_currency_code,
+                issuer: USDC_issuer.address
+            },
+            LPTokensIn: amountToRemove.toString(),
+            Fee: "10"
+        };
+
+        // 3. 提交交易
+        const prepared = await client.autofill(tx);
+        const signed = wallet.sign(prepared);
+        const result = await client.submitAndWait(signed.tx_blob);
+
+        // 4. 验证交易结果
         if (result.result.meta.TransactionResult !== "tesSUCCESS") {
             throw new Error(`Transaction failed: ${result.result.meta.TransactionResult}`);
         }
 
-        // 提取实际收到的金额
-        const receivedAmount = this.extractReceivedAmount(result);
+    } catch (error) {
+        console.error('Failed to remove liquidity:', error);
+        throw error;
+    } finally {
+        await client.disconnect();
+    }
+}
+
+/**
+ * 添加流动性到 AMM 池并获取 LP tokens
+ */
+export async function add_liquidity_to_AMM(
+    wallet: Wallet,
+    xrpAmount: number,
+    usdAmount: number
+): Promise<{
+    lpTokens: string;
+    txHash: string;
+}> {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
         
-        // 验证收到的金额是否满足最小要求
-        if (Number(receivedAmount) < Number(minOutputAmount)) {
-            throw new Error(
-                `Received amount (${receivedAmount}) less than minimum expected (${minOutputAmount})`
-            );
-        }
+        // 1. 添加 XRP
+        await add_xrp_to_XRP_USDC_AMM(wallet, xrpAmount);
+        
+        // 2. 添加 USD
+        await add_usd_to_XRP_USDC_AMM(wallet, usdAmount);
+
+        // 3. 获取用户新的 LP token 余额
+        const ammInfo = await get_amm_info();
+        const lpBalance = await get_account_currency_balance(
+            wallet,
+            ammInfo.lp_token.currency,
+            ammInfo.lp_token.issuer
+        );
 
         return {
-            success: true,
-            transactionHash: result.result.hash,
-            receivedAmount,
-            effectivePrice: Number(result.result.meta.delivered_amount) / Number(tx.AmountIn.value),
-            priceImpact: result.priceImpact
+            lpTokens: lpBalance,
+            txHash: '' // 可以返回交易哈希
         };
+    } finally {
+        await client.disconnect();
     }
+}
 
-    // 改进提取实际收到金额的方法
-    private extractReceivedAmount(txResult: any): string {
-        const changes = txResult.result.meta.AffectedNodes;
-        let receivedAmount = "0";
+/**
+ * 获取用户的 LP token 余额和对应的池子份额
+ */
+export async function get_user_pool_share(wallet: Wallet): Promise<{
+    lpTokens: string;
+    poolShare: number;
+    xrpAmount: number;
+    usdAmount: number;
+}> {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+        
+        // 1. 获取 AMM 信息
+        const ammInfo = await get_amm_info();
+        
+        // 2. 获取用户的 LP token 余额
+        const lpBalance = await get_account_currency_balance(
+            wallet,
+            ammInfo.lp_token.currency,
+            ammInfo.lp_token.issuer
+        );
 
-        for (const change of changes) {
-            if (change.ModifiedNode && change.ModifiedNode.LedgerEntryType === "AccountRoot") {
-                // 这里需要根据具体的 XRPL 交易结果结构来实现
-                // 通常需要查找账户余额的变化
-                const finalBalance = change.ModifiedNode.FinalFields.Balance;
-                const previousBalance = change.ModifiedNode.PreviousFields.Balance;
-                receivedAmount = (Number(finalBalance) - Number(previousBalance)).toString();
-                break;
-            }
-        }
-
-        return receivedAmount;
+        // 3. 计算用户在池子中的份额
+        const totalLpTokens = ammInfo.lp_token.value;
+        const shareRatio = Number(lpBalance) / Number(totalLpTokens);
+        
+        return {
+            lpTokens: lpBalance,
+            poolShare: shareRatio,
+            xrpAmount: ammInfo.xrp_amount * shareRatio,
+            usdAmount: ammInfo.usd_amount * shareRatio
+        };
+    } finally {
+        await client.disconnect();
     }
 }
