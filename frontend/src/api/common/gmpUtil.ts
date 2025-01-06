@@ -16,7 +16,7 @@ async function gmp(user: xrpl.Wallet, contractAddress:string, payloadStr:string,
         Memos: [
             {
                 Memo: {
-                    MemoData: contractAddress, 
+                    MemoData: contractAddress.replace("0x", ""), 
                     MemoType: "64657374696E6174696F6E5F61646472657373", // hex("destination_address")
                 },
             },

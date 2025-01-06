@@ -99,7 +99,7 @@ public class ContractService {
         );
 
         String encodedFunction = FunctionEncoder.encode(function);
-        return sendTransactionAsync(contractAddress, encodedFunction);
+        return sendTransactionAsync("0x" + contractAddress, encodedFunction);
     }
 
     // Function to call the execute method with ExecuteParams
@@ -116,7 +116,7 @@ public class ContractService {
         );
 
         String encodedFunction = FunctionEncoder.encode(function);
-        return sendTransactionAsync(contractAddress, encodedFunction);
+        return sendTransactionAsync("0x" + contractAddress, encodedFunction);
     }
 
     // Asynchronous Helper method to send transactions
