@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Tabs, Tab } from '@mui/material';
-import LendingTab from './LendingTab';
+import LendingTab from './lendingTab/LendingTab';
 import TransactionHistoryTab from './TransactionHistoryTab';
 import LiquidityProvisionTab from './LiquidityProvisionTab';
 

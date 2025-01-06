@@ -19,11 +19,15 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { styled } from '@mui/material/styles'; // Import styled
 import BigNumber from 'bignumber.js';
+import { useXrpPriceValue } from '../../../hooks/usePriceState';
+
+
 
 const COLLATERAL_MULTIPLIER = 1.5; // Example multiplier
-const INTEREST_RATE = 0.12;  // 12% as a decimal
-const INTEREST_TERM = "Annual interest, compounding daily";
-const dailyInterestBn = BigNumber(0.00026115787); // 0.026115787% as a decimal
+const LIQUIDATION_THRESHOLD = 1.1; // Example threshold
+const INTEREST_RATE = 0.10;  // 12% as a decimal
+const INTEREST_TERM = "Annual, compounding daily";
+const dailyInterestBn = BigNumber(1.00026115787); // 0.026115787% as a decimal
 function getPayableAfterDays(loanAmount:number, days:number) {
   return dailyInterestBn.exponentiatedBy(days).times(loanAmount).toNumber();
 }
@@ -70,6 +74,7 @@ const StyledSelectFormControl = styled(FormControl)(({ theme }) => ({
 
 
 function LoanForm() {
+  const { xrpPrice} = useXrpPriceValue();
   const [borrowAmount, setBorrowAmount] = useState('NA');
   const [repaymentTerm, setRepaymentTerm] = useState('week');
   const [collateralAmount, setCollateralAmount] = useState(0);
@@ -84,8 +89,11 @@ function LoanForm() {
 
   // Calculate collateral amount when borrowAmount changes
   useEffect(() => {
+    if (!xrpPrice) {
+      return;
+    }
     const amount = parseFloat(borrowAmount) || 0;
-    setCollateralAmount(amount * COLLATERAL_MULTIPLIER);
+    setCollateralAmount(amount * COLLATERAL_MULTIPLIER / xrpPrice);
   }, [borrowAmount]);
 
   // Calculate repayment amount when borrowAmount or repaymentTerm changes
@@ -149,13 +157,13 @@ function LoanForm() {
           <Grid container spacing={2}>
                 {/* Collateral Information */}
                 <Grid item xs={12} sm={6} >
-                    <StyledInfoText variant="body2">Collateral Amount (XRP):</StyledInfoText>
+                    <StyledInfoText variant="body2">XRP Collateral Amount (XRP={xrpPrice?.toFixed(2)}USD):</StyledInfoText>
                     <Typography variant="h6"  >{collateralAmount.toFixed(2)}</Typography>
                   </Grid>
 
                  <Grid item xs={12} sm={6} >
-                    <StyledInfoText variant="body2">Loan to Value Ratio:</StyledInfoText>
-                    <Typography variant="h6">50%</Typography>
+                    <StyledInfoText variant="body2">Collatoral Value(150% of loan):</StyledInfoText>
+                    <Typography variant="h6">{borrowAmount ? (parseFloat(borrowAmount) * COLLATERAL_MULTIPLIER).toFixed(2) : 0}</Typography>
                    </Grid>
 
                     {/* Interest Rate and term */}
@@ -218,7 +226,7 @@ function LoanForm() {
 
          {/* Auto Liquidation Alert */}
          <Alert severity="warning" sx={{ marginTop:2, display: "flex", justifyContent: "center" }}>
-              This loan is subject to auto-liquidation if the collateral value falls below the borrowed amount.
+              This loan is subject to auto-liquidation if the collateral value falls below {(LIQUIDATION_THRESHOLD * 100).toFixed(0)}% of the loan amount.
          </Alert>
 
         {/* Submit Button */}
