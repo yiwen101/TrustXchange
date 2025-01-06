@@ -258,6 +258,9 @@ export const usePoolLendingActions = () => {
     };
   
     const handleBorrow = async (user: xrpl.Wallet, borrowAmountUSD: number, currencyAmount: number, address?: string) => {
+        console.log("borrowAmountUSD", borrowAmountUSD);
+        console.log("currencyAmount", currencyAmount);
+        console.log("xrpCurrency(currencyAmount)", xrpCurrency(currencyAmount));
       await executeAndRefetch(() => borrow(user, borrowAmountUSD, xrpCurrency(currencyAmount)), address);
     };
   

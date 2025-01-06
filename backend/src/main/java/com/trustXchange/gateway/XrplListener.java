@@ -129,6 +129,6 @@ public class XrplListener {
 
     @PostConstruct
     public void listenForXrplActivity() {
-        executorService.scheduleAtFixedRate(this::listenAndManage, 2, 5, java.util.concurrent.TimeUnit.SECONDS);
+        executorService.scheduleAtFixedRate(this::listenAndManage,0, 3, java.util.concurrent.TimeUnit.SECONDS);
     }
 }

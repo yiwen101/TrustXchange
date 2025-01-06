@@ -36,9 +36,12 @@ async function gmp(user: xrpl.Wallet, contractAddress:string, payloadStr:string,
     };
 
     const signed = user.sign(await client.autofill(paymentTx));
-    return client.submitAndWait(signed.tx_blob).then(result=>callback(result.result.hash)).finally(() => client.disconnect()).catch((error) => {
-        console.error("Error submitting transaction:", error);
-    });
+    console.log("Submitting transaction...");
+    const result = await client.submitAndWait(signed.tx_blob)
+    console.log("Transaction submitted. Result:", result);
+
+    callback(result.result.hash)
+    await client.disconnect();
 }
 
 export async function gmp_and_call_backend(user: xrpl.Wallet, contractAddress:string, payloadStr:string,currencyAmount:xrpl.IssuedCurrencyAmount | string = "0"): Promise<void> {

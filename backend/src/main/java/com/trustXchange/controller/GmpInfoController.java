@@ -16,16 +16,16 @@ import com.trustXchange.repository.gmp.GmpInfoRepository;
 import lombok.Getter;
 import lombok.Setter;
 
-@CrossOrigin(origins = "http://localhost:5173")
+
 @RestController
-@RequestMapping("/api/gmp-info")
+@RequestMapping("/gmp")
 public class GmpInfoController {
     @Autowired
     private  GmpInfoRepository gmpInfoRepository;
     @Autowired
     private  GmpManager gmpManager;
 
-    @PostMapping("/check")
+    @PostMapping("/call")
     @ResponseStatus(HttpStatus.OK)
     public CheckGmpInfoResponse checkGmpInfo(@RequestBody CheckGmpInfoRequest request) {
         String payloadHash = GmpUtil.sha3(request.getPayloadString());
