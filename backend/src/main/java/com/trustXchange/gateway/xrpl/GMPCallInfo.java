@@ -1,30 +1,36 @@
 package com.trustXchange.gateway.xrpl;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import org.xrpl.xrpl4j.model.transactions.Address;
 import org.xrpl.xrpl4j.model.transactions.CurrencyAmount;
+import org.xrpl.xrpl4j.model.transactions.IssuedCurrencyAmount;
 import org.xrpl.xrpl4j.model.transactions.Payment;
+import org.xrpl.xrpl4j.model.transactions.XrpCurrencyAmount;
 
 import com.trustXchange.DestinationChainNotSupportException;
+
+import lombok.Getter;
+
+@Getter
 public class GMPCallInfo {
 
     public String destinationAddress;
     public String destinationChainHex;
     public String payloadHash;
-    public CurrencyAmount amount;
-    public Address from;
+    public Long amount;
+    public String symbol;
+    public String from;
 
-    public String payload;
-
-    public GMPCallInfo(String destinationAddress, String destinationChainHex, String payloadHash, CurrencyAmount amount, Address from, String payload) {
+    public GMPCallInfo(String destinationAddress, String destinationChainHex, String payloadHash, Long amount, String symbol, Address from) {
         this.destinationAddress = destinationAddress;
         this.destinationChainHex = destinationChainHex;
         this.payloadHash = payloadHash;
         this.amount = amount;
-        this.from = from;
-        this.payload = payload;
+        this.from = from.value();
+        this.symbol = symbol;
     }
 
     private static final String DESTINATION_ADDRESS_HEX = "64657374696E6174696F6E5F61646472657373";
@@ -36,9 +42,10 @@ public class GMPCallInfo {
     
     public static Optional<GMPCallInfo> Of(Payment payment) throws DestinationChainNotSupportException{
         Optional<GMPCallInfo> gmpCallInfo = Optional.empty();
+        try {
         List<String> datas = new ArrayList<>(3);
         List<String> types = new ArrayList<>(3);
-        
+        System.out.println("line 41, memo size: " + payment.memos().size());
         for(int i=0; i<3; i++){
             Optional<String> memoData = payment.memos().get(i).memo().memoData();
             Optional<String> memoType = payment.memos().get(i).memo().memoType();
@@ -51,21 +58,46 @@ public class GMPCallInfo {
         if (!types.equals(MEMO_TYPES_EXPECTED) || !types.equals(MEMO_TYPES_EXPECTED)) {
             return gmpCallInfo;
         }
+        String symbol;
+        Long amount;
+        CurrencyAmount currencyAmount = payment.amount();
+        if (XrpCurrencyAmount.class.isAssignableFrom(currencyAmount.getClass())) {
+            XrpCurrencyAmount xrpAmount = (XrpCurrencyAmount) currencyAmount;
+            symbol = "XRP";
+            amount = xrpAmount.toXrp().longValue();
+        } else if (IssuedCurrencyAmount.class.isAssignableFrom(currencyAmount.getClass())) {
+            IssuedCurrencyAmount issuedAmount = (IssuedCurrencyAmount) currencyAmount;
+            if (!"rQhWct2fv4Vc4KRjRgMrxa8xPN9Zx9iLKV".equals(issuedAmount.issuer().value())) {
+                return gmpCallInfo;
+            }
+            symbol = "USD";
+            String decimalValueString = issuedAmount.value();
+            BigDecimal decimalValue = new BigDecimal(decimalValueString);
+            amount = decimalValue.longValue();
+        } else {
+            return gmpCallInfo;
+        }
 
+        
         String destinationAddress = datas.get(0);
         String destinationChainHex = datas.get(1);
         String payloadHash = datas.get(2);
-        // particular to my gmp call
-        String payload = datas.get(3);
+        System.out.println("line 60, payloadHash: " + payloadHash);
+       
         Address from = payment.account();
 
         if (!destinationChainHex.equals(XRPL_EVM_SIDECHAIN_HEX)) {
-            throw new DestinationChainNotSupportException();
+            System.out.println("line 68, destinationChainHex: " + destinationChainHex);
+            return gmpCallInfo;
         }
         
-        CurrencyAmount amount = payment.amount();
+       
 
-        return Optional.of(new GMPCallInfo(destinationAddress, destinationChainHex, payloadHash, amount, from, payload));
+        return Optional.of(new GMPCallInfo(destinationAddress, destinationChainHex, payloadHash, amount, symbol, from));
+        } catch (Exception e) {
+         System.out.println("line 76, error: " + e.getMessage());
+            return gmpCallInfo;
+        }
     }
 
     public String toString() {

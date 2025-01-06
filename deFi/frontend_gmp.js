@@ -6,7 +6,7 @@ const XRPL_RPC_URL = "wss://s.devnet.rippletest.net:51233/";
 const DESTINATION_ADDRESS = "rfv9EskzSdWEsZsyBrujtidD2qdgiz8v7W";
 const AMOUNT = "90000000";
 
-async function gmp(contractAddress, payloadBytes) {
+async function gmp(contractAddress, payloadStr) {
     const client = new xrpl.Client(XRPL_RPC_URL);
     await client.connect();
 
@@ -14,7 +14,7 @@ async function gmp(contractAddress, payloadBytes) {
     const user = xrpl.Wallet.generate();
     await client.fundWallet(user);
     console.log("User address: ", user.address);
-    const payloadHash = ethers.keccak256(payloadBytes).replace(/^0x/, '');
+    const payloadHash = ethers.keccak256(payloadStr).replace("0x", "");
     const paymentTx = {
         TransactionType: "Payment",
         Account: user.address,
@@ -47,8 +47,43 @@ async function gmp(contractAddress, payloadBytes) {
     const result = await client.submitAndWait(signed.tx_blob);
     console.log("hash" + result.result.hash);
     await client.disconnect();
+    return result.result.hash;
 }
-const {inputData,executeWithTokenParams} = p2pUtils.getP2PBorrowingRequestGMPParams(100);
+const {inputData,executeWithTokenParams} = p2pUtils.getP2PBorrowingRequestGMPParams(203);
 
-const payloadByte = executeWithTokenParams.payload;
-gmp("",payloadByte);
+const payloadStr = executeWithTokenParams.payload;
+// spring-boot
+const backendApi = "http://localhost:8080/api/gmp-info/check";
+/*
+@Getter
+@Setter
+class CheckGmpInfoRequest {
+    private String payloadString;
+    private String transactionHash;
+}
+*/
+//const hash =  await gmp("",payloadStr);
+// sleep for 10 seconds
+await new Promise(resolve => setTimeout(resolve, 10000));
+const response = await fetch(backendApi, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+        payloadString: payloadStr,
+        transactionHash: 'CFC45CAF98E171427672F271FF56D871F1483642649DA77A64C7C4AB1FB54677',
+    }),
+});
+console.log(response);
+/*
+class CheckGmpInfoResponse {
+    public String message;
+
+    public CheckGmpInfoResponse(String message) {
+        this.message = message;
+    }
+}
+*/
+const data = await response.json();
+console.log(data.message);

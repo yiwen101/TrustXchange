@@ -18,6 +18,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class GmpUtil {
+        public static final String keccak256(String input) {
+                return Numeric.toHexString(Hash.sha3(input.getBytes(StandardCharsets.UTF_8)));
+        }
+        public static final String sha3(String input) {
+                return Hash.sha3(input);
+        }
 
     public static GmpInputs getGmpInputs(String sourceChain, String sourceAddress, String contractAddress, String payloadBytes) {
         BigInteger chainId = BigInteger.ONE; // Example Chain ID
@@ -46,10 +52,9 @@ public class GmpUtil {
         return new GmpInputs(inputData, executeParams);
     }
 
-    public static GmpWithTokenInputs getGMPWithTokenInputs(String sourceAddress, String contractAddress, String payloadBytes, String tokenSymbol, Long tokenAmount) {
+    public static GmpWithTokenInputs getGMPWithTokenInputs(String sourceChain,String sourceAddress, String contractAddress, String payloadBytes, String tokenSymbol, Long tokenAmount) {
         BigInteger chainId = BigInteger.ONE; // Example Chain ID
         String payloadHash = Hash.sha3(payloadBytes);
-        String sourceChain = "XRPL_testnet";
         String sourceTxHash = Numeric.toHexString(Hash.sha3("ignored".getBytes(StandardCharsets.UTF_8)));
         long sourceEventIndex = 0;
 
@@ -81,10 +86,6 @@ public class GmpUtil {
 
         ExecuteWithTokenParams executeWithTokenParams = new ExecuteWithTokenParams(commandId, sourceChain, sourceAddress, payloadBytes, tokenSymbol, tokenAmount);
         return new GmpWithTokenInputs(inputData, executeWithTokenParams);
-    }
-
-    private static final String keccak256(String input) {
-        return Numeric.toHexString(Hash.sha3(input.getBytes(StandardCharsets.UTF_8)));
     }
 
     private static String prepareCommandData(BigInteger chainId, List<byte[]> commandIds, List<String> commands, List<byte[]> params) {

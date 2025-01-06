@@ -31,7 +31,6 @@ import javax.annotation.PostConstruct;
 @Component
 public class ContractService {
    
-    public String privateKey;
     private Credentials credentials;
     private BigInteger chainId;
 
@@ -56,7 +55,6 @@ public class ContractService {
 
     // Constructor to initialize Credentials
     public ContractService(@Value("${application.privateKey}") String privateKey) {
-        this.privateKey = privateKey;
         credentials = Credentials.create(privateKey);
 
         // Initialize chainId using the ThreadLocal Web3j
@@ -71,11 +69,6 @@ public class ContractService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to retrieve Chain ID during initialization", e);
         }
-    }
-
-    @PostConstruct
-    public void printPrivateKey() {
-        System.out.println("Private Key: " + privateKey);
     }
 
     // Function to call the execute method on the gateway contract

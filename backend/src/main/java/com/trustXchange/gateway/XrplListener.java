@@ -17,8 +17,9 @@ import org.xrpl.xrpl4j.model.transactions.TransactionType;
 import org.xrpl.xrpl4j.model.transactions.XAddress;
 
 import com.trustXchange.DestinationChainNotSupportException;
-import com.trustXchange.gateway.evm.GmpManager;
+import com.trustXchange.entities.gmp.GmpInfo;
 import com.trustXchange.gateway.xrpl.GMPCallInfo;
+import com.trustXchange.repository.gmp.GmpInfoRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +44,8 @@ public class XrplListener {
     private static final Logger logger = LoggerFactory.getLogger(XrplListener.class);
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     @Autowired
-    GmpManager gmpManager;
+    GmpInfoRepository gmpInfoRepository;
+
     Set<Hash256> seenTransactionHashes = new HashSet<>();
     XrplClient xrplClient;
     Address classicAddress;
@@ -86,23 +88,25 @@ public class XrplListener {
         faucetClient.fundAccount(FundAccountRequest.of(classicAddress));
         System.out.println("Funded the account using the Testnet faucet.");
         */
-
-        
+        logger.info("Listening for new transactions");
         try {
             AccountTransactionsResult newTransactions = xrplClient.accountTransactions(classicAddress);
             newTransactions.transactions().forEach(tx -> {
             if(tx.validated() && !seenTransactionHashes.contains(tx.resultTransaction().hash())) {
                 Hash256 txHash = tx.resultTransaction().hash();
                 Transaction transaction = tx.resultTransaction().transaction();
+                logger.info("New Transaction: " + txHash);
                 seenTransactionHashes.add(txHash);
                 if(transaction.transactionType().equals(TransactionType.PAYMENT)) {
                     Payment payment = (Payment) transaction;
                     try {
+                        logger.info("line 101 at listener");
                         Optional<GMPCallInfo> gmpCallInfo = GMPCallInfo.Of(payment);
                         if (gmpCallInfo.isPresent()) {
-                            System.out.println("New GMP Call Transaction:");
-                            System.out.println(gmpCallInfo.get());
-                            System.out.printf("result transaction hash: %s\n", txHash);
+                            GMPCallInfo info = gmpCallInfo.get();
+                            GmpInfo gmpInfo = new GmpInfo(txHash.value(), info);
+                            gmpInfoRepository.save(gmpInfo);
+                            logger.info("New GMP Call: " + gmpInfo);
                         }
                     } catch (DestinationChainNotSupportException e) {
                         System.out.println("Destination chain not supported");
@@ -125,6 +129,6 @@ public class XrplListener {
 
     @PostConstruct
     public void listenForXrplActivity() {
-        executorService.scheduleAtFixedRate(this::listenAndManage, 0, 5, java.util.concurrent.TimeUnit.SECONDS);
+        executorService.scheduleAtFixedRate(this::listenAndManage, 2, 5, java.util.concurrent.TimeUnit.SECONDS);
     }
 }

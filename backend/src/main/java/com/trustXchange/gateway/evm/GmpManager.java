@@ -10,54 +10,52 @@ import org.xrpl.xrpl4j.model.transactions.CurrencyAmount;
 import org.xrpl.xrpl4j.model.transactions.IssuedCurrencyAmount;
 import org.xrpl.xrpl4j.model.transactions.XrpCurrencyAmount;
 
+import com.trustXchange.entities.gmp.GmpInfo;
 import com.trustXchange.gateway.evm.call.ContractService;
 import com.trustXchange.gateway.evm.call.GmpUtil;
+import com.trustXchange.gateway.evm.call.types.ExecuteParams;
+import com.trustXchange.gateway.evm.call.types.ExecuteWithTokenParams;
 import com.trustXchange.gateway.evm.call.types.GmpInputs;
 import com.trustXchange.gateway.evm.call.types.GmpWithTokenInputs;
-import com.trustXchange.gateway.xrpl.GMPCallInfo;
+import com.trustXchange.repository.gmp.GmpInfoRepository;
 
 @Component
 public class GmpManager {
     @Autowired
     ContractService service;
-    public void manage(GMPCallInfo info) {
-        CurrencyAmount currencyAmount = info.amount;
-        String symbol;
-        Long amount;
-        if (XrpCurrencyAmount.class.isAssignableFrom(currencyAmount.getClass())) {
-            XrpCurrencyAmount xrpAmount = (XrpCurrencyAmount) currencyAmount;
-            symbol = "XRP";
-            amount = xrpAmount.toXrp().longValue();
-        } else if (IssuedCurrencyAmount.class.isAssignableFrom(currencyAmount.getClass())) {
-            IssuedCurrencyAmount issuedAmount = (IssuedCurrencyAmount) currencyAmount;
-            if (!"rQhWct2fv4Vc4KRjRgMrxa8xPN9Zx9iLKV".equals(issuedAmount.issuer().value())) {
-                throw new IllegalArgumentException("Unsupported issuer: " + issuedAmount.issuer().value());
-            }
-            symbol = "USD";
-            String decimalValueString = issuedAmount.value();
-            BigDecimal decimalValue = new BigDecimal(decimalValueString);
-            amount = decimalValue.longValue();
-        } else {
-            throw new IllegalArgumentException("Unsupported currency amount type: " + currencyAmount.getClass());
-        }
-
+    @Autowired
+    private  GmpInfoRepository gmpInfoRepository;
+    public void manage(GmpInfo info, String payloadStr) {
+        Long amount = info.getAmount();
+        String symbol = info.getSymbol();
+        String destinationAddress = info.getDestinationAddress();
+        String from = info.getFrom();
+        String sourceChain = "XRPL_testnet";
         if (amount == 0) {
-            GmpInputs inputs = GmpUtil.getGmpInputs("XRPL_testnet",info.from.toString(), info.destinationAddress, info.payload);
-            service.approveContractCall(inputs.getInputData())
-                    .thenCompose(receipt -> service.callContract(inputs.getExecuteParams(), info.destinationAddress))
+            GmpInputs inputs = GmpUtil.getGmpInputs(sourceChain, from, destinationAddress, payloadStr);
+            String input = inputs.getInputData();
+            ExecuteParams executeParams = inputs.getExecuteParams();
+            service.approveContractCall(input)
+                    .thenCompose(receipt -> service.callContract(executeParams, destinationAddress))
                     .thenAccept(receipt -> {
                         System.out.println("callContract Transaction Receipt: " + receipt.getTransactionReceipt().get());
+                        info.setIsProcessed(true);
+                        gmpInfoRepository.save(info);
                     })
                     .exceptionally(e -> {
                         System.err.println("Error during contract calls: " + e.getMessage());
                         return null;
                     });
         } else {
-            GmpWithTokenInputs inputs = GmpUtil.getGMPWithTokenInputs(info.from.toString(), info.destinationAddress, info.payload, symbol, amount);
-            service.approveContractCall(inputs.getInputData())
-                    .thenCompose(receipt -> service.callContractWithMint(inputs.getExecuteWithTokenParams(), info.destinationAddress))
+            GmpWithTokenInputs inputs = GmpUtil.getGMPWithTokenInputs(sourceChain, from, destinationAddress, payloadStr,symbol,amount);
+            String input = inputs.getInputData();
+            ExecuteWithTokenParams executeWithTokenParams = inputs.getExecuteWithTokenParams();
+            service.approveContractCall(input)
+                    .thenCompose(receipt -> service.callContractWithMint(executeWithTokenParams, destinationAddress))
                     .thenAccept(receipt -> {
                         System.out.println("callContractWithMint Transaction Receipt: " + receipt.getTransactionReceipt().get());
+                        info.setIsProcessed(true);
+                        gmpInfoRepository.save(info);
                     })
                     .exceptionally(e -> {
                         System.err.println("Error during contract calls: " + e.getMessage());
