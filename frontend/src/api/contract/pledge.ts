@@ -67,24 +67,22 @@ export async function contribute(
 export async function withdraw(
     user: xrpl.Wallet,
     withdrawAmount: number,
-    currencyAmount: xrpl.IssuedCurrencyAmount | string
 ): Promise<void> {
     const payloadStr = prepareWithdrawPayload(withdrawAmount);
-    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
+    await gmp_and_call_backend(user, contractAddress, payloadStr);
 }
 
 export async function claimReward(
     user: xrpl.Wallet,
-     currencyAmount: xrpl.IssuedCurrencyAmount | string
 ): Promise<void> {
     const payloadStr = prepareClaimRewardPayload();
-    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
+    await gmp_and_call_backend(user, contractAddress, payloadStr);
 }
 
 export async function borrow(
     user: xrpl.Wallet,
     borrowAmountUSD: number,
-     currencyAmount: xrpl.IssuedCurrencyAmount | string
+    currencyAmount: xrpl.IssuedCurrencyAmount | string
 ): Promise<void> {
     const payloadStr = prepareBorrowPayload(borrowAmountUSD);
     await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
@@ -93,7 +91,7 @@ export async function borrow(
 export async function repayLoan(
     user: xrpl.Wallet,
     loanId: number,
-     currencyAmount: xrpl.IssuedCurrencyAmount | string
+    currencyAmount: xrpl.IssuedCurrencyAmount | string
 ): Promise<void> {
     const payloadStr = prepareRepayLoanPayload(loanId);
     await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
@@ -102,7 +100,7 @@ export async function repayLoan(
 export async function liquidateLoan(
     user: xrpl.Wallet,
     loanId: number,
-     currencyAmount: xrpl.IssuedCurrencyAmount | string
+    currencyAmount: xrpl.IssuedCurrencyAmount | string
 ): Promise<void> {
     const payloadStr = prepareLiquidateLoanPayload(loanId);
     await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);

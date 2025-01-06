@@ -1,3 +1,5 @@
+import { IssuedCurrencyAmount} from "xrpl";
+
 export const currencyCode = '5553444300000000000000000000000000000000';
 
 export const user1Info = {
@@ -32,3 +34,17 @@ export const XRP_LENDING_POOL = '0x83ABF2594aEDf109E2fD83C94FA23b5d9E38340e'
 export const OPTION_TRADING = '0x82189dEeeC0310fd147f2423093f4B1F8F95BFc8'
 export const XRPL_RPC_URL = 'wss://s.devnet.rippletest.net:51233/'
 export const XRPL_MULTISIG_ADDRESS = "rfv9EskzSdWEsZsyBrujtidD2qdgiz8v7W";
+
+export const usdIssuedCurrency = (amount:number) : IssuedCurrencyAmount => {
+    return {
+        value: amount.toString(),
+        currency: USDC_currency_code,
+        issuer: USDC_issuer.address
+    } as IssuedCurrencyAmount
+}
+
+// transfer integer xrp amount to drop string
+export const xrpCurrency = (amount: number): string => {
+    const drops = amount * 1000000;
+    return drops.toString();
+}

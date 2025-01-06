@@ -40,7 +40,7 @@ async function gmp(user: xrpl.Wallet, contractAddress:string, payloadStr:string,
     });
 }
 
-export async function gmp_and_call_backend(user: xrpl.Wallet, contractAddress:string, payloadStr:string,currencyAmount:xrpl.IssuedCurrencyAmount | string): Promise<void> {
+export async function gmp_and_call_backend(user: xrpl.Wallet, contractAddress:string, payloadStr:string,currencyAmount:xrpl.IssuedCurrencyAmount | string = "0"): Promise<void> {
     const callback = async (response: string) => {
         const maxRetries = 3;
         const sleepTime = 5000;

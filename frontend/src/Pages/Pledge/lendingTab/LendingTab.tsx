@@ -22,6 +22,7 @@ import BigNumber from 'bignumber.js';
 import { useXrpPriceValue } from '../../../hooks/usePriceState';
 import ExistingLoans from './ExistingLoans';
 import { useConnectedWalletValues } from '../../../hooks/useConnectedWallet';
+import { usePoolLendingActions } from '../../../hooks/usePoolLendingState';
 
 
 
@@ -78,17 +79,16 @@ const StyledSelectFormControl = styled(FormControl)(({ theme }) => ({
 function LoanForm() {
   const { xrpPrice} = useXrpPriceValue();
   const {connectedWallet} = useConnectedWalletValues();
+  const {handleBorrow} = usePoolLendingActions();
+
+  
   const [borrowAmount, setBorrowAmount] = useState('NA');
   const [repaymentTerm, setRepaymentTerm] = useState('week');
   const [collateralAmount, setCollateralAmount] = useState(0);
   const [repaymentAmount, setRepaymentAmount] = useState(0);
   const [showWhatIf, setShowWhatIf] = useState(false);
   // Mock loan data (replace with actual data fetching)
-  const [activeLoan, setActiveLoan] = useState({
-       loanAmount: 1000,
-       payableAmount: 1100,
-       collateralValue: 1500
-   })
+  
 
   // Calculate collateral amount when borrowAmount changes
   useEffect(() => {
@@ -125,8 +125,7 @@ function LoanForm() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-     alert('Form submitted');
-    // Add your submission logic here
+    handleBorrow(connectedWallet!, parseFloat(borrowAmount), Math.ceil(collateralAmount),connectedWallet!.classicAddress);
   };
 
     const handleExpandClick = () => {

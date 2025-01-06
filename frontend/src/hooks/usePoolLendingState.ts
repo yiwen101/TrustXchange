@@ -13,6 +13,18 @@ import {
     PoolLendingContributorEvents,
     PoolLendingPoolEvents,
 } from '../api/backend/types/pledgeTypes';
+import { 
+    contribute,
+    withdraw,
+    claimReward,
+    borrow,
+    repayLoan,
+    liquidateLoan
+} from '../api/contract/pledge';
+
+import * as xrpl from 'xrpl';
+import { usdIssuedCurrency, xrpCurrency } from '../const';
+
 
 // --- Atoms ---
 
@@ -182,6 +194,18 @@ export const usePoolLendingActions = () => {
             isInitialized = true;
         }
     }
+
+    const refetchData = async (address: string) => {
+       await Promise.all([
+            fetchBorrower(address),
+            fetchBorrowerEvents(address),
+            fetchContributor(address),
+            fetchContributorEvents(address),
+             fetchPoolEvents(),
+        ])
+    }
+
+
     const onLogin = async (address: string) => {
         await Promise.all([
         fetchBorrower(address),
@@ -191,7 +215,6 @@ export const usePoolLendingActions = () => {
         fetchPoolEvents()
         ]);
     };
-
 
     const setPage = (page: number) => {
       setPoolEventsPage(page)
@@ -208,7 +231,45 @@ export const usePoolLendingActions = () => {
         setContributorEvents([]);
     }
 
-      
+    const executeAndRefetch = async (apiCall: () => Promise<void>, address: string | undefined) => {
+      try {
+        await apiCall();
+        await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30 seconds
+          if(address){
+               await refetchData(address);
+            }else{
+             await fetchPoolEvents();
+           }
+      } catch (error) {
+        console.error("Error during API call or refetch:", error);
+      }
+    };
+  
+    const handleContribute = async (user: xrpl.Wallet, usdAmount:number, address?: string) => {
+        await executeAndRefetch(() => contribute(user, usdIssuedCurrency(usdAmount)), address);
+    };
+  
+    const handleWithdraw = async (user: xrpl.Wallet, withdrawAmount: number, address?: string) => {
+        await executeAndRefetch(() => withdraw(user, withdrawAmount), address);
+    };
+  
+    const handleClaimReward = async (user: xrpl.Wallet,  address?: string) => {
+        await executeAndRefetch(() => claimReward(user,), address);
+    };
+  
+    const handleBorrow = async (user: xrpl.Wallet, borrowAmountUSD: number, currencyAmount: number, address?: string) => {
+      await executeAndRefetch(() => borrow(user, borrowAmountUSD, xrpCurrency(currencyAmount)), address);
+    };
+  
+    const handleRepayLoan = async (user: xrpl.Wallet, loanId: number, usd: number, address?: string) => {
+        await executeAndRefetch(() => repayLoan(user, loanId, usdIssuedCurrency(usd)), address);
+    };
+  
+    const handleLiquidateLoan = async (user: xrpl.Wallet, loanId: number, currencyAmount: number, address?: string) => {
+      await executeAndRefetch(() => liquidateLoan(user, loanId, xrpCurrency(currencyAmount)), address);
+    };
+  
+
 
     return {
         fetchBorrower,
@@ -221,5 +282,12 @@ export const usePoolLendingActions = () => {
         setPageSize,
         onLogin,
         onLogout,
+        
+        handleContribute,
+        handleWithdraw,
+        handleClaimReward,
+        handleBorrow,
+        handleRepayLoan,
+        handleLiquidateLoan,
     };
 };
