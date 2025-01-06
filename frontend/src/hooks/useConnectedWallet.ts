@@ -5,6 +5,7 @@ import { testnet_url } from "../const";
 import { useThreadPool } from "../utils";
 import { userUsdXrpAMMInfo } from "../api/xrp/amm_transection";
 import { getRandomeWallet } from "../testWallets";
+import { usePoolLendingActions } from "./usePoolLendingState";
 
 const connectedWalletState = atom({
     key: "CONNECTED_WALLET",
@@ -33,6 +34,7 @@ export const useConnectedWalletActions = () => {
     const [connectionStatus, setConnectionStatus] = useRecoilState(walletConnectionStatusState);
     const setWalletAMMStatus = useSetRecoilState(walletAMMState);
     const threadPool = useThreadPool(8);
+    const {onLogin,onLogout} = usePoolLendingActions();
 
     const connectOrCreateWallet = async () => {
         if (connectionStatus === "connected") {
@@ -50,10 +52,14 @@ export const useConnectedWalletActions = () => {
             setConnectionStatus("connected");
             console.log("Connected wallet:", wallet);
             
+            
             // on connect
             threadPool.run(async () => {
                 const userAmmInfo = await xrp_api.get_user_usd_xrp_amm_contribution(wallet!);
                 setWalletAMMStatus(userAmmInfo);
+            });
+            threadPool.run(async () => {
+                onLogin(wallet!.classicAddress);
             });
         } catch (error) {
             console.error("Failed to connect wallet:", error);
@@ -75,6 +81,7 @@ export const useConnectedWalletActions = () => {
 
         // on disconnect
         setWalletAMMStatus(null);
+        onLogout();
     }
     const getTruncatedAddress = () => {
         if(connectedWalletValue !== null) {

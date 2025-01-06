@@ -20,6 +20,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { styled } from '@mui/material/styles'; // Import styled
 import BigNumber from 'bignumber.js';
 import { useXrpPriceValue } from '../../../hooks/usePriceState';
+import ExistingLoans from './ExistingLoans';
+import { useConnectedWalletValues } from '../../../hooks/useConnectedWallet';
 
 
 
@@ -75,6 +77,7 @@ const StyledSelectFormControl = styled(FormControl)(({ theme }) => ({
 
 function LoanForm() {
   const { xrpPrice} = useXrpPriceValue();
+  const {connectedWallet} = useConnectedWalletValues();
   const [borrowAmount, setBorrowAmount] = useState('NA');
   const [repaymentTerm, setRepaymentTerm] = useState('week');
   const [collateralAmount, setCollateralAmount] = useState(0);
@@ -122,12 +125,7 @@ function LoanForm() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    console.log('Form submitted:', {
-      borrowAmount,
-      collateralAmount,
-      repaymentTerm,
-      repaymentAmount,
-    });
+     alert('Form submitted');
     // Add your submission logic here
   };
 
@@ -231,7 +229,7 @@ function LoanForm() {
 
         {/* Submit Button */}
         <Box textAlign="center" mt={3}>
-          <Button variant="contained" type="submit">
+          <Button variant="contained" type="submit" disabled={connectedWallet === null}>
             Submit
           </Button>
          </Box>
@@ -239,36 +237,7 @@ function LoanForm() {
           </Card>
 
            {/* Manage Existing Loan Card */}
-           <Card sx={{marginTop: 3}} >
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Manage Active Loan
-              </Typography>
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} sm={4}>
-                 <Typography variant="body2">Loan Amount:</Typography>
-                  <Typography variant="h6">${activeLoan.loanAmount}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="body2">Payable Amount:</Typography>
-                 <Typography variant="h6">${activeLoan.payableAmount}</Typography>
-                </Grid>
-               <Grid item xs={12} sm={4}>
-                  <Typography variant="body2">Collateral Value:</Typography>
-                  <Typography variant="h6">${activeLoan.collateralValue}</Typography>
-                </Grid>
-                 <Grid item xs={12} sm={12} textAlign={"right"} marginTop={1}>
-                    <Button variant="outlined" color="primary"  sx={{ marginRight:1}}>
-                       Repay
-                    </Button>
-                  <Button variant="outlined" color="primary">
-                       Add Collateral
-                    </Button>
-                </Grid>
-             </Grid>
-           </CardContent>
-          </Card>
-
+           <ExistingLoans />
     </Box>
   );
 }

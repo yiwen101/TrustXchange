@@ -5,34 +5,48 @@ import {
   Card,
   CardContent
 } from '@mui/material';
-import React, { useState } from 'react';
+import React from 'react';
+import { usePoolLendingValues } from '../../../hooks/usePoolLendingState';
+import { useConnectedWalletValues } from '../../../hooks/useConnectedWallet';
 
 
 
 const ExistingLoans : React.FC = () => {
-    const [activeLoan, setActiveLoan] = useState({
-        loanAmount: 1000,
-        payableAmount: 1100,
-        collateralValue: 1500
-    })
+    const {borrower} = usePoolLendingValues();
+    const {connectedWallet} = useConnectedWalletValues();
   return (
            <Card sx={{marginTop: 3}} >
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              { !connectedWallet && (
+                  <Typography variant="body2">
+                    Connect your wallet to view your active loans.
+                  </Typography>)}
+              {connectedWallet && !borrower && (
+                <Typography variant="body2">
+                  You do not have any active loans.
+                </Typography>
+              )}
+              {connectedWallet &&  borrower &&(<Typography variant="h6" gutterBottom>
                 Manage Active Loan
               </Typography>
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} sm={4}>
+              )}
+              {connectedWallet &&  borrower && ( 
+                <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} sm={3}>
                  <Typography variant="body2">Loan Amount:</Typography>
-                  <Typography variant="h6">${activeLoan.loanAmount}</Typography>
+                  <Typography variant="h6">${borrower.borrowAmountUsd}</Typography>
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} sm={3}>
+                 <Typography variant="body2">Paid Amount:</Typography>
+                  <Typography variant="h6">${borrower.repaidUsd}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={3}>
                   <Typography variant="body2">Payable Amount:</Typography>
-                 <Typography variant="h6">${activeLoan.payableAmount}</Typography>
+                 <Typography variant="h6">${borrower.amountPayableUsd}</Typography>
                 </Grid>
-               <Grid item xs={12} sm={4}>
-                  <Typography variant="body2">Collateral Value:</Typography>
-                  <Typography variant="h6">${activeLoan.collateralValue}</Typography>
+               <Grid item xs={12} sm={3}>
+                  <Typography variant="body2">Collateral Amount:</Typography>
+                  <Typography variant="h6">${borrower.collateralAmountXrp}</Typography>
                 </Grid>
                  <Grid item xs={12} sm={12} textAlign={"right"} marginTop={1}>
                     <Button variant="outlined" color="primary"  sx={{ marginRight:1}}>
@@ -42,7 +56,8 @@ const ExistingLoans : React.FC = () => {
                        Add Collateral
                     </Button>
                 </Grid>
-             </Grid>
+             </Grid>)}
+             
            </CardContent>
           </Card>
   );
