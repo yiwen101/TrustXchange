@@ -49,7 +49,7 @@ public class XrplListener {
     Set<Hash256> seenTransactionHashes = new HashSet<>();
     XrplClient xrplClient;
     Address classicAddress;
-    String XRPL_CHAIN_ADDRESS = "rfv9EskzSdWEsZsyBrujtidD2qdgiz8v7W";
+    String XRPL_CHAIN_ADDRESS = "rGo4HdEE3wXToTqcEGxCAeaFYfqiRGdWSX";
     private boolean isInited = false;
     private void init() {
         if (isInited) {
@@ -88,7 +88,8 @@ public class XrplListener {
         faucetClient.fundAccount(FundAccountRequest.of(classicAddress));
         System.out.println("Funded the account using the Testnet faucet.");
         */
-        logger.info("Listening for new transactions");
+        
+        //logger.info("Listening for new transactions");
         try {
             AccountTransactionsResult newTransactions = xrplClient.accountTransactions(classicAddress);
             newTransactions.transactions().forEach(tx -> {

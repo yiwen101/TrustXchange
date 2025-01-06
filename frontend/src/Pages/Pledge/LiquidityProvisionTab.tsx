@@ -11,6 +11,8 @@ import {
   Divider
 } from '@mui/material';
 import { styled } from '@mui/material/styles'; // Import styled
+import { usePoolLendingActions } from '../../hooks/usePoolLendingState';
+import { useConnectedWalletValues } from '../../hooks/useConnectedWallet';
 
 // Styled TextField for the contribution amount
 const StyledContributeTextField = styled(TextField)(({ theme }) => ({
@@ -38,7 +40,12 @@ const StyledPaper = styled(Paper)(({theme}) => ({
 }));
 
 function LiquidityForm() {
-  const [contributeAmount, setContributeAmount] = useState('NA');
+  const {connectedWallet} = useConnectedWalletValues();
+  const { handleContribute,
+    handleWithdraw,
+    handleClaimReward,
+  } = usePoolLendingActions();
+  const [contributeAmount, setContributeAmount] = useState('');
   // Mock contribution data (replace with actual data fetching)
   const [activeContribution, setActiveContribution] = useState({
        contributionAmount: 5000,
@@ -48,27 +55,33 @@ function LiquidityForm() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    console.log('Form submitted:', {
-      contributeAmount,
-    });
+    alert('A name was submitted: ' + contributeAmount);
+    const usdAmountFloat = parseFloat(contributeAmount);
+    alert('A name was submitted: ' + usdAmountFloat);
+    const usdAmountInt = Math.round(usdAmountFloat);
+    alert('A name was submitted: ' + usdAmountInt);
+    handleContribute(connectedWallet!,usdAmountInt, connectedWallet!.address);
     // Add your submission logic here
   };
 
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ p: 2 }}>
+    <Box component="form"  sx={{ p: 2 }} onSubmit={handleSubmit}>
       <Grid container spacing={3} justifyContent="center">
         {/* Contribution Amount */}
         <Grid item xs={12} md={8} lg={6} >
           <StyledContributeTextField
             label="Contribute Amount (USD)"
             value={contributeAmount}
-            onChange={(e) => e.target.value ? setContributeAmount(e.target.value) : setContributeAmount('NA')}
+            onChange={(e) => e.target.value ? setContributeAmount(e.target.value) : setContributeAmount('')}
             fullWidth
             type="number"
             required
           />
         </Grid>
+        <Button variant="contained" color="primary" type="submit" sx={{marginTop: 2}}>
+          Submit
+        </Button>
       </Grid>
 
       {/* Divider */}

@@ -41,20 +41,23 @@ public class GMPCallInfo {
     private static final String XRPL_EVM_SIDECHAIN_HEX = "7872706C2D65766D2D73696465636861696E";
     
     public static Optional<GMPCallInfo> Of(Payment payment) throws DestinationChainNotSupportException{
+        System.out.println("line 44 in GMPCALLINFO, payment: " + payment);
         Optional<GMPCallInfo> gmpCallInfo = Optional.empty();
         try {
         List<String> datas = new ArrayList<>(3);
         List<String> types = new ArrayList<>(3);
-        System.out.println("line 41, memo size: " + payment.memos().size());
+        System.out.println("line 49, memo size: " + payment.memos().size());
         for(int i=0; i<3; i++){
             Optional<String> memoData = payment.memos().get(i).memo().memoData();
             Optional<String> memoType = payment.memos().get(i).memo().memoType();
             if (!memoData.isPresent() || !memoType.isPresent()) {
+                System.out.println("line 54, memoData: " + memoData);
                 return gmpCallInfo;
             }
             datas.add(memoData.get());
             types.add(memoType.get());
         }
+        System.out.println("line 60");
         if (!types.equals(MEMO_TYPES_EXPECTED) || !types.equals(MEMO_TYPES_EXPECTED)) {
             return gmpCallInfo;
         }
@@ -62,12 +65,14 @@ public class GMPCallInfo {
         Long amount;
         CurrencyAmount currencyAmount = payment.amount();
         if (XrpCurrencyAmount.class.isAssignableFrom(currencyAmount.getClass())) {
+            System.out.println("line 68, currencyAmount: " + currencyAmount);
             XrpCurrencyAmount xrpAmount = (XrpCurrencyAmount) currencyAmount;
             symbol = "XRP";
             amount = xrpAmount.toXrp().longValue();
         } else if (IssuedCurrencyAmount.class.isAssignableFrom(currencyAmount.getClass())) {
+            System.out.println("line 73, currencyAmount: " + currencyAmount);
             IssuedCurrencyAmount issuedAmount = (IssuedCurrencyAmount) currencyAmount;
-            if (!"rQhWct2fv4Vc4KRjRgMrxa8xPN9Zx9iLKV".equals(issuedAmount.issuer().value())) {
+            if (!"rGo4HdEE3wXToTqcEGxCAeaFYfqiRGdWSX".equals(issuedAmount.issuer().value())) {
                 return gmpCallInfo;
             }
             symbol = "USD";
@@ -75,6 +80,7 @@ public class GMPCallInfo {
             BigDecimal decimalValue = new BigDecimal(decimalValueString);
             amount = decimalValue.longValue();
         } else {
+            System.out.println("line 84, currencyAmount: " + currencyAmount);
             return gmpCallInfo;
         }
 
