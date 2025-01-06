@@ -46,8 +46,7 @@ export const useConnectedWalletActions = () => {
             await client.connect();
             const info = getRandomeWallet()
             //const wallet = await xrp_api.create_wallet();
-            //const wallet = await xrp_api.get_funded_wallet_with_usd(client, 1000, 1000, true);
-            const wallet = new Wallet(info.publicKey, info.privateKey);
+            const wallet = await xrp_api.get_funded_wallet_with_usd(1000, 1000, new Wallet(info.publicKey, info.privateKey));
             setConnectedWalletValue(wallet!);
             setConnectionStatus("connected");
             console.log("Connected wallet:", wallet);

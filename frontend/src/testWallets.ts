@@ -1,4 +1,4 @@
-const walletInfo = [
+export const walletInfo = [
     {
       "address": "rB8KX92KiXugoNncVb6uAMkXtDTeo3BVcU",
       "secret": "sEd7ZHXbc1xt73PgnRa4PFed9bftfyv",

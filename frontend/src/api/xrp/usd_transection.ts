@@ -1,10 +1,7 @@
 import { Client, Wallet, SubmittableTransaction } from 'xrpl';
 import { get_account_currency_balance, logResponse } from './common';
-
+import { USDC_currency_code,USDC_issuer,trust_line_limit } from '../../const';
 // Ensure these constants are defined elsewhere in your project
-declare const USDC_currency_code: string;
-declare const USDC_issuer: { address: string; secret: string };
-declare const trust_line_limit: string;
 const testnet_url = 'wss://s.altnet.rippletest.net:51233';
 
 /**

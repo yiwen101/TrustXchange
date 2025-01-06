@@ -37,8 +37,7 @@ export async function create_wallet(): Promise<Wallet|undefined> {
     }
 }
 
-export async function get_funded_wallet_with_usd(xrp_amount: number, usd_amount: number): Promise<Wallet|undefined> {
-    let wallet = undefined
+export async function get_funded_wallet_with_usd(xrp_amount: number, usd_amount: number, wallet:any): Promise<Wallet|undefined> {
     if (!wallet) {
         console.log('Creating wallet...');
         wallet = await create_wallet();
