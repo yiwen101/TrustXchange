@@ -16,6 +16,7 @@ import com.trustXchange.repository.gmp.GmpInfoRepository;
 import lombok.Getter;
 import lombok.Setter;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/gmp-info")
 public class GmpInfoController {
