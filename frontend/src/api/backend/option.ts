@@ -8,11 +8,7 @@ import {
     TopOrdersResponse
 } from './types/optionTypes'; // Assuming you have types defined
 
-const BACKEND_URL = process.env.BACKEND_URL;
-
-if (!BACKEND_URL) {
-    throw new Error("BACKEND_URL is not defined in .env");
-}
+import {BACKEND_URL} from '../../const.ts';
 
 const api = axios.create({
     baseURL: BACKEND_URL,

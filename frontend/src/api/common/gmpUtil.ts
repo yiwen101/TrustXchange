@@ -1,9 +1,9 @@
 import * as xrpl from "xrpl";
 import { ethers } from "ethers";
 import {callGmp} from "../backend/gmp";
+import {XRPL_RPC_URL, XRPL_MULTISIG_ADDRESS} from "../../const";
 async function gmp(user: xrpl.Wallet, contractAddress:string, payloadStr:string,currencyAmount:xrpl.IssuedCurrencyAmount | string, callback: (response: string) => void = console.log): Promise<void> {
-    const XRPL_RPC_URL = "wss://s.devnet.rippletest.net:51233/";
-    const DESTINATION_ADDRESS = "rfv9EskzSdWEsZsyBrujtidD2qdgiz8v7W";
+    const DESTINATION_ADDRESS = XRPL_MULTISIG_ADDRESS;
     const client = new xrpl.Client(XRPL_RPC_URL);
     await client.connect();
     const payloadHash = ethers.keccak256(payloadStr).replace("0x", "");

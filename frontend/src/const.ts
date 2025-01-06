@@ -26,3 +26,9 @@ export const mannnet_Bitstamp_usd_address = 'rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B'
 // 1Billon
 export const trust_line_limit = '1000000000';
 export const EXPLORER = 'https://testnet.xrpl.org'
+export const BACKEND_URL = 'http://localhost:8080'
+export const XRP_LENDING_P2P = '0x99006642Dc5F79eBeF9dCAf3e95bd7DA0452C58E'
+export const XRP_LENDING_POOL = '0x83ABF2594aEDf109E2fD83C94FA23b5d9E38340e'
+export const OPTION_TRADING = '0x82189dEeeC0310fd147f2423093f4B1F8F95BFc8'
+export const XRPL_RPC_URL = 'wss://s.devnet.rippletest.net:51233/'
+export const XRPL_MULTISIG_ADDRESS = "rfv9EskzSdWEsZsyBrujtidD2qdgiz8v7W";

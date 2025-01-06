@@ -3,12 +3,7 @@ import {
     GmpCallRequest,
     GmpCallResponse,
 } from './types/gmpTypes.ts';
-
-const BACKEND_URL = process.env.BACKEND_URL;
-
-if (!BACKEND_URL) {
-    throw new Error("REACT_APP_BACKEND_URL is not defined in .env");
-  }
+import {BACKEND_URL} from '../../const.ts';
 
 const gmpApi = axios.create({
     baseURL: BACKEND_URL,

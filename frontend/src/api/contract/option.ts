@@ -1,8 +1,8 @@
 import { ethers } from 'ethers';
 import * as xrpl from 'xrpl';
 import { gmp_and_call_backend } from '../common/gmpUtil';
-
-const contractAddress = process.env.XRP_OPTIONS_POOL as string;
+import {OPTION_TRADING} from '../../const';
+const contractAddress = OPTION_TRADING;
 
 const AbiCoder = ethers.AbiCoder.defaultAbiCoder();
 

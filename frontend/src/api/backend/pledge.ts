@@ -1,11 +1,7 @@
 import axios from 'axios';
 import { PoolLendingBorrower, PoolLendingBorrowerEvents, PoolLendingContributor, PoolLendingContributorEvents, PoolLendingPoolEvents } from './types/pledgeTypes.ts';
 
-const BACKEND_URL = process.env.BACKEND_URL;
-
-if (!BACKEND_URL) {
-    throw new Error("REACT_APP_BACKEND_URL is not defined in .env");
-}
+import {BACKEND_URL} from '../../const.ts';
 
 const api = axios.create({
     baseURL: BACKEND_URL,
