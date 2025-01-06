@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 
 @RestController
-@RequestMapping("/p2p") // Base path for all p2p endpoints
+@RequestMapping("api/p2p") // Base path for all p2p endpoints
 public class P2pController {
 
     // --------------------- Borrowing Request Endpoints ---------------------

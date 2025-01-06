@@ -18,7 +18,7 @@ import lombok.Setter;
 
 
 @RestController
-@RequestMapping("/gmp")
+@RequestMapping("api/gmp")
 public class GmpInfoController {
     @Autowired
     private  GmpInfoRepository gmpInfoRepository;

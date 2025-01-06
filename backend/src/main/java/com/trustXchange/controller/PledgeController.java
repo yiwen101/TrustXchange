@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 
 @RestController
-@RequestMapping("/pledge") // Base path for all pledge endpoints
+@RequestMapping("api/pledge") // Base path for all pledge endpoints
 public class PledgeController {
 
 

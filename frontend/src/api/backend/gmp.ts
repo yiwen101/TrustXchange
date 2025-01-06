@@ -13,7 +13,7 @@ const gmpApi = axios.create({
 });
 
 export const callGmp = async (request: GmpCallRequest): Promise<GmpCallResponse> => {
-    const response = await gmpApi.post('/gmp/call', request);
+    const response = await gmpApi.post('api/gmp/call', request);
     return response.data;
 };
 
