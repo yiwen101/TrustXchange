@@ -25,14 +25,17 @@ public class GmpManager {
     ContractService service;
     @Autowired
     private  GmpInfoRepository gmpInfoRepository;
+    @Autowired
+    private GmpUtil GmpUtil;
     public void manage(GmpInfo info, String payloadStr) {
         Long amount = info.getAmount();
         String symbol = info.getSymbol();
         String destinationAddress = info.getDestinationAddress();
         String from = info.getFrom();
         String sourceChain = "XRPL_testnet";
+        String payloadHash = info.getPayloadHash();
         if (amount == 0) {
-            GmpInputs inputs = GmpUtil.getGmpInputs(sourceChain, from, destinationAddress, payloadStr);
+            GmpInputs inputs = GmpUtil.getGmpInputs(sourceChain, from, destinationAddress, payloadStr,payloadHash);
             String input = inputs.getInputData();
             ExecuteParams executeParams = inputs.getExecuteParams();
             service.approveContractCall(input)

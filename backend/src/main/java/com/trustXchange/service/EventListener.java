@@ -44,14 +44,14 @@ public class EventListener {
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     private static final String RPC_URL = "https://rpc-evm-sidechain.xrpl.org";
     private static final String P2P_CONTRACT_ADDRESS = "0x99006642Dc5F79eBeF9dCAf3e95bd7DA0452C58E";
-    private static final String PLEDGE_CONTRACT_ADDRESS = "0x83ABF2594aEDf109E2fD83C94FA23b5d9E38340e";
+    private static final String PLEDGE_CONTRACT_ADDRESS = "0x73f58074490bA15216B5eE88f6Be96FbD729e6A6";
     private static final String OPTION_CONTRACT_ADDRESS = "0x82189dEeeC0310fd147f2423093f4B1F8F95BFc8";
 
     @PostConstruct
     public void listenFor()  {
-        executorService.scheduleAtFixedRate(() -> manageEventForContract(pledgeEventManagerRegistry,PLEDGE_CONTRACT_ADDRESS, "pledge"), 0, 1, TimeUnit.SECONDS);
-        executorService.scheduleAtFixedRate(() -> manageEventForContract(p2pEventManagerRegistry,P2P_CONTRACT_ADDRESS,"p2p"), 0, 1, TimeUnit.SECONDS);
-        executorService.scheduleAtFixedRate(() -> manageEventForContract(optionEventManagerRegistry,OPTION_CONTRACT_ADDRESS,"option"), 0, 1, TimeUnit.SECONDS);
+        //executorService.scheduleAtFixedRate(() -> manageEventForContract(pledgeEventManagerRegistry,PLEDGE_CONTRACT_ADDRESS, "pledge"), 0, 1, TimeUnit.SECONDS);
+        //executorService.scheduleAtFixedRate(() -> manageEventForContract(p2pEventManagerRegistry,P2P_CONTRACT_ADDRESS,"p2p"), 0, 1, TimeUnit.SECONDS);
+        //executorService.scheduleAtFixedRate(() -> manageEventForContract(optionEventManagerRegistry,OPTION_CONTRACT_ADDRESS,"option"), 0, 1, TimeUnit.SECONDS);
         }
 
     private void manageEventForContract(EventManagerRegistry eventManagerRegistry,String contractAddress, String contractName) {

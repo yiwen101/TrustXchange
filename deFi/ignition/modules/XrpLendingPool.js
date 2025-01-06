@@ -19,7 +19,7 @@ module.exports = buildModule("XrpLendingPoolModule", (m) => {
   const dailyRateParam = m.getParameter("dailyInterestFactorE18_", dailyFactor );
 
   // Deploy the MyAxelarGatewayImpl contract with the authModule parameter
-  const XrpLendingPool = m.contract("XrpLendingPoolV4", [gatewayAddressParam, priceOracleAddressParam, dailyRateParam]);
+  const XrpLendingPool = m.contract("XrpLendingPoolV5", [gatewayAddressParam, priceOracleAddressParam, dailyRateParam]);
 
   // Return the deployed contract instance
   return {XrpLendingPool};

@@ -1,4 +1,7 @@
 package com.trustXchange.gateway.evm.call;
+import org.checkerframework.checker.units.qual.C;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 // GmpUtil.java
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.datatypes.*;
@@ -7,16 +10,19 @@ import org.web3j.abi.datatypes.generated.Bytes32;
 import org.web3j.crypto.Hash;
 import org.web3j.utils.Numeric;
 
+import com.trustXchange.entities.gmp.GmpCount;
 import com.trustXchange.gateway.evm.call.types.ExecuteParams;
 import com.trustXchange.gateway.evm.call.types.ExecuteWithTokenParams;
 import com.trustXchange.gateway.evm.call.types.GmpInputs;
 import com.trustXchange.gateway.evm.call.types.GmpWithTokenInputs;
+import com.trustXchange.repository.gmp.GmpCountRepository;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Component
 public class GmpUtil {
         public static final String keccak256(String input) {
                 return Numeric.toHexString(Hash.sha3(input.getBytes(StandardCharsets.UTF_8)));
@@ -24,17 +30,18 @@ public class GmpUtil {
         public static final String sha3(String input) {
                 return Hash.sha3(input);
         }
+        @Autowired
+        private GmpCountRepository gmpCountRepository;
 
-    public static GmpInputs getGmpInputs(String sourceChain, String sourceAddress, String contractAddress, String payloadBytes) {
+    public GmpInputs getGmpInputs(String sourceChain, String sourceAddress, String contractAddress, String payloadBytes, String payloadHash) {
         BigInteger chainId = BigInteger.ONE; // Example Chain ID
-        String payloadHash = Hash.sha3(payloadBytes);
         String sourceTxHash = Numeric.toHexString(Hash.sha3("ignored".getBytes(StandardCharsets.UTF_8)));
         // todo, add sourceEventIndex
         long sourceEventIndex = 0;
 
         String param = createGatewayCallParams(sourceChain, sourceAddress, contractAddress, payloadHash, sourceTxHash, sourceEventIndex);
         String commandName =  "approveContractCall";
-        String commandId = createCommandId(commandName, param, 17);
+        String commandId = createCommandId(commandName, param, getGmpCounter());
         
         List<String> commandIds = Collections.singletonList(commandId);
         List<String> commands = Collections.singletonList(commandName);
@@ -52,7 +59,7 @@ public class GmpUtil {
         return new GmpInputs(inputData, executeParams);
     }
 
-    public static GmpWithTokenInputs getGMPWithTokenInputs(String sourceChain,String sourceAddress, String contractAddress, String payloadBytes, String tokenSymbol, Long tokenAmount) {
+    public GmpWithTokenInputs getGMPWithTokenInputs(String sourceChain,String sourceAddress, String contractAddress, String payloadBytes, String tokenSymbol, Long tokenAmount) {
         BigInteger chainId = BigInteger.ONE; // Example Chain ID
         String payloadHash = Hash.sha3(payloadBytes);
         String sourceTxHash = Numeric.toHexString(Hash.sha3("ignored".getBytes(StandardCharsets.UTF_8)));
@@ -61,7 +68,7 @@ public class GmpUtil {
         String param = createGatewayCallWithMintParams(sourceChain, sourceAddress, contractAddress, payloadHash, tokenSymbol, tokenAmount, sourceTxHash, sourceEventIndex);
         String commandName =  "approveContractCallWithMint";
         // todo, dynamically create command Id
-        String commandId = createCommandId(commandName, param, 17);
+        String commandId = createCommandId(commandName, param, getGmpCounter());
         
         List<String> commandIds = Collections.singletonList(commandId);
         List<String> commands = Collections.singletonList(commandName);
@@ -88,7 +95,7 @@ public class GmpUtil {
         return new GmpWithTokenInputs(inputData, executeWithTokenParams);
     }
 
-    private static String prepareCommandData(BigInteger chainId, List<byte[]> commandIds, List<String> commands, List<byte[]> params) {
+    private String prepareCommandData(BigInteger chainId, List<byte[]> commandIds, List<String> commands, List<byte[]> params) {
         List<Type> inputParameters = Arrays.asList(
                 new Uint256(chainId),
                 new DynamicArray<>(Bytes32.class, commandIds.stream().map(Bytes32::new).collect(Collectors.toList())),
@@ -105,7 +112,7 @@ public class GmpUtil {
         return "0x" + FunctionEncoder.encode(function).substring(10);
     }
 
-    private static String prepareExecuteInput(String data, byte[] proof) {
+    private String prepareExecuteInput(String data, byte[] proof) {
         List<Type> inputParameters = Arrays.asList(
                 new DynamicBytes(Numeric.hexStringToByteArray(data)),
                 new DynamicBytes(proof)
@@ -120,7 +127,7 @@ public class GmpUtil {
         return "0x" + FunctionEncoder.encode(function).substring(10);
     }
 
-    private static String createCommandId(String commandName, String paramBytes, long nonce) {
+    private String createCommandId(String commandName, String paramBytes, long nonce) {
         List<Type> inputParameters = Arrays.asList(
                 new Utf8String(commandName),
                 new DynamicBytes(Numeric.hexStringToByteArray(paramBytes)),
@@ -134,10 +141,11 @@ public class GmpUtil {
         );
 
         String encodedData = FunctionEncoder.encode(function);
-        return Numeric.toHexString(Hash.sha3(encodedData.getBytes(StandardCharsets.UTF_8)));
+        encodedData = "0x" + encodedData.substring(10);
+        return Hash.sha3(encodedData);
     }
 
-    private static String createGatewayCallParams(String sourceChain, String sourceAddress, String contractAddress,
+    private String createGatewayCallParams(String sourceChain, String sourceAddress, String contractAddress,
                                                  String payloadHash, String sourceTxHash, long sourceEventIndex) {
         List<Type> inputParameters = Arrays.asList(
                 new Utf8String(sourceChain),
@@ -157,7 +165,7 @@ public class GmpUtil {
         return "0x" + FunctionEncoder.encode(function).substring(10);
     }
 
-    private static String createGatewayCallWithMintParams(String sourceChain, String sourceAddress, String contractAddress,
+    private String createGatewayCallWithMintParams(String sourceChain, String sourceAddress, String contractAddress,
                                                          String payloadHash, String symbol, long amount,
                                                          String sourceTxHash, long sourceEventIndex) {
             System.out.println("sourceChain: " + sourceChain);
@@ -187,5 +195,22 @@ public class GmpUtil {
         );
 
         return "0x" + FunctionEncoder.encode(function).substring(10);
+    }
+
+    private Long getGmpCounter() {
+        String name = "name";
+        Optional<GmpCount> gmpCount = gmpCountRepository.findByName(name);
+        if (gmpCount.isEmpty()) {
+            GmpCount newGmpCount = new GmpCount();
+            newGmpCount.setName(name);
+            newGmpCount.setCount(1L);
+            gmpCountRepository.save(newGmpCount);
+            return 0L;
+        }
+        GmpCount gmpCountObj = gmpCount.get();
+        Long count = gmpCountObj.getCount();
+        gmpCountObj.setCount(count + 1);
+        gmpCountRepository.save(gmpCountObj);
+        return count;
     }
 }

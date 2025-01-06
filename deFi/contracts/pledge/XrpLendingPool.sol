@@ -9,7 +9,7 @@ interface PriceOracle {
     function getPriceXRPUSDT() external view returns (uint256);
 }
 
-contract XrpLendingPoolV4 is AxelarExecutableWithToken {
+contract XrpLendingPoolV5 is AxelarExecutableWithToken {
     using PRBMathUD60x18 for uint256;
 
     // --- Constants ---
@@ -206,6 +206,7 @@ contract XrpLendingPoolV4 is AxelarExecutableWithToken {
         uint256 _borrowAmountUSD
     ) internal {
         require(keccak256(bytes(tokenSymbol)) == keccak256(bytes("XRP")), "Invalid token symbol");
+        updatePrice();
         // time 10 up as collateral ratio is scaled by 100, and price is scaled by 1e4
         uint256 requiredCollateralXRP = (_borrowAmountUSD * collateralRatioPc * 100) / currentXRPPriceUSDE4;
         require(xrpAmount >= requiredCollateralXRP, "Insufficient collateral");

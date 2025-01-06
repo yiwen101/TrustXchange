@@ -77,14 +77,24 @@ async function callContract(params, contract_address) {
 }
 
 async function main() {
+  function prepareBorrowPayload(borrowAmountUSD) {
+    const command = "borrow";
+    const params = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256"],
+        [borrowAmountUSD]
+    );
+    return ethers.AbiCoder.defaultAbiCoder().encode(["string", "bytes"], [command, params]);
+}
+  
   //const {inputData,executeWithTokenParams} = utils.getPocMockInputs(51)
   //const {inputData,executeWithTokenParams} = p2pUtils.getP2PBorrowingRequestGMPParams(100);
-  //const {inputData,executeWithTokenParams} = pledgeUtils.getLendGMPParams(108);
-  const {inputData,executeWithTokenParams} = optionUtils.getIssueCallOptionGMPParams(200,100,100);
+  const {inputData,executeWithTokenParams} = pledgeUtils.getBorrowGMPParams(150,201);
+  //console.log("inputData",inputData);
+  //const {inputData,executeWithTokenParams} = optionUtils.getIssueCallOptionGMPParams(200,100,101);
   await approveContractCallWithMint(inputData);
   //await callPocContract(executeWithTokenParams);
-  //await callPoolContract(executeWithTokenParams);
-  await callOptionContract(executeWithTokenParams);
+  await callPoolContract(executeWithTokenParams);
+  //await callOptionContract(executeWithTokenParams);
 }
 
 main().catch((error) => {

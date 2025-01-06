@@ -8,5 +8,6 @@
   "XrpLendingP2PModule#XrpLendingP2PV4": "0x99006642Dc5F79eBeF9dCAf3e95bd7DA0452C58E",
   "XrpLendingPoolModule#XrpLendingPoolV2": "0x7A30ab450f30dC37034f66B6e5cFE6C114A07E22",
   "XrpLendingPoolModule#XrpLendingPoolV4": "0x83ABF2594aEDf109E2fD83C94FA23b5d9E38340e",
-  "OptionPModule#OptionTrading": "0x82189dEeeC0310fd147f2423093f4B1F8F95BFc8"
+  "OptionPModule#OptionTrading": "0x82189dEeeC0310fd147f2423093f4B1F8F95BFc8",
+  "XrpLendingPoolModule#XrpLendingPoolV5": "0x73f58074490bA15216B5eE88f6Be96FbD729e6A6"
 }
