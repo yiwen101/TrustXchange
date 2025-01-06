@@ -4,6 +4,7 @@ import xrp_api from "../api/xrp";
 import { testnet_url } from "../const";
 import { useThreadPool } from "../utils";
 import { userUsdXrpAMMInfo } from "../api/xrp/amm_transection";
+import { getRandomeWallet } from "../testWallets";
 
 const connectedWalletState = atom({
     key: "CONNECTED_WALLET",
@@ -19,7 +20,6 @@ const walletAMMState = atom({
     key: "WALLET_AMM_STATUS",
     default: null as userUsdXrpAMMInfo | null,
 });
-
 
 export const useConnectedWalletValues = () => {
     const connectedWallet = useRecoilValue(connectedWalletState);
@@ -42,8 +42,10 @@ export const useConnectedWalletActions = () => {
         const client = new Client(testnet_url);
         try {
             await client.connect();
-            const wallet = await xrp_api.create_wallet();
+            const info = getRandomeWallet()
+            //const wallet = await xrp_api.create_wallet();
             //const wallet = await xrp_api.get_funded_wallet_with_usd(client, 1000, 1000, true);
+            const wallet = new Wallet(info.publicKey, info.privateKey);
             setConnectedWalletValue(wallet!);
             setConnectionStatus("connected");
             console.log("Connected wallet:", wallet);
