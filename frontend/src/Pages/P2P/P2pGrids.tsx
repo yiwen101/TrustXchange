@@ -14,6 +14,7 @@ import {
   TextField,
 } from "@mui/material";
 import RequestCard from "./P2pGridCard";
+import RequestButton from "./P2pForm";
 
 // Interfaces
 export interface P2pBorrowingRequest {
@@ -223,24 +224,20 @@ const requestRows: RequestType[] = [
           const amountBorrowedUsd = isBorrowRequest ? (row as P2pBorrowingRequest).amountBorrowedUsd : 0;
           const amountToLendUsd = isBorrowRequest ? 0 : (row as P2pLendingRequest).amountToLendUsd;
           const amountLendedUsd = isBorrowRequest ? 0 : (row as P2pLendingRequest).amountLendedUsd;
-  
-  
           const collateralRatio = isBorrowRequest ? (initialCollateralAmountXrp / amountToBorrowUsd) : (amountToLendUsd / initialCollateralAmountXrp);
           const collateral = isBorrowRequest ? maxCollateralRatio : minCollateralRatio;
           const minimalPartialFill = isBorrowRequest ? (row as P2pBorrowingRequest).minimalPartialFill : (row as P2pLendingRequest).minimalPartialFill;
-  
-  
-        const status = row.canceled
-            ? "Cancelled"
-            : (isBorrowRequest ? (amountBorrowedUsd === amountToBorrowUsd
-                    ? "Filled"
-                    : amountBorrowedUsd > 0
-                        ? "Partial Filled"
-                        : "Not Filled") : (amountLendedUsd === amountToLendUsd
-                ? "Filled"
-                : amountLendedUsd > 0
-                    ? "Partial Filled"
-                    : "Not Filled"));
+          const status = row.canceled
+              ? "Cancelled"
+              : (isBorrowRequest ? (amountBorrowedUsd === amountToBorrowUsd
+                      ? "Filled"
+                      : amountBorrowedUsd > 0
+                          ? "Partial Filled"
+                          : "Not Filled") : (amountLendedUsd === amountToLendUsd
+                  ? "Filled"
+                  : amountLendedUsd > 0
+                      ? "Partial Filled"
+                      : "Not Filled"));
   
       return (
         (showOnlyMe === "any" ||
@@ -426,9 +423,7 @@ const requestRows: RequestType[] = [
         <Grid container spacing={2}>
         {filteredRows.map((row) => (<RequestCard key={row.requestId} row={row}/> ))}
         </Grid>
-          <Button variant="contained" color="primary" style={{marginTop: '10px'}}>
-            Submit New Lending/Borrowing Request
-          </Button>
+          <RequestButton />
       </Stack>
     );
   };
