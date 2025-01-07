@@ -116,3 +116,7 @@ export const walletInfo = [
 export const getRandomeWallet = () => {
     return walletInfo[Math.floor(Math.random() * walletInfo.length)];
 }
+
+export const getWallet = (index: number) => {
+    return walletInfo[index];
+}

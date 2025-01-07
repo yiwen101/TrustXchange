@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { PoolLendingBorrower, PoolLendingBorrowerEvents, PoolLendingContributor, PoolLendingContributorEvents, PoolLendingPoolEvents } from './types/pledgeTypes.ts';
+import { PoolLendingBorrower, PoolLendingContributor, PoolLendingPoolEvents, PoolLendingUserEvents } from './types/pledgeTypes.ts';
 
 import {BACKEND_URL} from '../../const.ts';
 
@@ -17,12 +17,6 @@ export const getBorrowerByAddress = async (borrowerAddress: string): Promise<Poo
     return response.data;
 };
 
-// --- Pool Lending Borrower Event Endpoints ---
-export const getBorrowerEventsByBorrowerAddress = async (borrowerAddress: string): Promise<PoolLendingBorrowerEvents[]> => {
-    const response = await api.get(`/api/pledge/borrower-events/${borrowerAddress}`);
-    return response.data;
-};
-
 // --- Pool Lending Contributor Endpoints ---
 export const getContributorByAddress = async (contributorAddress: string): Promise<PoolLendingContributor> => {
     const response = await api.get(`/api/pledge/contributors/${contributorAddress}`);
@@ -31,8 +25,8 @@ export const getContributorByAddress = async (contributorAddress: string): Promi
 
 
 // --- Pool Lending Contributor Event Endpoints ---
-export const getContributorEventsByContributorAddress = async (contributorAddress: string): Promise<PoolLendingContributorEvents[]> => {
-    const response = await api.get(`/api/pledge/contributor-events/${contributorAddress}`);
+export const getEventsByUserAddress = async (address: string): Promise<PoolLendingUserEvents[]> => {
+    const response = await api.get(`/api/pledge/events/${address}`);
     return response.data;
 };
 

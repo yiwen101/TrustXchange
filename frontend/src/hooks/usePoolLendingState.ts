@@ -1,16 +1,15 @@
 import { atom, selector, useRecoilState, useRecoilValue } from 'recoil';
 import {
     getBorrowerByAddress,
-    getBorrowerEventsByBorrowerAddress,
+    getEventsByUserAddress,
     getContributorByAddress,
-    getContributorEventsByContributorAddress,
     getAllPoolEvents,
 } from '../api/backend/pledge';
 import {
     PoolLendingBorrower,
-    PoolLendingBorrowerEvents,
+    PoolLendingUserEvents,
     PoolLendingContributor,
-    PoolLendingContributorEvents,
+    
     PoolLendingPoolEvents,
 } from '../api/backend/types/pledgeTypes';
 import { 
@@ -33,19 +32,14 @@ const borrowerState = atom<PoolLendingBorrower | null>({
     default: null,
 });
 
-const borrowerEventsState = atom<PoolLendingBorrowerEvents[]>({
-    key: 'borrowerEventsState',
+const userEventsState = atom<PoolLendingUserEvents[]>({
+    key: 'userEventsState',
     default: [],
 });
 
 const contributorState = atom<PoolLendingContributor | null>({
     key: 'contributorState',
     default: null,
-});
-
-const contributorEventsState = atom<PoolLendingContributorEvents[]>({
-    key: 'contributorEventsState',
-    default: [],
 });
 
 const poolEventsState = atom<{ content: PoolLendingPoolEvents[]; totalPages: number; totalElements: number }>({
@@ -71,21 +65,15 @@ const borrowerSelector = selector<PoolLendingBorrower | null>({
     get: ({ get }) => get(borrowerState),
 });
 
-const borrowerEventsSelector = selector<PoolLendingBorrowerEvents[]>({
+const userEventsSelector = selector<PoolLendingUserEvents[]>({
     key: 'borrowerEventsSelector',
-    get: ({ get }) => get(borrowerEventsState),
+    get: ({ get }) => get(userEventsState),
 });
 
 const contributorSelector = selector<PoolLendingContributor | null>({
     key: 'contributorSelector',
     get: ({ get }) => get(contributorState),
 });
-
-const contributorEventsSelector = selector<PoolLendingContributorEvents[]>({
-    key: 'contributorEventsSelector',
-    get: ({ get }) => get(contributorEventsState),
-});
-
 
 const poolEventsSelector = selector<{ content: PoolLendingPoolEvents[]; totalPages: number; totalElements: number }>({
     key: 'poolEventsSelector',
@@ -108,9 +96,8 @@ const poolEventsPageSizeSelector = selector<number>({
 export const usePoolLendingValues = () => {
     return {
         borrower: useRecoilValue(borrowerSelector),
-        borrowerEvents: useRecoilValue(borrowerEventsSelector),
+        userEvents: useRecoilValue(userEventsSelector),
         contributor: useRecoilValue(contributorSelector),
-        contributorEvents: useRecoilValue(contributorEventsSelector),
         poolEvents: useRecoilValue(poolEventsSelector),
         poolEventsPage: useRecoilValue(poolEventsPageSelector),
         poolEventsPageSize: useRecoilValue(poolEventsPageSizeSelector),
@@ -123,13 +110,12 @@ export const usePoolLendingValues = () => {
 let isInitialized = false;
 
 export const usePoolLendingActions = () => {
+    const [userEvents, setUserEvents] = useRecoilState(userEventsState);
     // --- Borrower State ---
     const [borrower, setBorrower] = useRecoilState(borrowerState);
-    const [borrowerEvents, setBorrowerEvents] = useRecoilState(borrowerEventsState);
 
     // --- Contributor State ---
     const [contributor, setContributor] = useRecoilState(contributorState);
-    const [contributorEvents, setContributorEvents] = useRecoilState(contributorEventsState);
 
     // --- Pool Events State ---
     const [poolEvents, setPoolEvents] = useRecoilState(poolEventsState);
@@ -146,13 +132,13 @@ export const usePoolLendingActions = () => {
         }
     };
 
-    const fetchBorrowerEvents = async (borrowerAddress: string) => {
+    const fetchUserEvents = async (borrowerAddress: string) => {
         try {
-            const data = await getBorrowerEventsByBorrowerAddress(borrowerAddress);
-            setBorrowerEvents(data);
+            const data = await getEventsByUserAddress(borrowerAddress);
+            setUserEvents(data);
         } catch (error) {
             console.error("Error fetching borrower events:", error);
-            setBorrowerEvents([]);
+            setUserEvents([]);
         }
     };
 
@@ -163,16 +149,6 @@ export const usePoolLendingActions = () => {
         } catch (error) {
             console.error("Error fetching contributor data:", error);
             setContributor(null);
-        }
-    };
-
-    const fetchContributorEvents = async (contributorAddress: string) => {
-        try {
-            const data = await getContributorEventsByContributorAddress(contributorAddress);
-            setContributorEvents(data);
-        } catch (error) {
-            console.error("Error fetching contributor events:", error);
-            setContributorEvents([]);
         }
     };
 
@@ -198,22 +174,15 @@ export const usePoolLendingActions = () => {
     const refetchData = async (address: string) => {
        await Promise.all([
             fetchBorrower(address),
-            fetchBorrowerEvents(address),
+            fetchUserEvents(address),
             fetchContributor(address),
-            fetchContributorEvents(address),
-             fetchPoolEvents(),
+            fetchPoolEvents(),
         ])
     }
 
 
     const onLogin = async (address: string) => {
-        await Promise.all([
-        fetchBorrower(address),
-        fetchBorrowerEvents(address),
-        fetchContributor(address),
-        fetchContributorEvents(address),
-        fetchPoolEvents()
-        ]);
+        await refetchData(address);
     };
 
     const setPage = (page: number) => {
@@ -226,9 +195,8 @@ export const usePoolLendingActions = () => {
 
     const onLogout = () => {
         setBorrower(null);
-        setBorrowerEvents([]);
+        setUserEvents([]);
         setContributor(null);
-        setContributorEvents([]);
     }
 
     const executeAndRefetch = async (apiCall: () => Promise<void>, address: string | undefined) => {
@@ -276,9 +244,8 @@ export const usePoolLendingActions = () => {
 
     return {
         fetchBorrower,
-        fetchBorrowerEvents,
         fetchContributor,
-        fetchContributorEvents,
+        fetchUserEvents,
         fetchPoolEvents,
         init,
         setPage,

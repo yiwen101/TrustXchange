@@ -32,7 +32,7 @@ public class PoolLendingBorrowerEvents  {
 
 
     @Column(name = "borrower_address", nullable = false)
-     private String borrowerAddress;
+    private String borrowerAddress;
 
 
     @CreationTimestamp

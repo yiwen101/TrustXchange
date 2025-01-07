@@ -10,22 +10,11 @@ import {
   Paper,
   Button,
 } from '@mui/material';
-
-interface Transaction {
-  date: string;
-  type: string;
-  amount: number;
-  collateral: number;
-  status: string;
-}
+import { usePoolLendingValues } from '../../hooks/usePoolLendingState';
 
 function TransactionHistoryTab() {
-  const transactions: Transaction[] = [
-    { date: '01/01/24', type: 'Borrowed', amount: 500, collateral: 400, status: 'Active' },
-    { date: '12/20/23', type: 'Repaid', amount: 1000, collateral: 800, status: 'Closed' },
-    //Add more transactions
-  ];
-    
+  const { userEvents} = usePoolLendingValues();
+
   return (
     <Box>
       <TableContainer component={Paper}>
@@ -33,26 +22,32 @@ function TransactionHistoryTab() {
           <TableHead>
             <TableRow>
               <TableCell>Date</TableCell>
-              <TableCell>Type</TableCell>
+              <TableCell>Name</TableCell>
               <TableCell>Amount</TableCell>
-              <TableCell>Collateral</TableCell>
-              <TableCell>Status</TableCell>
-                <TableCell>Action</TableCell>
+                <TableCell>View transaction </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {transactions.map((transaction, index) => (
+            {userEvents && userEvents.map((transaction, index) => (
               <TableRow key={index}>
-                <TableCell>{transaction.date}</TableCell>
-                <TableCell>{transaction.type}</TableCell>
+                <TableCell>{new Date(transaction.createdAt).toLocaleDateString()}</TableCell>
+                <TableCell>{transaction.eventName}</TableCell>
                 <TableCell>${transaction.amount}</TableCell>
-                <TableCell>{transaction.collateral} XRP</TableCell>
-                <TableCell>{transaction.status}</TableCell>
                   <TableCell>
-                  <Button variant="outlined" size='small'>{transaction.status === 'Active' ? 'Repay' : 'View' }</Button>
-                  </TableCell>
+                    <Button
+                      variant="outlined"
+                      href={transaction.transactionUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      View transaction 
+                    </Button>
+                </TableCell>
               </TableRow>
             ))}
+             {!userEvents &&  <TableRow>
+                  <TableCell colSpan={5} align="center">Log in to view transaction history</TableCell>
+                </TableRow>}
           </TableBody>
         </Table>
       </TableContainer>

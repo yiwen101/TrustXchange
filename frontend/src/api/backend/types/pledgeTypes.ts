@@ -9,14 +9,6 @@ export interface PoolLendingBorrower {
     updatedAt: string;
 }
 
-export interface PoolLendingBorrowerEvents {
-    transactionHash: string;
-    transactionUrl: string;
-    eventName: string;
-    amount: number;
-    borrowerAddress: string;
-    createdAt: string;
-}
 export interface PoolLendingContributor {
     address: string;
     contributionBalance: number;
@@ -26,12 +18,13 @@ export interface PoolLendingContributor {
     updatedAt: string;
 }
 
-export interface PoolLendingContributorEvents {
+export interface PoolLendingUserEvents {
     transactionHash: string;
     transactionUrl: string;
     eventName: string;
+    type: string;
     amount: number;
-    contributorAddress: string;
+    userAddress: string;
     createdAt: string;
 }
 
