@@ -43,7 +43,7 @@ public class EventListener {
     private static final Logger logger = LoggerFactory.getLogger(EventListener.class);
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     private static final String RPC_URL = "https://rpc-evm-sidechain.xrpl.org";
-    private static final String P2P_CONTRACT_ADDRESS = "0x99006642Dc5F79eBeF9dCAf3e95bd7DA0452C58E";
+    private static final String P2P_CONTRACT_ADDRESS = "0x9bB6D34405F7014979694242F4373fe83d038827";
     private static final String PLEDGE_CONTRACT_ADDRESS = "0x73f58074490bA15216B5eE88f6Be96FbD729e6A6";
     private static final String OPTION_CONTRACT_ADDRESS = "0x82189dEeeC0310fd147f2423093f4B1F8F95BFc8";
 

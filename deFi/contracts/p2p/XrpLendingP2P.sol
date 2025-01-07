@@ -10,7 +10,7 @@ interface PriceOracle {
     function getPriceXRPUSDT() external view returns (uint256);
 }
 
-contract XrpLendingP2PV4 is AxelarExecutableWithToken {
+contract XrpLendingP2PV5 is AxelarExecutableWithToken {
     using PRBMathUD60x18 for uint256;
     // --- Constants ---
 
