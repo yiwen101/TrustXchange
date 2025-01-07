@@ -30,7 +30,14 @@ function TransactionHistoryTab() {
           <TableBody>
             {userEvents && userEvents.map((transaction, index) => (
               <TableRow key={index}>
-                <TableCell>{new Date(transaction.createdAt).toLocaleDateString()}</TableCell>
+                <TableCell>{new Date(transaction.createdAt).toLocaleString(undefined, {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  })}</TableCell>
                 <TableCell>{transaction.eventName}</TableCell>
                 <TableCell>${transaction.amount}</TableCell>
                   <TableCell>
