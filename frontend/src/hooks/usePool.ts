@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useConnectedWallet } from './useConnectedWallet';
 import { useXrpPriceValue } from './usePriceState';
-import { add_xrp_to_XRP_USDC_AMM, add_usd_to_XRP_USDC_AMM, get_user_amm_share, remove_liquidity_from_XRP_USDC_AMM, add_liquidity_to_AMM, get_user_pool_share } from '../api/xrp/amm_transection';
+import { add_xrp_to_XRP_USDC_AMM, add_usd_to_XRP_USDC_AMM, get_user_amm_share, remove_liquidity_from_XRP_USDC_AMM, add_liquidity_to_AMM, get_user_pool_share, get_wallet_balance } from '../api/xrp/amm_transection';
 import { AMMInfo, PoolStats, UserStats } from '../types/amm';
 
 interface PoolState {
@@ -25,11 +25,59 @@ export function usePool() {
 
     const { wallet } = useConnectedWallet();
     const { ammInfo } = useXrpPriceValue();
+    const [userStats, setUserStats] = useState<UserStats | null>(null);
 
+    // 获取用户池子信息
+    useEffect(() => {
+        const fetchUserStats = async () => {
+            if (!wallet || !ammInfo) return;
+            try {
+                const poolShare = await get_user_pool_share(wallet);
+                setUserStats({
+                    userXrp: poolShare.xrpAmount,
+                    userUsd: poolShare.usdAmount,
+                    sharePercentage: poolShare.poolShare,
+                    lpTokens: poolShare.lpTokens
+                });
+            } catch (error) {
+                console.error('Failed to get user stats:', error);
+            }
+        };
+        
+        fetchUserStats();
+    }, [wallet, ammInfo]);
+
+    // 添加最小接收金额保护
+    const MIN_SLIPPAGE = 0.99; // 99%
+    
+    // 添加余额验证
+    const validateBalance = async (xrpAmount: string, usdAmount: string): Promise<boolean> => {
+        if (!wallet) return false;
+        try {
+            const balance = await get_wallet_balance(wallet);
+            return Number(xrpAmount) <= balance.xrp && 
+                   Number(usdAmount) <= balance.usdc;
+        } catch (error) {
+            console.error('Failed to validate balance:', error);
+            return false;
+        }
+    };
+
+    // 添加流动性
     const addLiquidity = async (xrpAmount: string, usdAmount: string) => {
         if (!wallet || !ammInfo) return;
 
         try {
+            // 添加余额检查
+            const hasBalance = await validateBalance(xrpAmount, usdAmount);
+            if (!hasBalance) {
+                setState(prev => ({
+                    ...prev,
+                    error: 'Insufficient balance'
+                }));
+                return;
+            }
+
             setState(prev => ({ ...prev, isLoading: true, error: null }));
             
             const result = await add_liquidity_to_AMM(
@@ -37,6 +85,15 @@ export function usePool() {
                 Number(xrpAmount),
                 Number(usdAmount)
             );
+
+            // 更新用户状态
+            const poolShare = await get_user_pool_share(wallet);
+            setUserStats({
+                userXrp: poolShare.xrpAmount,
+                userUsd: poolShare.usdAmount,
+                sharePercentage: poolShare.poolShare,
+                lpTokens: poolShare.lpTokens
+            });
 
             setState(prev => ({
                 ...prev,
@@ -56,12 +113,23 @@ export function usePool() {
         }
     };
 
-    const removeLiquidity = async (percentage: number) => {
+    // 移除流动性
+    const removeLiquidity = async (lpTokenAmount: string) => {
         if (!wallet || !ammInfo) return;
 
         try {
             setState(prev => ({ ...prev, isLoading: true, error: null }));
-            await remove_liquidity_from_XRP_USDC_AMM(wallet, percentage);
+            await remove_liquidity_from_XRP_USDC_AMM(wallet, lpTokenAmount);
+            
+            // 更新用户状态
+            const poolShare = await get_user_pool_share(wallet);
+            setUserStats({
+                userXrp: poolShare.xrpAmount,
+                userUsd: poolShare.usdAmount,
+                sharePercentage: poolShare.poolShare,
+                lpTokens: poolShare.lpTokens
+            });
+
             setState(prev => ({ ...prev, success: true }));
         } catch (error) {
             setState(prev => ({
@@ -126,19 +194,6 @@ export function usePool() {
         // 计算用户在池子中的份额百分比
         return 0.1; // 示例：10%
     };
-
-    const [userStats, setUserStats] = useState<UserStats | null>(null);
-
-    useEffect(() => {
-        const fetchUserStats = async () => {
-            const stats = await getUserStats();
-            setUserStats(stats);
-        };
-        
-        if (wallet && ammInfo) {
-            fetchUserStats();
-        }
-    }, [wallet, ammInfo, getUserStats]);
 
     const handleXrpAmountChange = useCallback((value: string) => {
         if (!ammInfo) return;

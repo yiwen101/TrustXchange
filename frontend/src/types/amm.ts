@@ -20,4 +20,20 @@ export interface UserStats {
     userXrp: number;
     userUsd: number;
     sharePercentage: number;
+}
+
+export interface TransactionResult {
+    success: boolean;
+    hash?: string;
+    error?: string;
+}
+
+export interface PoolTransaction extends TransactionResult {
+    lpTokens?: string;
+    sharePercentage?: number;
+}
+
+export interface MinReceiveAmounts {
+    xrp: string;
+    usd: string;
 } 
