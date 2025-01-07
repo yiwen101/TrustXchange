@@ -105,7 +105,7 @@ function prepareLiquidateLoanPayload(
     return ethers.AbiCoder.defaultAbiCoder().encode(["string", "bytes"], [command, params]);
 }
 
-export async function createLendingRequest(
+export async function createLendRequest(
     user: xrpl.Wallet,
     
     minCollateralRatio: number,
@@ -125,7 +125,7 @@ export async function createLendingRequest(
     await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
 }
 
-export async function createBorrowingRequest(
+export async function createBorrowRequest(
     user: xrpl.Wallet,
     
     amountToBorrowUSD: number,
@@ -147,7 +147,7 @@ export async function createBorrowingRequest(
     await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
 }
 
-export async function acceptLendingRequest(
+export async function acceptLendRequest(
     user: xrpl.Wallet,
     
     requestId: number,
@@ -158,7 +158,7 @@ export async function acceptLendingRequest(
     await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
 }
 
-export async function acceptBorrowingRequest(
+export async function acceptBorrowRequest(
     user: xrpl.Wallet,
     
     requestId: number,
@@ -180,24 +180,22 @@ export async function repayLoan(
     await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
 }
 
-export async function cancelLendingRequest(
+export async function cancelLendRequest(
     user: xrpl.Wallet,
     
     requestId: number,
-    currencyAmount: xrpl.IssuedCurrencyAmount | string
 ): Promise<void> {
     const payloadStr = prepareCancelLendingRequestPayload(requestId);
-    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
+    await gmp_and_call_backend(user, contractAddress, payloadStr);
 }
 
-export async function cancelBorrowingRequest(
+export async function cancelBorrowRequest(
     user: xrpl.Wallet,
     
     requestId: number,
-    currencyAmount: xrpl.IssuedCurrencyAmount | string
 ): Promise<void> {
     const payloadStr = prepareCancelBorrowingRequestPayload(requestId);
-    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
+    await gmp_and_call_backend(user, contractAddress, payloadStr);
 }
 
 export async function liquidateLoan(

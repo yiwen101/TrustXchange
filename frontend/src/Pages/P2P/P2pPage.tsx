@@ -2,6 +2,7 @@ import * as React from 'react';
 import P2pTable from './P2pTable';
 import { Box, Tab, Tabs } from '@mui/material';
 import P2pForm from './P2pForm';
+import P2pCardGrid from './P2pGrids';
 // tabs: market, form, my orders
 
 const P2pPage: React.FC = () => {
@@ -29,8 +30,8 @@ const P2pPage: React.FC = () => {
           variant="fullWidth"
           centered
         >
-          <Tab label="Full Table" />
-          <Tab label="Smart Order" />
+          <Tab label="Table View" />
+          <Tab label="Card View" />
         </Tabs>
       </Box>
       {activeTab === 0 && (
@@ -40,7 +41,7 @@ const P2pPage: React.FC = () => {
       )}
       {activeTab === 1 && (
         <Box p={2}>
-          <P2pForm />
+          <P2pCardGrid />
         </Box>
       )}
     </Box>
