@@ -14,17 +14,17 @@ export interface P2pBorrowingRequest {
     canceledBySystem: boolean;
     createdAt: string;
     updatedAt: string;
-}
-
-export interface P2pBorrowingRequestEvent {
+  }
+  
+  export interface P2pBorrowingRequestEvent {
     transactionHash: string;
     transactionUrl: string;
     eventName: string;
     requestId: number;
     createdAt: string;
-}
-
-export interface P2pLendingRequest {
+  }
+  
+  export interface P2pLendingRequest {
     requestId: number;
     lender: string;
     amountToLendUsd: number;
@@ -38,17 +38,17 @@ export interface P2pLendingRequest {
     canceledBySystem: boolean;
     createdAt: string;
     updatedAt: string;
-}
-
-export interface P2pLendingRequestEvent {
+  }
+  
+  export interface P2pLendingRequestEvent {
     transactionHash: string;
     transactionUrl: string;
     eventName: string;
     requestId: number;
     createdAt: string;
-}
-
-export interface P2pLoan {
+  }
+  
+  export interface P2pLoan {
     loanId: number;
     lender: string;
     borrower: string;
@@ -64,13 +64,24 @@ export interface P2pLoan {
     borrowRequestId: number;
     createdAt: string;
     updatedAt: string;
-}
-
-export interface P2pLoanEvent {
+  }
+  
+  export interface P2pLoanEvent {
     transactionHash: string;
     transactionUrl: string;
     eventName: string;
     amount: number;
     loanId: number;
     createdAt: string;
-}
+  }
+  
+  export interface AllRequestsResponse {
+    borrowRequests: P2pBorrowingRequest[];
+    lendRequests: P2pLendingRequest[];
+  }
+
+  export interface AllEventsResponse {
+    loanEvents: P2pLoanEvent[];
+    borrowRequestEvents: P2pBorrowingRequestEvent[];
+    lendRequestEvents: P2pLendingRequestEvent[];
+  }

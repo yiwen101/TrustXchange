@@ -4,131 +4,112 @@ import com.trustXchange.entities.p2p.*;
 import com.trustXchange.repository.p2p.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.sql.Timestamp;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
-
+import java.util.stream.Stream;
 
 @RestController
-@RequestMapping("api/p2p") // Base path for all p2p endpoints
+@RequestMapping("api/p2p")
 public class P2pController {
 
-    // --------------------- Borrowing Request Endpoints ---------------------
+
     @Autowired
     private P2pBorrowingRequestRepository p2pBorrowingRequestRepository;
 
-    @GetMapping("/borrowing-requests")
-    public ResponseEntity<List<P2pBorrowingRequest>> getAllBorrowingRequests() {
-        return ResponseEntity.ok(p2pBorrowingRequestRepository.findAll());
-    }
-
-    @GetMapping("/borrowing-requests/{requestId}")
-    public ResponseEntity<P2pBorrowingRequest> getBorrowingRequestByRequestId(@PathVariable Integer requestId) {
-        Optional<P2pBorrowingRequest> borrowingRequest = p2pBorrowingRequestRepository.findById(requestId);
-        return borrowingRequest.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/borrowing-requests/borrower/{borrower}")
-    public ResponseEntity<List<P2pBorrowingRequest>> getBorrowingRequestsByBorrower(@PathVariable String borrower) {
-        return ResponseEntity.ok(p2pBorrowingRequestRepository.findByBorrower(borrower));
-    }
-
-
-    // --------------------- Borrowing Request Event Endpoints ---------------------
-    @Autowired
-    private P2pBorrowingRequestEventRepository p2pBorrowingRequestEventRepository;
-
-    @GetMapping("/borrowing-request-events/{requestId}")
-    public ResponseEntity<List<P2pBorrowingRequestEvent>> getBorrowingRequestEventsByRequestId(@PathVariable Integer requestId) {
-        return ResponseEntity.ok(p2pBorrowingRequestEventRepository.findAll().stream()
-                .filter(borrowingRequestEvent -> borrowingRequestEvent.getRequestId().equals(requestId))
-                .collect(Collectors.toList()));
-    }
-
-    // --------------------- Lending Request Endpoints ---------------------
     @Autowired
     private P2pLendingRequestRepository p2pLendingRequestRepository;
 
-    @GetMapping("/lending-requests")
-    public ResponseEntity<List<P2pLendingRequest>> getAllLendingRequests() {
-        return ResponseEntity.ok(p2pLendingRequestRepository.findAll());
-    }
-
-    @GetMapping("/lending-requests/{requestId}")
-    public ResponseEntity<P2pLendingRequest> getLendingRequestById(@PathVariable Integer requestId) {
-        Optional<P2pLendingRequest> lendingRequest = p2pLendingRequestRepository.findById(requestId);
-        return lendingRequest.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/lending-requests/lender/{lender}")
-    public ResponseEntity<List<P2pLendingRequest>> getLendingRequestsByLender(@PathVariable String lender) {
-        return ResponseEntity.ok(p2pLendingRequestRepository.findByLender(lender));
-    }
-
-
-    // --------------------- Lending Request Event Endpoints ---------------------
+    @Autowired
+    private P2pLoanRepository p2pLoanRepository;
+    @Autowired
+    private P2pLoanEventRepository p2pLoanEventRepository;
+    @Autowired
+    private P2pBorrowingRequestEventRepository p2pBorrowingRequestEventRepository;
     @Autowired
     private P2pLendingRequestEventRepository p2pLendingRequestEventRepository;
 
-    @GetMapping("/lending-request-events/{requestId}")
-    public ResponseEntity<List<P2pLendingRequestEvent>> getLendingRequestEventsByRequestId(@PathVariable Integer requestId) {
-        return ResponseEntity.ok(p2pLendingRequestEventRepository.findAll().stream()
-                .filter(lendingRequestEvent -> lendingRequestEvent.getRequestId().equals(requestId))
-                .collect(Collectors.toList()));
+    // 1. Get all borrow and lend requests
+    @GetMapping("/requests")
+    public ResponseEntity<AllRequestsResponse> getAllRequests() {
+        List<P2pBorrowingRequest> borrowRequests = p2pBorrowingRequestRepository.findAll();
+        List<P2pLendingRequest> lendRequests = p2pLendingRequestRepository.findAll();
+        return ResponseEntity.ok(new AllRequestsResponse(borrowRequests, lendRequests));
     }
 
-    // --------------------- Loan Endpoints ---------------------
-    @Autowired
-    private P2pLoanRepository p2pLoanRepository;
-
-    @GetMapping("/loans/{loanId}")
-    public ResponseEntity<P2pLoan> getLoanById(@PathVariable Integer loanId) {
-        Optional<P2pLoan> loan = p2pLoanRepository.findById(loanId);
-        return loan.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    // 2. Get all loans by address (borrower or lender)
+    @GetMapping("/loans/address/{address}")
+    public ResponseEntity<List<P2pLoan>> getLoansByAddress(@PathVariable String address) {
+        List<P2pLoan> loans = p2pLoanRepository.findAll().stream()
+                .filter(loan -> loan.getBorrower().equalsIgnoreCase(address) || loan.getLender().equalsIgnoreCase(address))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(loans);
     }
 
-    @GetMapping("/loans/borrower/{borrower}")
-    public ResponseEntity<List<P2pLoan>> getLoansByBorrower(@PathVariable String borrower) {
-        return ResponseEntity.ok(p2pLoanRepository.findByBorrower(borrower));
+    // 3. Get all events related to an address
+    @GetMapping("/events/address/{address}")
+    public ResponseEntity<AllEventsResponse> getEventsByAddress(@PathVariable String address) {
+        List<P2pLoanEvent> loanEvents = p2pLoanEventRepository.findAll().stream().filter(loanEvent -> {
+            P2pLoan loan = loanEvent.getP2pLoan();
+             return loan !=null && (loan.getBorrower().equalsIgnoreCase(address) || loan.getLender().equalsIgnoreCase(address));
+        }).collect(Collectors.toList());
+        List<P2pBorrowingRequestEvent> borrowRequestEvents = p2pBorrowingRequestEventRepository.findAll().stream().filter(borrowingRequestEvent -> {
+              P2pBorrowingRequest request = borrowingRequestEvent.getP2pBorrowingRequest();
+            return request !=null && request.getBorrower().equalsIgnoreCase(address);
+        }).collect(Collectors.toList());
+        List<P2pLendingRequestEvent> lendRequestEvents = p2pLendingRequestEventRepository.findAll().stream().filter(lendingRequestEvent -> {
+            P2pLendingRequest request = lendingRequestEvent.getP2pLendingRequest();
+            return request!=null && request.getLender().equalsIgnoreCase(address);
+        }).collect(Collectors.toList());
+
+
+        return ResponseEntity.ok(new AllEventsResponse(loanEvents, borrowRequestEvents, lendRequestEvents));
     }
 
-    @GetMapping("/loans/lender/{lender}")
-    public ResponseEntity<List<P2pLoan>> getLoansByLender(@PathVariable String lender) {
-        return ResponseEntity.ok(p2pLoanRepository.findByLender(lender));
+
+
+
+    // DTO classes
+    static class AllRequestsResponse {
+        private List<P2pBorrowingRequest> borrowRequests;
+        private List<P2pLendingRequest> lendRequests;
+
+        public AllRequestsResponse(List<P2pBorrowingRequest> borrowRequests, List<P2pLendingRequest> lendRequests) {
+            this.borrowRequests = borrowRequests;
+            this.lendRequests = lendRequests;
+        }
+
+        public List<P2pBorrowingRequest> getBorrowRequests() {
+            return borrowRequests;
+        }
+
+        public List<P2pLendingRequest> getLendRequests() {
+            return lendRequests;
+        }
     }
 
-    @GetMapping("/loans/lendRequest/{lendRequestId}")
-    public ResponseEntity<List<P2pLoan>> getLoansByLendRequestId(@PathVariable Integer lendRequestId) {
-        return ResponseEntity.ok(p2pLoanRepository.findAll().stream()
-                .filter(loan -> lendRequestId.equals(loan.getLendRequestId()))
-                .collect(Collectors.toList()));
+    static class AllEventsResponse{
+        private List<P2pLoanEvent> loanEvents;
+        private List<P2pBorrowingRequestEvent> borrowRequestEvents;
+        private List<P2pLendingRequestEvent> lendRequestEvents;
+        public AllEventsResponse(List<P2pLoanEvent> loanEvents, List<P2pBorrowingRequestEvent> borrowRequestEvents, List<P2pLendingRequestEvent> lendRequestEvents){
+            this.loanEvents=loanEvents;
+            this.borrowRequestEvents = borrowRequestEvents;
+            this.lendRequestEvents = lendRequestEvents;
+        }
+
+        public List<P2pLoanEvent> getLoanEvents() {
+            return loanEvents;
+        }
+
+        public List<P2pBorrowingRequestEvent> getBorrowRequestEvents() {
+            return borrowRequestEvents;
+        }
+
+        public List<P2pLendingRequestEvent> getLendRequestEvents() {
+            return lendRequestEvents;
+        }
     }
-
-    @GetMapping("/loans/borrowRequest/{borrowRequestId}")
-    public ResponseEntity<List<P2pLoan>> getLoansByBorrowRequestId(@PathVariable Integer borrowRequestId) {
-        return ResponseEntity.ok(p2pLoanRepository.findAll().stream()
-                .filter(loan -> borrowRequestId.equals(loan.getBorrowRequestId()))
-                .collect(Collectors.toList()));
-    }
-
-    // --------------------- Loan Event Endpoints ---------------------
-    @Autowired
-    private P2pLoanEventRepository p2pLoanEventRepository;
-
-    @GetMapping("/loan-events/loan/{loanId}")
-    public ResponseEntity<List<P2pLoanEvent>> getLoanEventsByLoanId(@PathVariable Integer loanId) {
-      return   ResponseEntity.ok(p2pLoanEventRepository.findAll().stream().
-              filter(loanEvent -> loanEvent.getLoanId().equals(loanId)).
-              collect(Collectors.toList()));
-    }
-
 }

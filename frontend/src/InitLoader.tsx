@@ -9,15 +9,20 @@ import P2pPage from './Pages/P2P/P2pPage';
 import SwapPage from './Pages/Swap/SwapPage';
 import FuturePage from './Pages/Future/FuturePage';
 import { useXrpPriceState} from './hooks/usePriceState';
-import Dev from './Dev';
+import Dev from './Pages/Future/Dev';
 import PledgePage from './Pages/Pledge/PledgePage';
-
+import P2pMarketplace from './Pages/P2P_new/P2pMarketplace';
+import {  useP2pActions } from "./hooks/useP2pLendingState";
 
 
 const InitLoader = () => {
+    const {initP2p} = useP2pActions();
     const { init} = useXrpPriceState(); 
     const _init = useCallback(async () => {
-      await init()
+      Promise.all([
+        init(),
+        initP2p(),
+      ]);
     }, []);
 
     useEffect(() => {
@@ -33,7 +38,7 @@ const InitLoader = () => {
               <Route path="/pool" element={<PoolPage />} />
               <Route path="/pledge" element={<PledgePage />} />
               <Route path="/future" element={<FuturePage />} />
-              <Route path="/dev" element={<Dev />} />
+              <Route path="/dev" element={<P2pMarketplace />} />
               <Route path="/p2p" element={<P2pPage />} />
               <Route path="/swap" element={<SwapPage />} />
             </Routes>
