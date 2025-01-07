@@ -47,16 +47,17 @@ async function gmp(user: xrpl.Wallet, contractAddress:string, payloadStr:string,
 
 export async function gmp_and_call_backend(user: xrpl.Wallet, contractAddress:string, payloadStr:string,currencyAmount:xrpl.IssuedCurrencyAmount | string = "0"): Promise<void> {
     const callback = async (response: string) => {
-        const maxRetries = 3;
-        const sleepTime = 5000;
+        const maxRetries = 10;
+        const oneSecond = 1000;
         const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
         for (let i = 0; i < maxRetries; i++) {
+            await sleep(oneSecond);
             const result = await callGmp({payloadString: payloadStr, transactionHash: response});
             if (result.success) {
+                await sleep(oneSecond*5);
                 return;
             }
-            console.log(`GMP call to backend failed: ${result.message}`);
-            await sleep(sleepTime);
+            console.log(`GMP call to backend failed: ${result.message}`); 
         }
     }
     return gmp(user, contractAddress, payloadStr, currencyAmount, callback);

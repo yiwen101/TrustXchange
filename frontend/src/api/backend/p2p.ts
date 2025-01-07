@@ -1,11 +1,8 @@
 import axios from 'axios';
 import {
-    P2pBorrowingRequest,
-    P2pBorrowingRequestEvent,
-    P2pLendingRequest,
-    P2pLendingRequestEvent,
     P2pLoan,
-    P2pLoanEvent
+    AllRequestsResponse,
+    AllEventsResponse
 } from './types/p2pTypes';
 
 import {BACKEND_URL} from '../../const.ts';
@@ -17,82 +14,19 @@ const api = axios.create({
     },
 });
 
-// --- Borrowing Request Endpoints ---
-export const getAllBorrowingRequests = async (): Promise<P2pBorrowingRequest[]> => {
-    const response = await api.get('/api/p2p/borrowing-requests');
+
+export const getAllRequests = async (): Promise<AllRequestsResponse> => {
+    const response = await api.get<AllRequestsResponse>('/api/p2p/requests');
     return response.data;
 };
 
-export const getBorrowingRequestByRequestId = async (requestId: number): Promise<P2pBorrowingRequest> => {
-    const response = await api.get(`/api/p2p/borrowing-requests/${requestId}`);
-    return response.data;
-};
-
-export const getBorrowingRequestsByBorrower = async (borrower: string): Promise<P2pBorrowingRequest[]> => {
-    const response = await api.get(`/api/p2p/borrowing-requests/borrower/${borrower}`);
+export const getLoansByAddress = async (address: string): Promise<P2pLoan[]> => {
+    const response = await api.get<P2pLoan[]>(`/api/p2p/loans/address/${address}`);
     return response.data;
 };
 
 
-// --- Borrowing Request Event Endpoints ---
-export const getBorrowingRequestEventsByRequestId = async (requestId: number): Promise<P2pBorrowingRequestEvent[]> => {
-    const response = await api.get(`/api/p2p/borrowing-request-events/${requestId}`);
-    return response.data;
-};
-
-
-// --- Lending Request Endpoints ---
-export const getAllLendingRequests = async (): Promise<P2pLendingRequest[]> => {
-    const response = await api.get('/api/p2p/lending-requests');
-    return response.data;
-};
-
-export const getLendingRequestById = async (requestId: number): Promise<P2pLendingRequest> => {
-    const response = await api.get(`/api/p2p/lending-requests/${requestId}`);
-    return response.data;
-};
-
-export const getLendingRequestsByLender = async (lender: string): Promise<P2pLendingRequest[]> => {
-    const response = await api.get(`/api/p2p/lending-requests/lender/${lender}`);
-    return response.data;
-};
-
-
-// --- Lending Request Event Endpoints ---
-export const getLendingRequestEventsByRequestId = async (requestId: number): Promise<P2pLendingRequestEvent[]> => {
-    const response = await api.get(`/api/p2p/lending-request-events/${requestId}`);
-    return response.data;
-};
-
-
-// --- Loan Endpoints ---
-export const getLoanById = async (loanId: number): Promise<P2pLoan> => {
-    const response = await api.get(`/api/p2p/loans/${loanId}`);
-    return response.data;
-};
-
-export const getLoansByBorrower = async (borrower: string): Promise<P2pLoan[]> => {
-    const response = await api.get(`/api/p2p/loans/borrower/${borrower}`);
-    return response.data;
-};
-
-export const getLoansByLender = async (lender: string): Promise<P2pLoan[]> => {
-    const response = await api.get(`/api/p2p/loans/lender/${lender}`);
-    return response.data;
-};
-export const getLoansByLendRequestId = async (lendRequestId: number): Promise<P2pLoan[]> => {
-    const response = await api.get(`/api/p2p/loans/lendRequest/${lendRequestId}`);
-    return response.data;
-};
-
-export const getLoansByBorrowRequestId = async (borrowRequestId: number): Promise<P2pLoan[]> => {
-    const response = await api.get(`/api/p2p/loans/borrowRequest/${borrowRequestId}`);
-    return response.data;
-};
-
-
-// --- Loan Event Endpoints ---
-export const getLoanEventsByLoanId = async (loanId: number): Promise<P2pLoanEvent[]> => {
-    const response = await api.get(`/api/p2p/loan-events/loan/${loanId}`);
+export const getEventsByAddress = async (address: string): Promise<AllEventsResponse> => {
+    const response = await api.get<AllEventsResponse>(`/api/p2p/events/address/${address}`);
     return response.data;
 };

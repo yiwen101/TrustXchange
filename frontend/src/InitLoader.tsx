@@ -12,13 +12,17 @@ import { useXrpPriceState} from './hooks/usePriceState';
 import Dev from './Pages/Future/Dev';
 import PledgePage from './Pages/Pledge/PledgePage';
 import P2pMarketplace from './Pages/P2P_new/P2pMarketplace';
-
+import {  useP2pActions } from "./hooks/useP2pLendingState";
 
 
 const InitLoader = () => {
+    const {initP2p} = useP2pActions();
     const { init} = useXrpPriceState(); 
     const _init = useCallback(async () => {
-      await init()
+      Promise.all([
+        init(),
+        initP2p(),
+      ]);
     }, []);
 
     useEffect(() => {

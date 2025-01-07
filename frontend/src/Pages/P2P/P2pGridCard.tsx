@@ -11,8 +11,8 @@ import {
 import {
     P2pBorrowingRequest,
     P2pLendingRequest
-} from './P2pGrids';
-import { renderType, renderStatus, alertSelected } from './P2pGrids';
+} from "../../api/backend/types/p2pTypes";
+import { useConnectedWalletValues } from '../../hooks/useConnectedWallet';
 
 interface RequestCardProps {
     row: P2pBorrowingRequest | P2pLendingRequest;
@@ -62,13 +62,14 @@ function renderType(type: "Borrow" | "Lend") {
   }
 
 const RequestCard: React.FC<RequestCardProps> = ({ row }) => {
+    const {connectedWallet} = useConnectedWalletValues();
+    const ownerAddress = (row as P2pBorrowingRequest).borrower || (row as P2pLendingRequest).lender;
     const isBorrowRequest = (row as P2pBorrowingRequest).borrower !== undefined;
     const type = isBorrowRequest ? "Borrow" : "Lend";
     const amountToBorrowUsd = isBorrowRequest ? (row as P2pBorrowingRequest).amountToBorrowUsd : 0;
     const amountBorrowedUsd = isBorrowRequest ? (row as P2pBorrowingRequest).amountBorrowedUsd : 0;
     const amountToLendUsd = isBorrowRequest ? 0 : (row as P2pLendingRequest).amountToLendUsd;
     const amountLendedUsd = isBorrowRequest ? 0 : (row as P2pLendingRequest).amountLendedUsd;
-     const initialCollateralAmountXrp = isBorrowRequest ? (row as P2pBorrowingRequest).initialCollateralAmountXrp : 0;
     const minimalPartialFill = isBorrowRequest ? (row as P2pBorrowingRequest).minimalPartialFill : (row as P2pLendingRequest).minimalPartialFill;
 
 
@@ -83,7 +84,7 @@ const RequestCard: React.FC<RequestCardProps> = ({ row }) => {
             : amountLendedUsd > 0
                 ? "Partial Filled"
                 : "Not Filled"));
-     const collateralRatio = isBorrowRequest ? ((initialCollateralAmountXrp / amountToBorrowUsd) * 100).toFixed(2) : ((amountToLendUsd / initialCollateralAmountXrp) * 100).toFixed(2);
+     const collateralRatio = isBorrowRequest ? (row as P2pBorrowingRequest).maxCollateralRatio : (row as P2pLendingRequest).minCollateralRatio;
 
      const amountDisplay = status === "Partial Filled"
           ? (isBorrowRequest
@@ -122,9 +123,16 @@ const RequestCard: React.FC<RequestCardProps> = ({ row }) => {
                         Minimal Partial Fill: {minimalPartialFill}
                     </Typography>
                     <Stack display="flex" flexDirection="row" justifyContent="flex-end" mt={2}>
+                        {connectedWallet && connectedWallet.classicAddress == ownerAddress &&(
                         <Button variant="contained" color="primary" onClick={() => alertSelected(row)}>
-                            Select
+                           Cancel
                         </Button>
+                        )}
+                        {connectedWallet && connectedWallet.classicAddress != ownerAddress && (
+                            <Button variant="contained" color="primary" onClick={() => alertSelected(row)}>
+                               Accept
+                            </Button>
+                        )}
                     </Stack>
                 </CardContent>
             </Card>

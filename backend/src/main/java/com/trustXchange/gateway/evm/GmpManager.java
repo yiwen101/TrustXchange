@@ -41,7 +41,7 @@ public class GmpManager {
             ExecuteParams executeParams = inputs.getExecuteParams();
             // wait for 3 seconds before second call, as sometime gateway will block the second call even though first is approved
             service.approveContractCall(input)
-                    .thenCompose(receipt -> sleep(3000).thenApply(v -> receipt))
+                    .thenCompose(receipt -> sleep(1500).thenApply(v -> receipt))
                     .thenCompose(receipt -> service.callContract(executeParams, destinationAddress))
                     .thenAccept(receipt -> {
                         System.out.println("callContract Transaction Receipt: " + receipt.getTransactionReceipt().get());
@@ -57,7 +57,7 @@ public class GmpManager {
             String input = inputs.getInputData();
             ExecuteWithTokenParams executeWithTokenParams = inputs.getExecuteWithTokenParams();
             service.approveContractCall(input)
-                    .thenCompose(receipt -> sleep(3000).thenApply(v -> receipt))
+                    .thenCompose(receipt -> sleep(1500).thenApply(v -> receipt))
                     .thenCompose(receipt -> service.callContractWithMint(executeWithTokenParams, destinationAddress))
                     .thenAccept(receipt -> {
                         System.out.println("callContractWithMint Transaction Receipt: " + receipt.getTransactionReceipt().get());

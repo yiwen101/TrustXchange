@@ -109,7 +109,7 @@ function getP2PLendingRequestGMPParams() {
     const liquidationThreshold = 110;
     const desiredInterestRate = 10;
     const paymentDuration = 30;
-    const minimalPartialFill = 100;
+    const minimalPartialFill = 99;
     const payloadBytes = prepareLendingRequestPayload(
         minCollateralRatio,
         liquidationThreshold,

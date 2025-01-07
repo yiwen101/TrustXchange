@@ -7,6 +7,8 @@ import {
   DialogActions,
   TextField,
 } from '@mui/material';
+import { useP2pActions } from '../../hooks/useP2pLendingState';
+import { useConnectedWalletValues } from '../../hooks/useConnectedWallet';
 
 interface NewRequestFormProps {
     open: boolean;
@@ -14,21 +16,44 @@ interface NewRequestFormProps {
 }
 
 const NewRequestForm: React.FC<NewRequestFormProps> = ({open, onClose}: NewRequestFormProps) => {
+    const {handleCreateBorrowRequest, handleCreateLendRequest} = useP2pActions();
+    const {connectedWallet} = useConnectedWalletValues();
     const [isLending, setIsLending] = useState(false);
     const [amount, setAmount] = useState('');
     const [collateralRatio, setCollateralRatio] = useState('150');
     const [interestRate, setInterestRate] = useState('10');
     const [duration, setDuration] = useState('');
     const [partialFill, setPartialFill] = useState('');
+    const [liquidationThreshold, setLiquidationThreshold] = useState('100');
     
-    const handleSubmit = () => {
-        // TODO: Implement the actual submission logic.
-        // You'll likely want to use `fetch` or a library like `axios` 
-        // to send this data to your backend.
+    const handleSubmit = async () => {
         console.log("Form Submitted:",{
           amount, collateralRatio, interestRate, duration, partialFill, isLending
         });
-        if (onClose)
+        if (isLending) {
+            await handleCreateLendRequest(
+                connectedWallet!,
+                 Math.floor(parseFloat(amount)),
+                 Math.floor(parseFloat(collateralRatio)),
+                parseFloat(liquidationThreshold),
+                Math.floor(parseFloat(interestRate)),
+                parseInt(duration),
+                Math.floor(parseFloat(partialFill)),
+                connectedWallet!.classicAddress,
+            );
+        } else {
+            await handleCreateBorrowRequest(
+                connectedWallet!,
+                Math.floor(parseFloat(amount)),
+                Math.floor(parseFloat(partialFill) * parseFloat(collateralRatio) / 100),
+                Math.floor(parseFloat(collateralRatio)),
+                parseInt(liquidationThreshold),
+                100 + Math.floor(parseFloat(interestRate)),
+                parseInt(duration),
+                Math.floor(parseFloat(interestRate)),
+                connectedWallet!.classicAddress,
+            );
+        }
         onClose(); 
     };
 
