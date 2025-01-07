@@ -11,17 +11,12 @@ import {
 import RequestCard from "./P2pGridCard";
 import RequestButton from "./P2pForm";
 import { useP2pValues, useP2pActions } from "../../hooks/useP2pLendingState";
+// Interfaces
+
 import {
     P2pBorrowingRequest,
     P2pLendingRequest,
 } from "../../api/backend/types/p2pTypes";
-import {
-    createFilter,
-    numberCompare,
-    stringCompare,
-    FilterFunction,
-} from './filters'
-
 
 type RequestType = P2pBorrowingRequest | P2pLendingRequest;
 
@@ -29,137 +24,91 @@ type RequestType = P2pBorrowingRequest | P2pLendingRequest;
 const P2pCardGrid: React.FC = () => {
   const { allRequests } = useP2pValues();
   const { fetchAllRequests } = useP2pActions();
-    const myName = "Bob"; //replace with your actual name
-    const [showOnlyMe, setShowOnlyMe] = useState<string>("any");
-    const [requestTypeFilter, setRequestTypeFilter] = useState("borrow/lend");
-    const [statusFilter, setStatusFilter] = useState("Not Filled/Partial Filled");
-    const [durationCondition, setDurationCondition] = useState("any");
-    const [durationFilter, setDurationFilter] = useState("");
-    const [interestRateCondition, setInterestRateCondition] = useState("any");
-    const [interestRateFilter, setInterestRateFilter] = useState("");
-    const [collateralCondition, setCollateralCondition] = useState("any");
-    const [collateralFilter, setCollateralFilter] = useState("");
 
-  useEffect(() => {
-    fetchAllRequests();
-  }, [fetchAllRequests]);
+   useEffect(() => {
+        fetchAllRequests();
+    }, [fetchAllRequests]);
 
 
+  const myName = "Bob"; //replace with your actual name
+  const [showOnlyMe, setShowOnlyMe] = useState<string>("any");
+  const [requestTypeFilter, setRequestTypeFilter] = useState("borrow/lend");
+  const [statusFilter, setStatusFilter] = useState("Not Filled/Partial Filled");
+  const [durationCondition, setDurationCondition] = useState("any");
+  const [durationFilter, setDurationFilter] = useState("");
+  const [interestRateCondition, setInterestRateCondition] = useState("any");
+  const [interestRateFilter, setInterestRateFilter] = useState("");
+  const [collateralCondition, setCollateralCondition] = useState("any");
+  const [collateralFilter, setCollateralFilter] = useState("");
 
+  // Combine requests into a single array for filtering
     const requestRows: RequestType[] = allRequests
     ? [...allRequests.borrowRequests, ...allRequests.lendRequests]
     : [];
 
-    const createTypeFilter = (): FilterFunction =>
-        createFilter<string>(
-            {
-                value: requestTypeFilter,
-                condition: "any"
-            },
-            (row) => {
-                const isBorrowRequest = (row as P2pBorrowingRequest).borrower !== undefined;
-                return isBorrowRequest ? "Borrow" : "Lend";
-            },
-            stringCompare
-        );
-    const createNameFilter = (): FilterFunction =>
-        createFilter<string>(
-            {
-                value: showOnlyMe,
-                condition: "any"
-            },
-            (row) => {
-                const isBorrowRequest = (row as P2pBorrowingRequest).borrower !== undefined;
-                const borrower = isBorrowRequest ? (row as P2pBorrowingRequest).borrower : '_';
-                const lender = isBorrowRequest ? '_' : (row as P2pLendingRequest).lender;
-               return (showOnlyMe === "any" ||
-                (showOnlyMe === "true" && (borrower === myName || lender === myName)) ||
-                (showOnlyMe === "false" && borrower !== myName && lender !== myName)) ? "" : "false";
 
-            },
-            stringCompare
-        );
+  const filteredRows = requestRows.filter((row) => {
+      const isBorrowRequest = (row as P2pBorrowingRequest).borrower !== undefined;
+      const borrower = isBorrowRequest ? (row as P2pBorrowingRequest).borrower : '_';
+      const lender = isBorrowRequest ? '_' : (row as P2pLendingRequest).lender;
+      const type = isBorrowRequest ? "Borrow" : "Lend";
+      const duration = isBorrowRequest ? (row as P2pBorrowingRequest).paymentDuration : (row as P2pLendingRequest).paymentDuration;
+      const interestRate = isBorrowRequest ? (row as P2pBorrowingRequest).desiredInterestRate : (row as P2pLendingRequest).desiredInterestRate;
+      const initialCollateralAmountXrp = isBorrowRequest ? (row as P2pBorrowingRequest).initialCollateralAmountXrp : 0;
+      const minCollateralRatio = isBorrowRequest ? 0 : (row as P2pLendingRequest).minCollateralRatio;
+      const maxCollateralRatio = isBorrowRequest ? (row as P2pBorrowingRequest).maxCollateralRatio : 0;
+      const amountToBorrowUsd = isBorrowRequest ? (row as P2pBorrowingRequest).amountToBorrowUsd : 0;
+      const amountBorrowedUsd = isBorrowRequest ? (row as P2pBorrowingRequest).amountBorrowedUsd : 0;
+      const amountToLendUsd = isBorrowRequest ? 0 : (row as P2pLendingRequest).amountToLendUsd;
+      const amountLendedUsd = isBorrowRequest ? 0 : (row as P2pLendingRequest).amountLendedUsd;
+      const collateral = isBorrowRequest ? maxCollateralRatio : minCollateralRatio;
+       const status = row.canceled
+            ? "Cancelled"
+            : (isBorrowRequest ? (amountBorrowedUsd === amountToBorrowUsd
+                    ? "Filled"
+                    : amountBorrowedUsd > 0
+                        ? "Partial Filled"
+                        : "Not Filled") : (amountLendedUsd === amountToLendUsd
+                ? "Filled"
+                : amountLendedUsd > 0
+                    ? "Partial Filled"
+                    : "Not Filled"));
 
-
-    const createStatusFilter = (): FilterFunction =>
-        createFilter<string, any>(
-            {
-                value: statusFilter,
-                condition: "any"
-            },
-            (row) => {
-                const isBorrowRequest = (row as P2pBorrowingRequest).borrower !== undefined;
-                const amountToBorrowUsd = isBorrowRequest ? (row as P2pBorrowingRequest).amountToBorrowUsd : 0;
-                const amountBorrowedUsd = isBorrowRequest ? (row as P2pBorrowingRequest).amountBorrowedUsd : 0;
-                const amountToLendUsd = isBorrowRequest ? 0 : (row as P2pLendingRequest).amountToLendUsd;
-                const amountLendedUsd = isBorrowRequest ? 0 : (row as P2pLendingRequest).amountLendedUsd;
-
-                  return row.canceled
-                    ? "Cancelled"
-                    : (isBorrowRequest ? (amountBorrowedUsd === amountToBorrowUsd
-                            ? "Filled"
-                            : amountBorrowedUsd > 0
-                                ? "Partial Filled"
-                                : "Not Filled") : (amountLendedUsd === amountToLendUsd
-                        ? "Filled"
-                        : amountLendedUsd > 0
-                            ? "Partial Filled"
-                            : "Not Filled"));
-            },
-            stringCompare
-        );
-   const createDurationFilter = (): FilterFunction =>
-       createFilter<number, any>(
-        {
-            value: parseInt(durationFilter),
-            condition: durationCondition
-        },
-        (row) => {
-            const isBorrowRequest = (row as P2pBorrowingRequest).borrower !== undefined;
-             return isBorrowRequest ? (row as P2pBorrowingRequest).paymentDuration : (row as P2pLendingRequest).paymentDuration;
-        },
-        numberCompare
+    return (
+      (showOnlyMe === "any" ||
+        (showOnlyMe === "true" && (borrower === myName || lender === myName)) ||
+        (showOnlyMe === "false" && borrower !== myName && lender !== myName)) &&
+      (requestTypeFilter === "borrow/lend" ||
+       type.toLowerCase().includes(requestTypeFilter.toLowerCase())) &&
+      (statusFilter === "any" ||
+        (statusFilter === "Not Filled/Partial Filled" && (status === "Not Filled" || status === "Partial Filled")) ||
+        status.toLowerCase().includes(statusFilter.toLowerCase())) &&
+      (durationCondition === "any" ||
+        durationFilter === "" ||
+        (durationCondition === "greater" &&
+          duration > parseInt(durationFilter)) ||
+        (durationCondition === "less" &&
+          duration < parseInt(durationFilter)) ||
+        (durationCondition === "equal" &&
+          duration === parseInt(durationFilter))) &&
+      (interestRateCondition === "any" ||
+        interestRateFilter === "" ||
+        (interestRateCondition === "greater" &&
+          interestRate > parseFloat(interestRateFilter)) ||
+        (interestRateCondition === "less" &&
+          interestRate < parseFloat(interestRateFilter)) ||
+        (interestRateCondition === "equal" &&
+          interestRate === parseFloat(interestRateFilter))) &&
+      (collateralCondition === "any" ||
+        collateralFilter === "" ||
+        (collateralCondition === "greater" &&
+          collateral > parseFloat(collateralFilter)) ||
+        (collateralCondition === "less" &&
+          collateral < parseFloat(collateralFilter)) ||
+        (collateralCondition === "equal" &&
+          collateral === parseFloat(collateralFilter)))
     );
-   const createInterestRateFilter = (): FilterFunction =>
-        createFilter<number, any>(
-            {
-                value: parseFloat(interestRateFilter),
-                condition: interestRateCondition
-            },
-            (row) => {
-                const isBorrowRequest = (row as P2pBorrowingRequest).borrower !== undefined;
-                return isBorrowRequest ? (row as P2pBorrowingRequest).desiredInterestRate : (row as P2pLendingRequest).desiredInterestRate;
-            },
-            numberCompare
-        );
-   const createCollateralFilter = (): FilterFunction =>
-       createFilter<number, any>(
-        {
-            value: parseFloat(collateralFilter),
-            condition: collateralCondition
-        },
-        (row) => {
-            const isBorrowRequest = (row as P2pBorrowingRequest).borrower !== undefined;
-            const initialCollateralAmountXrp = isBorrowRequest ? (row as P2pBorrowingRequest).initialCollateralAmountXrp : 0;
-            const amountToBorrowUsd = isBorrowRequest ? (row as P2pBorrowingRequest).amountToBorrowUsd : 0;
-            const amountToLendUsd = isBorrowRequest ? 0 : (row as P2pLendingRequest).amountToLendUsd;
-            return isBorrowRequest ? (initialCollateralAmountXrp / amountToBorrowUsd) : (amountToLendUsd / initialCollateralAmountXrp);
-
-        },
-        numberCompare
-    );
-
-
-    const filters = [
-        createNameFilter(),
-        createTypeFilter(),
-        createStatusFilter(),
-        createDurationFilter(),
-        createInterestRateFilter(),
-        createCollateralFilter()
-    ];
-
-    const filteredRows = requestRows.filter(row => filters.every(filter => filter(row)));
+  });
 
   return (
     <Stack display="flex" flexDirection="column" justifyContent="flex-start" p={2}>
