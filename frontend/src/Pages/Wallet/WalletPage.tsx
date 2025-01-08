@@ -1,32 +1,63 @@
-import { useConnectedWalletValues } from '../../hooks/useConnectedWallet';
-import { Box, Card, CardContent, Typography, Container } from '@mui/material';
+import { useConnectedWalletValues, useConnectedWalletActions } from '../../hooks/useConnectedWallet';
+import { Card, CardContent, Typography, Grid, Button } from '@mui/material';
 
-function WalletPage() {
-  const { balances } = useConnectedWalletValues();
+const WalletPage: React.FC = () => {
+  const { balances, connectedWallet } = useConnectedWalletValues();
+  const { connectOrCreateWallet, disconnectWallet, getTruncatedAddress } = useConnectedWalletActions();
 
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom align="center">
-          XRPL Wallet
+    <Card sx={{ marginTop: 3 }}>
+      <CardContent>
+        <Typography variant="h5" gutterBottom>
+          Wallet
         </Typography>
-        <Card sx={{ minWidth: 275, mt: 2 }}>
-          <CardContent>
-            <Typography variant="h6" component="h2" gutterBottom>
-              User Account
-            </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-              <Typography color="text.secondary">USD Balance:</Typography>
+        
+        {!connectedWallet && (
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12}>
+              <Typography variant="body2" gutterBottom>
+                Connect your wallet to view your balances.
+              </Typography>
+              <Button 
+                variant="outlined" 
+                color="primary" 
+                onClick={connectOrCreateWallet}
+                sx={{ marginTop: 2 }}
+              >
+                Connect Wallet
+              </Button>
+            </Grid>
+          </Grid>
+        )}
+
+        {connectedWallet && (
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12}>
+              <Typography variant="body2" gutterBottom>
+                Address: {getTruncatedAddress()}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="body2">USD Balance:</Typography>
               <Typography variant="h6">${balances.usd.toFixed(2)}</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography color="text.secondary">XRP Balance:</Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="body2">XRP Balance:</Typography>
               <Typography variant="h6">{balances.xrp.toFixed(2)} XRP</Typography>
-            </Box>
-          </CardContent>
-        </Card>
-      </Box>
-    </Container>
+            </Grid>
+            <Grid item xs={12} textAlign="right" marginTop={1}>
+              <Button 
+                variant="outlined" 
+                color="primary" 
+                onClick={disconnectWallet}
+              >
+                Disconnect
+              </Button>
+            </Grid>
+          </Grid>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
