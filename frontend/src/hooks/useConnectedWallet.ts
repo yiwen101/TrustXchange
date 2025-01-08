@@ -6,6 +6,7 @@ import { useThreadPool } from "../utils";
 import { userUsdXrpAMMInfo } from "../api/xrp/amm_transection";
 import { getWallet } from "../testWallets";
 import { usePoolLendingActions } from "./usePoolLendingState";
+import { getXRPBalance, getUSDBalance } from "../api/xrp/wallet";
 
 const walletBalanceState = atom({
     key: "WALLET_BALANCE",
@@ -46,30 +47,16 @@ export const useConnectedWalletActions = () => {
     const threadPool = useThreadPool(8);
     const {onLogin, onLogout} = usePoolLendingActions();
 
-    const fetchBalances = async (client: Client, wallet: Wallet) => {
+    const fetchBalances = async (wallet: Wallet) => {
         try {
-            // Fetch XRP balance
-            const xrpResponse = await client.request({
-                command: 'account_info',
-                account: wallet.classicAddress,
-                ledger_index: 'validated',
-            });
-            const xrpBalance = parseFloat(xrpResponse.result.account_data.Balance) / 1e6;
-
-            // Fetch USD balance
-            const usdResponse = await client.request({
-                command: 'account_lines',
-                account: wallet.classicAddress,
-                ledger_index: 'validated',
-            });
-
-            const usdLine = usdResponse.result.lines.find(
-                (line: any) => line.currency === currencyCode
-            );
-
+            const [xrpBalance, usdBalance] = await Promise.all([
+                getXRPBalance(wallet),
+                getUSDBalance(wallet)
+            ]);
+            
             setBalances({
                 xrp: xrpBalance,
-                usd: usdLine ? parseFloat(usdLine.balance) : 0
+                usd: usdBalance
             });
         } catch (error) {
             console.error('Error fetching balances:', error);
@@ -88,7 +75,7 @@ export const useConnectedWalletActions = () => {
             const wallet = Wallet.fromSeed(info.secret);
             setConnectedWalletValue(wallet!);
             
-            await fetchBalances(client, wallet);
+            await fetchBalances(wallet);
             
             setConnectionStatus("connected");
             console.log("Connected wallet:", wallet);
@@ -131,7 +118,11 @@ export const useConnectedWalletActions = () => {
         connectOrCreateWallet, 
         disconnectWallet, 
         getTruncatedAddress,
-        fetchBalances,
+        fetchBalances: async () => {
+            if (connectedWalletValue) {
+                await fetchBalances(connectedWalletValue);
+            }
+        },
         get_connected_wallet: async () => {
             await connectOrCreateWallet();
             return connectedWalletValue;
