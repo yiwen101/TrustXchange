@@ -38,7 +38,7 @@ const InitLoader = () => {
               <Route path="/pool" element={<PoolPage />} />
               <Route path="/pledge" element={<PledgePage />} />
               <Route path="/future" element={<FuturePage />} />
-              <Route path="/dev" element={<P2pMarketplace />} />
+              <Route path="/dev" element={<Dev />} />
               <Route path="/p2p" element={<P2pPage />} />
               <Route path="/swap" element={<SwapPage />} />
             </Routes>
