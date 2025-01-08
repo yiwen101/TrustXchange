@@ -125,26 +125,20 @@ const SwapPage = () => {
   return (
     <Card style={{ padding: '20px', width: '250px', margin: 'auto' }}>
       <Typography variant="h5">Swap</Typography>
-      <InputCard 
-        icon={isXrpToUsd ? <XrpIcon /> : <UsdcIcon />} 
-        value={isXrpToUsd ? xrpValueInput : usdValueInput} 
-        onChange={isXrpToUsd ? handleXrpValueChange : handleUsdValueChange}
-        disabled={!connectedWallet || isSwapping}
-      />
-      <IconButton 
-        onClick={handleSwitch} 
-        style={{ marginTop: '2px' }}
-        disabled={!connectedWallet || isSwapping}
-      >
+      {isXrpToUsd ? (
+        <InputCard icon={<XrpIcon />} value={xrpValueInput} onChange={handleXrpValueChange} />
+      ) : (
+        <InputCard icon={<UsdcIcon />} value={usdValueInput} onChange={handleUsdValueChange} />
+      )}
+      <IconButton onClick={handleSwitch} style={{ marginTop: '2px' }}>
         <SwapVertIcon />
       </IconButton>
-      <InputCard 
-        icon={isXrpToUsd ? <UsdcIcon /> : <XrpIcon />} 
-        value={isXrpToUsd ? usdValueInput : xrpValueInput} 
-        onChange={isXrpToUsd ? handleUsdValueChange : handleXrpValueChange}
-        disabled={!connectedWallet || isSwapping}
-      />
-      <Button 
+      {isXrpToUsd ? (
+        <InputCard icon={<UsdcIcon />} value={usdValueInput} onChange={handleUsdValueChange} />
+      ) : (
+        <InputCard icon={<XrpIcon />} value={xrpValueInput} onChange={handleXrpValueChange}/>
+      )}
+     <Button 
         variant="contained" 
         color="primary" 
         style={{ marginTop: '20px', width: '100%' }}
