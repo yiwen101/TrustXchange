@@ -7,12 +7,14 @@ import InputCard from './InputCard';
 import xrp_api from '../../api/xrp';
 import { useXrpPriceValue } from '../../hooks/usePriceState';
 import { useConnectedWalletValues, useConnectedWalletActions } from '../../hooks/useConnectedWallet';
+import { swap_usdc_for_XRP, swap_XRP_for_usdc } from '../../api/xrp/amm_transection';
 
 const SwapPage = () => {
   const [usdValueInput, setUsdValueInput] = useState('');
   const [xrpValueInput, setXrpValueInput] = useState('');
   const [isXrpToUsd, setIsXrpToUsd] = useState(true);
   const [dp, setDp] = useState(2);
+  const [isSwapping, setIsSwapping] = useState(false);
   const { xrpPrice, xrpPriceYesterday, ammInfo } = useXrpPriceValue();
   const { connectedWallet } = useConnectedWalletValues();
   const { connectOrCreateWallet } = useConnectedWalletActions();
@@ -74,11 +76,46 @@ const SwapPage = () => {
     setUsdValueInput(value);
   }
   const handleSwap = async () => {
-    if (!connectedWallet) {
+    if (!connectedWallet || !ammInfo) {
       return;
     }
-    // Add your swap logic here
-    console.log("Performing swap...");
+
+    try {
+      setIsSwapping(true);
+      
+      const usdAmount = parseFloat(usdValueInput);
+      const xrpAmount = parseFloat(xrpValueInput);
+      
+      if (isNaN(usdAmount) || isNaN(xrpAmount)) {
+        throw new Error('Invalid input amounts');
+      }
+
+      if (isXrpToUsd) {
+        // XRP to USD swap
+        await swap_XRP_for_usdc(
+          connectedWallet,
+          xrpAmount,
+          usdAmount
+        );
+      } else {
+        // USD to XRP swap
+        await swap_usdc_for_XRP(
+          connectedWallet,
+          usdAmount,
+          xrpAmount
+        );
+      }
+
+      // Clear inputs after successful swap
+      setUsdValueInput('');
+      setXrpValueInput('');
+      alert('Swap successful!');
+    } catch (error) {
+      console.error('Swap failed:', error);
+      alert('Swap failed: ' + (error as Error).message);
+    } finally {
+      setIsSwapping(false);
+    }
   };
 
   const current_price_2dp = xrpPrice ? xrpPrice.toFixed(2) : '0.00'
@@ -92,12 +129,12 @@ const SwapPage = () => {
         icon={isXrpToUsd ? <XrpIcon /> : <UsdcIcon />} 
         value={isXrpToUsd ? xrpValueInput : usdValueInput} 
         onChange={isXrpToUsd ? handleXrpValueChange : handleUsdValueChange}
-        disabled={!connectedWallet}
+        disabled={!connectedWallet || isSwapping}
       />
       <IconButton 
         onClick={handleSwitch} 
         style={{ marginTop: '2px' }}
-        disabled={!connectedWallet}
+        disabled={!connectedWallet || isSwapping}
       >
         <SwapVertIcon />
       </IconButton>
@@ -105,15 +142,17 @@ const SwapPage = () => {
         icon={isXrpToUsd ? <UsdcIcon /> : <XrpIcon />} 
         value={isXrpToUsd ? usdValueInput : xrpValueInput} 
         onChange={isXrpToUsd ? handleUsdValueChange : handleXrpValueChange}
-        disabled={!connectedWallet}
+        disabled={!connectedWallet || isSwapping}
       />
       <Button 
         variant="contained" 
         color="primary" 
         style={{ marginTop: '20px', width: '100%' }}
         onClick={connectedWallet ? handleSwap : connectOrCreateWallet}
+        disabled={isSwapping || (!connectedWallet && isSwapping)}
       >
-        {connectedWallet ? 'Swap' : 'Connect Wallet'}
+        {!connectedWallet ? 'Connect Wallet' : 
+         isSwapping ? 'Swapping...' : 'Swap'}
       </Button>
 
       <Typography variant="h5" style={{ marginTop: '40px' }}>Market Condition</Typography>

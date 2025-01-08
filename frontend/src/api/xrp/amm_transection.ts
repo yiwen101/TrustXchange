@@ -484,3 +484,40 @@ function swapIn(asset_in_bn: BigNumber, pool_in_bn: BigNumber, pool_out_bn: BigN
     );
     return outputAmount;
 }
+
+/**
+ * Swaps XRP for USDC.
+ * @param wallet - The wallet initiating the swap.
+ * @param xrp_amount - The amount of XRP to swap.
+ * @param intended_usd_amount - The intended amount of USDC to receive.
+ */
+export async function swap_XRP_for_usdc(wallet: Wallet, xrp_amount: number, intended_usd_amount: number): Promise<void> {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+        console.log(`Swapping ${xrp_amount} XRP for ${intended_usd_amount} USDC...`);
+
+        const takerGets = xrpStrOf(xrp_amount);
+
+        const takerPays = {
+            currency: USDC_currency_code,
+            issuer: USDC_issuer.address,
+            value: usdStrOf(intended_usd_amount),
+        };
+
+        const offer_result = await client.submitAndWait({
+            TransactionType: "OfferCreate",
+            Account: wallet.address,
+            TakerPays: takerPays,
+            TakerGets: takerGets,
+            Flags: 0x00020000 // Immediate or Cancel
+        }, { autofill: true, wallet: wallet });
+
+        logResponse(offer_result);
+    } catch (error) {
+        console.error('Error in swap_XRP_for_usdc:', error);
+        throw error; // Re-throw to handle in UI
+    } finally {
+        await client.disconnect();
+    }
+}
