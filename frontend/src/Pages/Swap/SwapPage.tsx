@@ -7,7 +7,6 @@ import InputCard from './InputCard';
 import xrp_api from '../../api/xrp';
 import { useXrpPriceValue } from '../../hooks/usePriceState';
 import { useConnectedWalletValues, useConnectedWalletActions } from '../../hooks/useConnectedWallet';
-import { swap_usdc_for_XRP, swap_XRP_for_usdc } from '../../api/xrp/amm_transection';
 
 const SwapPage = () => {
   const [usdValueInput, setUsdValueInput] = useState('');
@@ -17,7 +16,7 @@ const SwapPage = () => {
   const [isSwapping, setIsSwapping] = useState(false);
   const { xrpPrice, xrpPriceYesterday, ammInfo } = useXrpPriceValue();
   const { connectedWallet } = useConnectedWalletValues();
-  const { connectOrCreateWallet } = useConnectedWalletActions();
+  const { swapForXrp,swapForUsd,connectOrCreateWallet } = useConnectedWalletActions();
 
   const handleSwitch = () => {
     setIsXrpToUsd(!isXrpToUsd);
@@ -92,15 +91,13 @@ const SwapPage = () => {
 
       if (isXrpToUsd) {
         // XRP to USD swap
-        await swap_XRP_for_usdc(
-          connectedWallet,
+        await swapForXrp(
           xrpAmount,
           usdAmount
         );
       } else {
         // USD to XRP swap
-        await swap_usdc_for_XRP(
-          connectedWallet,
+        await swapForUsd(
           usdAmount,
           xrpAmount
         );

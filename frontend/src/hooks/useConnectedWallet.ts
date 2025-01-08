@@ -1,12 +1,13 @@
 import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { Client, Wallet } from 'xrpl';
 import xrp_api from "../api/xrp";
-import { testnet_url, currencyCode } from "../const";
+import { testnet_url} from "../const";
 import { useThreadPool } from "../utils";
 import { userUsdXrpAMMInfo } from "../api/xrp/amm_transection";
 import { getWallet } from "../testWallets";
 import { usePoolLendingActions } from "./usePoolLendingState";
 import { getXRPBalance, getUSDBalance } from "../api/xrp/wallet";
+import {swap_usdc_for_XRP,swap_XRP_for_usdc } from '../api/xrp/amm_transection'
 
 const walletBalanceState = atom({
     key: "WALLET_BALANCE",
@@ -114,18 +115,41 @@ export const useConnectedWalletActions = () => {
         return "";
     }
 
+    const swapForXrp = async (usdAmount: number, xrpAmount: number) => {
+        if (!connectedWalletValue) {
+            throw new Error('Wallet not connected or AMM not loaded');
+        }
+        swap_usdc_for_XRP(
+            connectedWalletValue,
+            usdAmount,
+            xrpAmount
+        ).then(() => {
+            fetchBalances(connectedWalletValue!);
+        });
+    }
+
+    const swapForUsd = async (usdAmount: number, xrpAmount: number) => {
+        if (!connectedWalletValue) {
+            throw new Error('Wallet not connected or AMM not loaded');
+        }
+        swap_XRP_for_usdc(
+            connectedWalletValue,
+            xrpAmount,
+            usdAmount
+        ).then(() => {
+            fetchBalances(connectedWalletValue!);
+    });
+    }
+
     return { 
         connectOrCreateWallet, 
         disconnectWallet, 
         getTruncatedAddress,
-        fetchBalances: async () => {
-            if (connectedWalletValue) {
-                await fetchBalances(connectedWalletValue);
-            }
-        },
         get_connected_wallet: async () => {
             await connectOrCreateWallet();
             return connectedWalletValue;
-        }
+        },
+        swapForXrp,
+        swapForUsd
     };
 }
