@@ -136,7 +136,7 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
         }}
       >
         <Typography variant="subtitle1" gutterBottom>
-          Approval and Execution of GMP Call
+          Approval of the GMP Call by the Gateway
         </Typography>
         {!xrplTransaction && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -189,7 +189,7 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
         }}
       >
         <Typography variant="subtitle1" gutterBottom>
-          Approval of GMP Call to Contract
+          Execution of the approved GMP Call by the Contract
         </Typography>
         {!gatewayTransaction && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
