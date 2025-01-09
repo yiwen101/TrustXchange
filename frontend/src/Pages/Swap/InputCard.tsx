@@ -1,35 +1,63 @@
 // InputCard.tsx
 import React from 'react';
-import PropTypes from 'prop-types';
-import { Card, TextField, Stack } from '@mui/material';
+import { Card, Stack, Typography, TextField } from '@mui/material';
 
 interface InputCardProps {
-  icon: JSX.Element;
+  icon: React.ReactNode;
   value: string;
-  onChange?: (value: string) => void;
-  disabled?: boolean;
+  onChange: (value: string) => void;
+  error?: boolean;
+  helperText?: string;
 }
 
-const InputCard: React.FC<InputCardProps> = React.memo(({ icon, value, onChange = undefined, disabled = false }) => (
-  <Card style={{ padding: '10px', marginTop: '2px' }}>
-    <Stack direction="row" alignItems="center">
-      {icon}
-      <TextField
-        label="Amount"
-        value={value}
-        onChange={(e) => onChange && onChange(e.target.value)}
-        disabled={disabled}
-        style={{ marginLeft: '10px', flex: 1 }}
-      />
-    </Stack>
-  </Card>
-));
-InputCard.displayName = 'InputCard';
+const InputCard: React.FC<InputCardProps> = ({ icon, value, onChange, error, helperText }) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    // Allow empty input
+    if (value === '') {
+      onChange(value);
+      return;
+    }
 
-InputCard.propTypes = {
-  icon: PropTypes.element.isRequired,
-  value: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired,
+    // Only allow valid number patterns
+    if (/^\d*\.?\d*$/.test(value)) {
+      // Prevent multiple decimal points
+      if ((value.match(/\./g) || []).length <= 1) {
+        // Prevent more than 6 decimal places
+        const parts = value.split('.');
+        if (parts.length === 2 && parts[1].length > 6) {
+          return;
+        }
+        onChange(value);
+      }
+    }
+  };
+
+  return (
+    <Card style={{ padding: '10px', marginTop: '10px' }}>
+      <Stack direction="row" alignItems="center" spacing={2}>
+        {icon}
+        <TextField
+          fullWidth
+          value={value}
+          onChange={handleInputChange}
+          placeholder="0.00"
+          variant="standard"
+          error={error}
+          helperText={helperText}
+          InputProps={{
+            type: 'text',
+            style: { fontSize: '20px' },
+            inputProps: {
+              pattern: '^[0-9]*[.]?[0-9]*$',
+              inputMode: 'decimal',
+            }
+          }}
+        />
+      </Stack>
+    </Card>
+  );
 };
 
 export default InputCard;

@@ -16,9 +16,9 @@ const SwapPage = () => {
   const [isSwapping, setIsSwapping] = useState(false);
   const { xrpPrice, xrpPriceYesterday, ammInfo } = useXrpPriceValue();
   const { connectedWallet } = useConnectedWalletValues();
-  const { swapForXrp,swapForUsd,connectOrCreateWallet } = useConnectedWalletActions();
-  const [slippage, setSlippage] = useState(0.5); // Default 0.5%
-  const [showSlippageSettings, setShowSlippageSettings] = useState(false);
+  const { swapForXrp, swapForUsd, connectOrCreateWallet } = useConnectedWalletActions();
+  const [maxSlippageTolerance, setMaxSlippageTolerance] = useState(0.5); // Default 0.5%
+  const [inputError, setInputError] = useState('');
 
   // Add slippage options
   const slippageOptions = [0.1, 0.5, 1.0];
@@ -27,12 +27,24 @@ const SwapPage = () => {
     setIsXrpToUsd(!isXrpToUsd);
     setUsdValueInput('')
     setXrpValueInput('')
-
   };
+
   const handleXrpValueChange = (value: string) => {
+    setInputError('');
+    if (value === '') {
+      setXrpValueInput('');
+      setUsdValueInput('');
+      return;
+    }
+
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) {
+      setInputError('Please enter a valid number');
+      return;
+    }
+
     const max_tradable_usd = ammInfo!.usd_amount-10;
     const max_tradable_xrp = ammInfo!.xrp_amount-10;
-    const xrp_amount = parseFloat(value)
     if (isXrpToUsd) {
       const usd_can_get = xrp_api.get_usd_can_get_with_xrp(parseFloat(value),ammInfo!);
       if (usd_can_get.toNumber() > max_tradable_usd-1) {
@@ -43,10 +55,10 @@ const SwapPage = () => {
       }
       setUsdValueInput(usd_can_get.toFixed(dp));
     } else {
-      if (xrp_amount > max_tradable_xrp-1) {
+      if (numValue > max_tradable_xrp-1) {
         const usd_needed = xrp_api.get_usd_needed_for_xrp(max_tradable_xrp,ammInfo!);
         setXrpValueInput(max_tradable_xrp.toFixed(dp));
-        setUsdValueInput(usd_needed.toFixed());
+        setUsdValueInput(usd_needed.toFixed(dp));
         return
       }
       const usd_can_get = xrp_api.get_usd_needed_for_xrp(parseFloat(value),ammInfo!);
@@ -54,11 +66,25 @@ const SwapPage = () => {
     }
     setXrpValueInput(value)
   }
+
   const handleUsdValueChange = (value: string) => {
+    setInputError('');
+    if (value === '') {
+      setXrpValueInput('');
+      setUsdValueInput('');
+      return;
+    }
+
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) {
+      setInputError('Please enter a valid number');
+      return;
+    }
+
     const max_tradable_usd = ammInfo!.usd_amount-10;
     const max_tradable_xrp = ammInfo!.xrp_amount-10;
     if (isXrpToUsd) {
-      if (parseFloat(value) > max_tradable_usd) {
+      if (numValue > max_tradable_usd) {
         const xrp_required = xrp_api.get_xrp_needed_for_usd(max_tradable_usd,ammInfo!);
         setXrpValueInput(xrp_required.toFixed(dp));
         setUsdValueInput(max_tradable_usd.toFixed(dp));
@@ -79,6 +105,7 @@ const SwapPage = () => {
     }
     setUsdValueInput(value);
   }
+
   const handleSwap = async () => {
     if (!connectedWallet || !ammInfo) {
       return;
@@ -92,15 +119,12 @@ const SwapPage = () => {
         throw new Error('Invalid input amounts');
       }
 
-      // Calculate minimum amount with slippage
-      const minReceived = isXrpToUsd 
-        ? usdAmount * (1 - slippage/100)  // min USD to receive
-        : xrpAmount * (1 - slippage/100); // min XRP to receive
-
       // Show confirmation dialog with slippage info
       const confirmed = window.confirm(
-        `You will receive at least ${minReceived.toFixed(4)} ${isXrpToUsd ? 'USD' : 'XRP'}\n` +
-        `Slippage: ${slippage}%\n` +
+        `You are swapping:\n` +
+        `${isXrpToUsd ? xrpAmount + ' XRP → ' + usdAmount + ' USD' : usdAmount + ' USD → ' + xrpAmount + ' XRP'}\n` +
+        `Maximum slippage tolerance: ${maxSlippageTolerance}%\n` +
+        `The swap will be attempted with the lowest possible slippage, starting from 0%\n` +
         `Continue with swap?`
       );
 
@@ -109,9 +133,11 @@ const SwapPage = () => {
       setIsSwapping(true);
       
       if (isXrpToUsd) {
-        await swapForXrp(xrpAmount, minReceived);
+        // When swapping XRP to USD, xrpAmount is what we're sending, usdAmount is what we expect to receive
+        await swapForXrp(xrpAmount, usdAmount, maxSlippageTolerance);
       } else {
-        await swapForUsd(usdAmount, minReceived);
+        // When swapping USD to XRP, usdAmount is what we're sending, xrpAmount is what we expect to receive
+        await swapForUsd(usdAmount, xrpAmount, maxSlippageTolerance);
       }
 
       setUsdValueInput('');
@@ -130,15 +156,14 @@ const SwapPage = () => {
   const price_diff_2dp = price_diff.toFixed(2)
 
   const handleSlippageChange = (value: number) => {
-    setSlippage(value);
-    setShowSlippageSettings(false);
+    setMaxSlippageTolerance(value);
   };
 
   return (
     <Card style={{ padding: '20px', width: '250px', margin: 'auto' }}>
       <Typography variant="h5">Swap</Typography>
       
-      {/* Make slippage settings more visible */}
+      {/* Maximum slippage tolerance settings */}
       <Box sx={{ 
         display: 'flex', 
         flexDirection: 'column', 
@@ -149,15 +174,15 @@ const SwapPage = () => {
         borderRadius: 1
       }}>
         <Typography variant="body2" gutterBottom>
-          Slippage Tolerance
+          Maximum Slippage Tolerance
         </Typography>
         <Stack direction="row" spacing={1}>
-          {[0.1, 0.5, 1.0].map((value) => (
+          {slippageOptions.map((value) => (
             <Button
               key={value}
               size="small"
-              variant={slippage === value ? "contained" : "outlined"}
-              onClick={() => setSlippage(value)}
+              variant={maxSlippageTolerance === value ? "contained" : "outlined"}
+              onClick={() => handleSlippageChange(value)}
               sx={{ minWidth: '60px' }}
             >
               {value}%
@@ -167,24 +192,48 @@ const SwapPage = () => {
       </Box>
 
       {isXrpToUsd ? (
-        <InputCard icon={<XrpIcon />} value={xrpValueInput} onChange={handleXrpValueChange} />
+        <InputCard 
+          icon={<XrpIcon />} 
+          value={xrpValueInput} 
+          onChange={handleXrpValueChange}
+          error={!!inputError}
+          helperText={inputError}
+        />
       ) : (
-        <InputCard icon={<UsdcIcon />} value={usdValueInput} onChange={handleUsdValueChange} />
+        <InputCard 
+          icon={<UsdcIcon />} 
+          value={usdValueInput} 
+          onChange={handleUsdValueChange}
+          error={!!inputError}
+          helperText={inputError}
+        />
       )}
       <IconButton onClick={handleSwitch} style={{ marginTop: '2px' }}>
         <SwapVertIcon />
       </IconButton>
       {isXrpToUsd ? (
-        <InputCard icon={<UsdcIcon />} value={usdValueInput} onChange={handleUsdValueChange} />
+        <InputCard 
+          icon={<UsdcIcon />} 
+          value={usdValueInput} 
+          onChange={handleUsdValueChange}
+          error={!!inputError}
+          helperText={inputError}
+        />
       ) : (
-        <InputCard icon={<XrpIcon />} value={xrpValueInput} onChange={handleXrpValueChange}/>
+        <InputCard 
+          icon={<XrpIcon />} 
+          value={xrpValueInput} 
+          onChange={handleXrpValueChange}
+          error={!!inputError}
+          helperText={inputError}
+        />
       )}
-     <Button 
+      <Button 
         variant="contained" 
         color="primary" 
         style={{ marginTop: '20px', width: '100%' }}
         onClick={connectedWallet ? handleSwap : connectOrCreateWallet}
-        disabled={isSwapping || (!connectedWallet && isSwapping)}
+        disabled={isSwapping || (!connectedWallet && isSwapping) || !!inputError || !xrpValueInput || !usdValueInput}
       >
         {!connectedWallet ? 'Connect Wallet' : 
          isSwapping ? 'Swapping...' : 'Swap'}

@@ -131,14 +131,14 @@ export const useConnectedWalletActions = () => {
             await connectOrCreateWallet();
             return connectedWalletValue;
         },
-        swapForXrp: async (xrpAmount: number, minUsdReceived: number) => {
+        swapForXrp: async (xrpAmount: number, minUsdReceived: number, maxSlippageTolerance: number) => {
             if (!connectedWalletValue) return;
-            await swap_XRP_for_usdc(connectedWalletValue, xrpAmount, minUsdReceived);
+            await swap_XRP_for_usdc(connectedWalletValue, xrpAmount, minUsdReceived, maxSlippageTolerance);
             await fetchBalances(connectedWalletValue);
         },
-        swapForUsd: async (usdAmount: number, minXrpReceived: number) => {
+        swapForUsd: async (usdAmount: number, minXrpReceived: number, maxSlippageTolerance: number) => {
             if (!connectedWalletValue) return;
-            await swap_usdc_for_XRP(connectedWalletValue, usdAmount, minXrpReceived);
+            await swap_usdc_for_XRP(connectedWalletValue, usdAmount, minXrpReceived, maxSlippageTolerance);
             await fetchBalances(connectedWalletValue);
         },
     };

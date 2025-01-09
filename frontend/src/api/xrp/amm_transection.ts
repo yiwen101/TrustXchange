@@ -3,7 +3,7 @@ import BigNumber from 'bignumber.js';
 import { get_account_currency_balance, logResponse, usdStrOf, xrpStrOf } from './common';
 import { fund_wallet } from './wallet';
 import { get_latest_xrp_price, get_xrp_price_at_ledger } from './xrp_price';
-import {  USDC_issuer,USDC_currency_code,mannnet_Bitstamp_usd_address, mainnet_url, testnet_url } from '../../const';
+import { USDC_issuer, USDC_currency_code, mannnet_Bitstamp_usd_address, mainnet_url, testnet_url } from '../../const';
 
 export interface AMMInfo {
     usd_amount: number;
@@ -17,42 +17,116 @@ export interface AMMInfo {
  * @param wallet - The wallet initiating the swap.
  * @param usd_amount - The amount of USDC to swap.
  * @param intended_xrp_amount - The intended amount of XRP to receive.
- * @param slippage - The slippage percentage.
+ * @param max_slippage_tolerance - Maximum acceptable slippage percentage.
  */
 export async function swap_usdc_for_XRP(
     wallet: Wallet, 
     usd_amount: number, 
     intended_xrp_amount: number,
-    slippage: number = 0.5
+    max_slippage_tolerance: number = 0.5
 ): Promise<void> {
     const client = new Client(testnet_url);
     try {
         await client.connect();
         
-        // Calculate minimum XRP to receive with slippage
-        const minXrpAmount = intended_xrp_amount * (1 - slippage/100);
-        
-        console.log(`Swapping ${usd_amount} USDC for minimum ${minXrpAmount} XRP (${slippage}% slippage)...`);
+        // Try with increasing slippage until success or max tolerance reached
+        for (let slippage = 0; slippage <= max_slippage_tolerance; slippage += 0.1) {
+            try {
+                const minXrpAmount = intended_xrp_amount * (1 - slippage/100);
+                
+                console.log(`Attempting swap with ${slippage.toFixed(1)}% slippage...`);
+                console.log(`Swapping ${usd_amount} USDC for minimum ${minXrpAmount} XRP`);
 
-        const takerGets = {
-            currency: USDC_currency_code,
-            issuer: USDC_issuer.address,
-            value: usdStrOf(usd_amount),
-        };
+                const takerGets = {
+                    currency: USDC_currency_code,
+                    issuer: USDC_issuer.address,
+                    value: usdStrOf(usd_amount),
+                };
 
-        const takerPays = xrpStrOf(minXrpAmount);
+                const takerPays = xrpStrOf(minXrpAmount);
 
-        const offer_result = await client.submitAndWait({
-            TransactionType: "OfferCreate",
-            Account: wallet.address,
-            TakerPays: takerPays,
-            TakerGets: takerGets,
-            Flags: 0x00020000 // Immediate or Cancel
-        }, { autofill: true, wallet: wallet });
+                const offer_result = await client.submitAndWait({
+                    TransactionType: "OfferCreate",
+                    Account: wallet.address,
+                    TakerPays: takerPays,
+                    TakerGets: takerGets,
+                    Flags: 0x00020000 // Immediate or Cancel
+                }, { autofill: true, wallet: wallet });
 
-        logResponse(offer_result);
+                logResponse(offer_result);
+                // If we reach here, the swap was successful
+                return;
+            } catch (error) {
+                if (slippage >= max_slippage_tolerance) {
+                    throw new Error(`Swap failed even with maximum slippage tolerance of ${max_slippage_tolerance}%`);
+                }
+                console.log(`Swap failed with ${slippage.toFixed(1)}% slippage, trying higher slippage...`);
+                // Continue to next iteration with higher slippage
+            }
+        }
     } catch (error) {
         console.error('Error in swap_usdc_for_XRP:', error);
+        throw error; // Re-throw to handle in UI
+    } finally {
+        await client.disconnect();
+    }
+}
+
+/**
+ * Swaps XRP for USDC.
+ * @param wallet - The wallet initiating the swap.
+ * @param xrp_amount - The amount of XRP to swap.
+ * @param intended_usd_amount - The intended amount of USDC to receive.
+ * @param max_slippage_tolerance - Maximum acceptable slippage percentage.
+ */
+export async function swap_XRP_for_usdc(
+    wallet: Wallet, 
+    xrp_amount: number, 
+    intended_usd_amount: number,
+    max_slippage_tolerance: number = 0.5
+): Promise<void> {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+        
+        // Try with increasing slippage until success or max tolerance reached
+        for (let slippage = 0; slippage <= max_slippage_tolerance; slippage += 0.1) {
+            try {
+                const minUsdAmount = intended_usd_amount * (1 - slippage/100);
+                
+                console.log(`Attempting swap with ${slippage.toFixed(1)}% slippage...`);
+                console.log(`Swapping ${xrp_amount} XRP for minimum ${minUsdAmount} USDC`);
+
+                const takerGets = xrpStrOf(xrp_amount);
+
+                const takerPays = {
+                    currency: USDC_currency_code,
+                    issuer: USDC_issuer.address,
+                    value: usdStrOf(minUsdAmount),
+                };
+
+                const offer_result = await client.submitAndWait({
+                    TransactionType: "OfferCreate",
+                    Account: wallet.address,
+                    TakerPays: takerPays,
+                    TakerGets: takerGets,
+                    Flags: 0x00020000 // Immediate or Cancel
+                }, { autofill: true, wallet: wallet });
+
+                logResponse(offer_result);
+                // If we reach here, the swap was successful
+                return;
+            } catch (error) {
+                if (slippage >= max_slippage_tolerance) {
+                    throw new Error(`Swap failed even with maximum slippage tolerance of ${max_slippage_tolerance}%`);
+                }
+                console.log(`Swap failed with ${slippage.toFixed(1)}% slippage, trying higher slippage...`);
+                // Continue to next iteration with higher slippage
+            }
+        }
+    } catch (error) {
+        console.error('Error in swap_XRP_for_usdc:', error);
+        throw error; // Re-throw to handle in UI
     } finally {
         await client.disconnect();
     }
@@ -493,41 +567,4 @@ function swapIn(asset_in_bn: BigNumber, pool_in_bn: BigNumber, pool_out_bn: BigN
         pool_in_bn.multipliedBy(pool_out_bn).dividedBy(newPoolIn)
     );
     return outputAmount;
-}
-
-/**
- * Swaps XRP for USDC.
- * @param wallet - The wallet initiating the swap.
- * @param xrp_amount - The amount of XRP to swap.
- * @param intended_usd_amount - The intended amount of USDC to receive.
- */
-export async function swap_XRP_for_usdc(wallet: Wallet, xrp_amount: number, intended_usd_amount: number): Promise<void> {
-    const client = new Client(testnet_url);
-    try {
-        await client.connect();
-        console.log(`Swapping ${xrp_amount} XRP for ${intended_usd_amount} USDC...`);
-
-        const takerGets = xrpStrOf(xrp_amount);
-
-        const takerPays = {
-            currency: USDC_currency_code,
-            issuer: USDC_issuer.address,
-            value: usdStrOf(intended_usd_amount),
-        };
-
-        const offer_result = await client.submitAndWait({
-            TransactionType: "OfferCreate",
-            Account: wallet.address,
-            TakerPays: takerPays,
-            TakerGets: takerGets,
-            Flags: 0x00020000 // Immediate or Cancel
-        }, { autofill: true, wallet: wallet });
-
-        logResponse(offer_result);
-    } catch (error) {
-        console.error('Error in swap_XRP_for_usdc:', error);
-        throw error; // Re-throw to handle in UI
-    } finally {
-        await client.disconnect();
-    }
 }
