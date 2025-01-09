@@ -113,16 +113,18 @@ export async function createLendRequest(
     desiredInterestRate: number,
     paymentDuration: number,
     minimalPartialFill: number,
-    currencyAmount: xrpl.IssuedCurrencyAmount | string
+    currencyAmount: xrpl.IssuedCurrencyAmount | string,
+    beforeCallBackend?: undefined | ((response: string) => void),
+    afterCallBackend?: undefined | ((response: string) => void)
 ): Promise<void> {
     const payloadStr = prepareLendingRequestPayload(
         minCollateralRatio,
         liquidationThreshold,
         desiredInterestRate,
         paymentDuration,
-        minimalPartialFill
+        minimalPartialFill,
     );
-    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
+    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount, beforeCallBackend, afterCallBackend);
 }
 
 export async function createBorrowRequest(
@@ -134,7 +136,9 @@ export async function createBorrowRequest(
     desiredInterestRate: number,
     paymentDuration: number,
     minimalPartialFill: number,
-    currencyAmount: xrpl.IssuedCurrencyAmount | string
+    currencyAmount: xrpl.IssuedCurrencyAmount | string,
+    beforeCallBackend?: undefined | ((response: string) => void), 
+    afterCallBackend?: undefined | ((response: string) => void )
 ): Promise<void> {
     const payloadStr = prepareBorrowingRequestPayload(
         amountToBorrowUSD,
@@ -144,7 +148,7 @@ export async function createBorrowRequest(
         paymentDuration,
         minimalPartialFill
     );
-    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
+    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount, beforeCallBackend, afterCallBackend);
 }
 
 export async function acceptLendRequest(
@@ -152,10 +156,12 @@ export async function acceptLendRequest(
     
     requestId: number,
     borrowAmountUSD: number,
-    currencyAmount: xrpl.IssuedCurrencyAmount | string
+    currencyAmount: xrpl.IssuedCurrencyAmount | string,
+    beforeCallBackend?: undefined | ((response: string) => void), 
+    afterCallBackend?: undefined | ((response: string) => void )
 ): Promise<void> {
     const payloadStr = prepareAcceptLendingRequestPayload(requestId, borrowAmountUSD);
-    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
+    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount, beforeCallBackend, afterCallBackend);
 }
 
 export async function acceptBorrowRequest(
@@ -163,10 +169,12 @@ export async function acceptBorrowRequest(
     
     requestId: number,
     collateralAmountXRP: number,
-    currencyAmount: xrpl.IssuedCurrencyAmount | string
+    currencyAmount: xrpl.IssuedCurrencyAmount | string,
+    beforeCallBackend?: undefined | ((response: string) => void),
+    afterCallBackend?: undefined | ((response: string) => void)
 ): Promise<void> {
     const payloadStr = prepareAcceptBorrowingRequestPayload(requestId, collateralAmountXRP);
-    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
+    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount, beforeCallBackend, afterCallBackend);
 }
 
 export async function repayLoan(
@@ -174,36 +182,44 @@ export async function repayLoan(
     
     repayAmountUSD: number,
     loanId: number,
-    currencyAmount: xrpl.IssuedCurrencyAmount | string
+    currencyAmount: xrpl.IssuedCurrencyAmount | string,
+    beforeCallBackend?: undefined | ((response: string) => void),
+    afterCallBackend?: undefined | ((response: string) => void)
 ): Promise<void> {
     const payloadStr = prepareRepayLoanPayload(repayAmountUSD, loanId);
-    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
+    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount, beforeCallBackend, afterCallBackend);
 }
 
 export async function cancelLendRequest(
     user: xrpl.Wallet,
     
     requestId: number,
+    beforeCallBackend?: undefined | ((response: string) => void),
+    afterCallBackend?: undefined | ((response: string) => void)
 ): Promise<void> {
     const payloadStr = prepareCancelLendingRequestPayload(requestId);
-    await gmp_and_call_backend(user, contractAddress, payloadStr);
+    await gmp_and_call_backend(user, contractAddress, payloadStr,undefined, beforeCallBackend, afterCallBackend);
 }
 
 export async function cancelBorrowRequest(
     user: xrpl.Wallet,
     
     requestId: number,
+    beforeCallBackend?: undefined | ((response: string) => void),
+    afterCallBackend?: undefined | ((response: string) => void)
 ): Promise<void> {
     const payloadStr = prepareCancelBorrowingRequestPayload(requestId);
-    await gmp_and_call_backend(user, contractAddress, payloadStr);
+    await gmp_and_call_backend(user, contractAddress, payloadStr,undefined, beforeCallBackend, afterCallBackend);
 }
 
 export async function liquidateLoan(
     user: xrpl.Wallet,
     
     loanId: number,
-    currencyAmount: xrpl.IssuedCurrencyAmount | string
+    currencyAmount: xrpl.IssuedCurrencyAmount | string,
+    beforeCallBackend?: undefined | ((response: string) => void),
+    afterCallBackend?: undefined | ((response: string) => void)
 ): Promise<void> {
     const payloadStr = prepareLiquidateLoanPayload(loanId);
-    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount);
+    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount, beforeCallBackend, afterCallBackend);
 }

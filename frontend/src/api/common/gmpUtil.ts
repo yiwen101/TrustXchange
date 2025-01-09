@@ -2,9 +2,10 @@ import * as xrpl from "xrpl";
 import { ethers } from "ethers";
 import {callGmp} from "../backend/gmp";
 import {testnet_url, USDC_issuer} from "../../const";
-async function gmp(user: xrpl.Wallet, contractAddress:string, payloadStr:string,currencyAmount:xrpl.IssuedCurrencyAmount | string, callback: (response: string) => void = console.log): Promise<void> {
+async function gmp(user: xrpl.Wallet, contractAddress:string, payloadStr:string,currencyAmount:xrpl.IssuedCurrencyAmount | string): Promise<string> {
     const DESTINATION_ADDRESS = USDC_issuer.address;
     const client = new xrpl.Client(testnet_url);
+    try{
     await client.connect();
     const payloadHash = ethers.keccak256(payloadStr).replace("0x", "");
     console.log(contractAddress, payloadHash);
@@ -40,13 +41,25 @@ async function gmp(user: xrpl.Wallet, contractAddress:string, payloadStr:string,
     console.log("Submitting transaction...");
     const result = await client.submitAndWait(signed.tx_blob)
     console.log("Transaction submitted. Result:", result);
-
-    callback(result.result.hash)
-    await client.disconnect();
+    return result.result.hash;
+    } finally {
+        await client.disconnect();
+    }
 }
 
-export async function gmp_and_call_backend(user: xrpl.Wallet, contractAddress:string, payloadStr:string,currencyAmount:xrpl.IssuedCurrencyAmount | string = "0"): Promise<void> {
-    const callback = async (response: string) => {
+export async function gmp_and_call_backend(
+    user: xrpl.Wallet, 
+    contractAddress:string,
+    payloadStr:string,
+    currencyAmount:xrpl.IssuedCurrencyAmount | string = "0",
+    beforeCallBackend: undefined | ((response: string) => void) = undefined,
+    afterCallBackend: undefined | ((response: string) => void) = undefined,
+): Promise<void> {
+
+    const callBackend = async (response: string) => {
+        if (beforeCallBackend) {
+            beforeCallBackend(response);
+        }
         const maxRetries = 10;
         const oneSecond = 1000;
         const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -55,10 +68,13 @@ export async function gmp_and_call_backend(user: xrpl.Wallet, contractAddress:st
             const result = await callGmp({payloadString: payloadStr, transactionHash: response});
             if (result.success) {
                 await sleep(oneSecond*5);
+                if (afterCallBackend) {
+                    afterCallBackend(result.message);
+                }
                 return;
             }
             console.log(`GMP call to backend failed: ${result.message}`); 
         }
     }
-    return gmp(user, contractAddress, payloadStr, currencyAmount, callback);
+    return gmp(user, contractAddress, payloadStr, currencyAmount).then(hash => callBackend(hash));
 }
