@@ -265,7 +265,7 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
         onClick={handleButtonClicked}
         disabled={isApproved && !(xrplTransaction && gatewayTransaction && evmTransaction)}
       >
-        {isApproved && !(xrplTransaction && gatewayTransaction && evmTransaction) ? <CircularProgress size={24} /> : isApproved ? 'Approve' : 'Finish'}
+        {isApproved && !(xrplTransaction && gatewayTransaction && evmTransaction) ? <CircularProgress size={24} /> : isApproved ? 'Finish':'Approve'}
       </Button>
     </DialogContent>
     <DialogActions  sx={{
