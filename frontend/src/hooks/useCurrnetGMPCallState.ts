@@ -16,9 +16,11 @@ export const useCurrentGMPCallState = () => {
     const [xrplTransaction, setXrplTransaction] = useRecoilState(XrplTransaction);
     const [evmTransaction, setEvmTransaction] = useRecoilState(EvmTransaction);
     const beforeCallBackend = (hash:string) => {
+        console.log("beforeCallBackend", hash);
         setXrplTransaction(hash);
     }
     const afterCallBackend = (hash:string) => {
+        console.log("afterCallBackend", hash);
         setEvmTransaction(hash);
     }
 

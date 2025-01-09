@@ -49,7 +49,7 @@ export const useP2pActions = () => {
     const setAllRequests = useSetRecoilState(allRequestsState);
     const setLoansByAddress = useSetRecoilState(loansByAddressState);
     const setEventsByAddress = useSetRecoilState(eventsByAddressState);
-    const {beforeCallBackend, afterCallBackend,reset} = useCurrentGMPCallState();
+    const {beforeCallBackend, afterCallBackend} = useCurrentGMPCallState();
 
     const fetchAllRequests = async () => {
         const requests = await getAllRequests();
@@ -93,7 +93,6 @@ export const useP2pActions = () => {
           await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30 seconds
             if(address){
                 await Promise.all([
-                    reset(),
                     onLoginP2p(address),
                     fetchAllRequests(),
                 ]);

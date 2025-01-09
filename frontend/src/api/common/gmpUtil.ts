@@ -55,7 +55,7 @@ export async function gmp_and_call_backend(
     beforeCallBackend: undefined | ((response: string) => void) = undefined,
     afterCallBackend: undefined | ((response: string) => void) = undefined,
 ): Promise<void> {
-
+    console.log(afterCallBackend);
     const callBackend = async (response: string) => {
         if (beforeCallBackend) {
             beforeCallBackend(response);
@@ -68,15 +68,18 @@ export async function gmp_and_call_backend(
             const result = await callGmp({payloadString: payloadStr, transactionHash: response});
             
             if (result.success) {
-                for (let i = 0; i < maxRetries; i++) {
-                    await sleep(oneSecond);
+                console.log(`GMP call to backend succeeded, sleeping for 10 seconds...`);
+                await sleep(3 * oneSecond);
+                for (let i = 0; i < 3; i++) {
                     const _result = await callGmp({payloadString: payloadStr, transactionHash: response});
+                    console.log(`GMP call to backend result: ${_result.message}`);
                     if(_result.isProcessed) {
                         if (afterCallBackend) {
                             afterCallBackend(_result.message);
                         }
                         return;
                     }
+                    await sleep(3 * oneSecond);
                 }
                 return;
             }
