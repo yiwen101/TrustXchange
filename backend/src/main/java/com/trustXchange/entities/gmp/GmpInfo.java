@@ -19,6 +19,8 @@ public class GmpInfo {
     @Id
     @Column(name = "transaction_hash", nullable = false)
     String transactionHash;
+    @Column(name = "evm_transaction_hash", nullable = false)
+    String evmTransactionHash;
     @Column(name = "destination_address", nullable = false)
     String destinationAddress;
     @Column(name = "destination_chain_hex", nullable = false)
@@ -38,6 +40,7 @@ public class GmpInfo {
 
     public GmpInfo(String transactionHash, GMPCallInfo gmpCallInfo) {
         this.transactionHash = transactionHash;
+        this.evmTransactionHash = "";
         this.destinationAddress = gmpCallInfo.getDestinationAddress();
         this.destinationChainHex = gmpCallInfo.getDestinationChainHex();
         this.payloadHash = gmpCallInfo.getPayloadHash();

@@ -66,10 +66,17 @@ export async function gmp_and_call_backend(
         for (let i = 0; i < maxRetries; i++) {
             await sleep(oneSecond);
             const result = await callGmp({payloadString: payloadStr, transactionHash: response});
+            
             if (result.success) {
-                await sleep(oneSecond*5);
-                if (afterCallBackend) {
-                    afterCallBackend(result.message);
+                for (let i = 0; i < maxRetries; i++) {
+                    await sleep(oneSecond);
+                    const _result = await callGmp({payloadString: payloadStr, transactionHash: response});
+                    if(_result.isProcessed) {
+                        if (afterCallBackend) {
+                            afterCallBackend(_result.message);
+                        }
+                        return;
+                    }
                 }
                 return;
             }

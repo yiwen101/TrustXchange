@@ -46,6 +46,7 @@ public class GmpManager {
                     .thenAccept(receipt -> {
                         System.out.println("callContract Transaction Receipt: " + receipt.getTransactionReceipt().get());
                         info.setIsProcessed(true);
+                        info.setEvmTransactionHash(receipt.getTransactionReceipt().get().getTransactionHash());
                         gmpInfoRepository.save(info);
                     })
                     .exceptionally(e -> {
@@ -62,6 +63,7 @@ public class GmpManager {
                     .thenAccept(receipt -> {
                         System.out.println("callContractWithMint Transaction Receipt: " + receipt.getTransactionReceipt().get());
                         info.setIsProcessed(true);
+                        info.setEvmTransactionHash(receipt.getTransactionReceipt().get().getTransactionHash());
                         gmpInfoRepository.save(info);
                     })
                     .exceptionally(e -> {

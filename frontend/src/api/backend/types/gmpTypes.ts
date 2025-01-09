@@ -5,5 +5,6 @@ export interface GmpCallRequest {
 
 export interface GmpCallResponse {
     success: boolean;
+    isProcessed: boolean;
     message: string;
 }

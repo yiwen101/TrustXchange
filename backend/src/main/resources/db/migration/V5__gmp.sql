@@ -5,6 +5,7 @@ CREATE TABLE gmp_count (
 
 CREATE TABLE gmp_info (
     transaction_hash VARCHAR(255) PRIMARY KEY,
+    evm_transaction_hash VARCHAR(255) NOT NULL,
     destination_address VARCHAR(255) NOT NULL,
     destination_chain_hex VARCHAR(255) NOT NULL,
     payload_hash VARCHAR(255) NOT NULL,

@@ -40,7 +40,7 @@ public class GmpInfoController {
             return new CheckGmpInfoResponse(false, "not match");
         }
         if (gmpInfo.getIsProcessed()) {
-            return new CheckGmpInfoResponse(true, "already processed");
+            return new CheckGmpInfoResponse(true, true, gmpInfo.getEvmTransactionHash());
         }
         if (gmpInfo.getIsProcessing()) {
             return new CheckGmpInfoResponse(true, "processing");
@@ -61,10 +61,17 @@ class CheckGmpInfoRequest {
 
 class CheckGmpInfoResponse {
     public boolean success;
+    public boolean isProcessed;
     public String message;
 
+    public CheckGmpInfoResponse(boolean success, boolean isProcessed, String message) {
+        this.success = success;
+        this.message = message;
+        this.isProcessed = isProcessed;
+    }
     public CheckGmpInfoResponse(boolean success, String message) {
         this.success = success;
         this.message = message;
+        this.isProcessed = false;
     }
 }
