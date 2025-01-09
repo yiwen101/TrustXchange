@@ -1,6 +1,16 @@
 // SwapPage.tsx
 import React, { useState } from 'react';
-import { Card, Button, IconButton, Typography, Stack, Box } from '@mui/material';
+import { 
+  Card, 
+  Button, 
+  IconButton, 
+  Typography, 
+  Stack, 
+  Box,
+  Container,
+  ButtonGroup,
+  Paper
+} from '@mui/material';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 import { XrpIcon, UsdcIcon } from '../../icons/Icons';
 import InputCard from './InputCard';
@@ -160,101 +170,152 @@ const SwapPage = () => {
   };
 
   return (
-    <Card style={{ padding: '20px', width: '250px', margin: 'auto' }}>
-      <Typography variant="h5">Swap</Typography>
-      
-      {/* Maximum slippage tolerance settings */}
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center',
-        my: 2,
-        p: 1,
-        border: '1px solid #eee',
-        borderRadius: 1
-      }}>
-        <Typography variant="body2" gutterBottom>
-          Maximum Slippage Tolerance
-        </Typography>
-        <Stack direction="row" spacing={1}>
-          {slippageOptions.map((value) => (
-            <Button
-              key={value}
-              size="small"
-              variant={maxSlippageTolerance === value ? "contained" : "outlined"}
-              onClick={() => handleSlippageChange(value)}
-              sx={{ minWidth: '60px' }}
-            >
-              {value}%
-            </Button>
-          ))}
-        </Stack>
-      </Box>
-
-      {isXrpToUsd ? (
-        <InputCard 
-          icon={<XrpIcon />} 
-          value={xrpValueInput} 
-          onChange={handleXrpValueChange}
-          error={!!inputError}
-          helperText={inputError}
-        />
-      ) : (
-        <InputCard 
-          icon={<UsdcIcon />} 
-          value={usdValueInput} 
-          onChange={handleUsdValueChange}
-          error={!!inputError}
-          helperText={inputError}
-        />
-      )}
-      <IconButton onClick={handleSwitch} style={{ marginTop: '2px' }}>
-        <SwapVertIcon />
-      </IconButton>
-      {isXrpToUsd ? (
-        <InputCard 
-          icon={<UsdcIcon />} 
-          value={usdValueInput} 
-          onChange={handleUsdValueChange}
-          error={!!inputError}
-          helperText={inputError}
-        />
-      ) : (
-        <InputCard 
-          icon={<XrpIcon />} 
-          value={xrpValueInput} 
-          onChange={handleXrpValueChange}
-          error={!!inputError}
-          helperText={inputError}
-        />
-      )}
-      <Button 
-        variant="contained" 
-        color="primary" 
-        style={{ marginTop: '20px', width: '100%' }}
-        onClick={connectedWallet ? handleSwap : connectOrCreateWallet}
-        disabled={isSwapping || (!connectedWallet && isSwapping) || !!inputError || !xrpValueInput || !usdValueInput}
+    <Container maxWidth="sm" sx={{ mt: 4 }}>
+      <Paper 
+        elevation={3}
+        sx={{
+          p: 4,
+          borderRadius: 2,
+          bgcolor: 'background.paper',
+          maxWidth: '400px',
+          mx: 'auto'
+        }}
       >
-        {!connectedWallet ? 'Connect Wallet' : 
-         isSwapping ? 'Swapping...' : 'Swap'}
-      </Button>
+        <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
+          Swap
+        </Typography>
 
-      <Typography variant="h5" style={{ marginTop: '40px' }}>Market Condition</Typography>
-      <Card style={{ padding: '10px', marginTop: '10px' }}>
-        {xrpPrice && xrpPriceYesterday && (
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <XrpIcon />
-            <Typography variant="h6">{current_price_2dp}</Typography>
+        {/* Slippage Settings */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Maximum Slippage Tolerance
+          </Typography>
+          <ButtonGroup size="small" sx={{ mb: 2 }}>
+            {[0.1, 0.5, 1.0].map((value) => (
+              <Button
+                key={value}
+                variant={maxSlippageTolerance === value ? "contained" : "outlined"}
+                onClick={() => handleSlippageChange(value)}
+                sx={{ 
+                  minWidth: '60px',
+                  '&.Mui-selected': {
+                    bgcolor: 'primary.main'
+                  }
+                }}
+              >
+                {value}%
+              </Button>
+            ))}
+          </ButtonGroup>
+        </Box>
+
+        {/* Swap Inputs */}
+        <Stack spacing={1}>
+          {isXrpToUsd ? (
+            <InputCard 
+              icon={<XrpIcon />} 
+              value={xrpValueInput} 
+              onChange={handleXrpValueChange}
+              error={!!inputError}
+              helperText={inputError}
+              label="You pay"
+            />
+          ) : (
+            <InputCard 
+              icon={<UsdcIcon />} 
+              value={usdValueInput} 
+              onChange={handleUsdValueChange}
+              error={!!inputError}
+              helperText={inputError}
+              label="You pay"
+            />
+          )}
+
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 1 }}>
+            <IconButton 
+              onClick={handleSwitch}
+              sx={{ 
+                bgcolor: 'background.default',
+                '&:hover': {
+                  bgcolor: 'action.hover'
+                }
+              }}
+            >
+              <SwapVertIcon />
+            </IconButton>
+          </Box>
+
+          {isXrpToUsd ? (
+            <InputCard 
+              icon={<UsdcIcon />} 
+              value={usdValueInput} 
+              onChange={handleUsdValueChange}
+              error={!!inputError}
+              helperText={inputError}
+              label="You receive"
+            />
+          ) : (
+            <InputCard 
+              icon={<XrpIcon />} 
+              value={xrpValueInput} 
+              onChange={handleXrpValueChange}
+              error={!!inputError}
+              helperText={inputError}
+              label="You receive"
+            />
+          )}
+        </Stack>
+
+        {/* Swap Button */}
+        <Button 
+          variant="contained" 
+          fullWidth
+          size="large"
+          onClick={connectedWallet ? handleSwap : connectOrCreateWallet}
+          disabled={isSwapping || (!connectedWallet && isSwapping) || !!inputError || !xrpValueInput || !usdValueInput}
+          sx={{ 
+            mt: 3,
+            height: '48px',
+            borderRadius: 2,
+            textTransform: 'none',
+            fontSize: '1.1rem'
+          }}
+        >
+          {!connectedWallet ? 'Connect Wallet' : 
+           isSwapping ? 'Swapping...' : 'Swap'}
+        </Button>
+
+        {/* Market Condition */}
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="h6" gutterBottom>
+            Market Condition
+          </Typography>
+          <Paper 
+            variant="outlined" 
+            sx={{ 
+              p: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <XrpIcon />
+              <Typography variant="h6">{current_price_2dp}</Typography>
+            </Box>
             <Typography
               variant="body2"
-              style={{ color: price_diff > 0 ? 'green' : 'red' }}
+              sx={{ 
+                color: price_diff > 0 ? 'success.main' : 'error.main',
+                fontWeight: 500
+              }}
             >
               {price_diff_2dp} since yesterday
             </Typography>
-          </Stack>
-        )}
-      </Card>
-    </Card>
+          </Paper>
+        </Box>
+      </Paper>
+    </Container>
   );
 };
 

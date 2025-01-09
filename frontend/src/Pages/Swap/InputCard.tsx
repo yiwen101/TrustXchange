@@ -1,6 +1,6 @@
 // InputCard.tsx
 import React from 'react';
-import { Card, Stack, Typography, TextField } from '@mui/material';
+import { Paper, InputBase, Box, Typography } from '@mui/material';
 
 interface InputCardProps {
   icon: React.ReactNode;
@@ -8,55 +8,63 @@ interface InputCardProps {
   onChange: (value: string) => void;
   error?: boolean;
   helperText?: string;
+  label?: string;
 }
 
-const InputCard: React.FC<InputCardProps> = ({ icon, value, onChange, error, helperText }) => {
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    
-    // Allow empty input
-    if (value === '') {
-      onChange(value);
-      return;
-    }
-
-    // Only allow valid number patterns
-    if (/^\d*\.?\d*$/.test(value)) {
-      // Prevent multiple decimal points
-      if ((value.match(/\./g) || []).length <= 1) {
-        // Prevent more than 6 decimal places
-        const parts = value.split('.');
-        if (parts.length === 2 && parts[1].length > 6) {
-          return;
-        }
-        onChange(value);
-      }
-    }
-  };
-
+const InputCard: React.FC<InputCardProps> = ({ 
+  icon, 
+  value, 
+  onChange, 
+  error, 
+  helperText,
+  label 
+}) => {
   return (
-    <Card style={{ padding: '10px', marginTop: '10px' }}>
-      <Stack direction="row" alignItems="center" spacing={2}>
+    <Box>
+      {label && (
+        <Typography 
+          variant="body2" 
+          color="text.secondary" 
+          sx={{ mb: 0.5, ml: 1 }}
+        >
+          {label}
+        </Typography>
+      )}
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 1.5,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          bgcolor: 'background.paper',
+          borderColor: error ? 'error.main' : 'divider'
+        }}
+      >
         {icon}
-        <TextField
+        <InputBase
           fullWidth
           value={value}
-          onChange={handleInputChange}
+          onChange={(e) => onChange(e.target.value)}
           placeholder="0.00"
-          variant="standard"
-          error={error}
-          helperText={helperText}
-          InputProps={{
-            type: 'text',
-            style: { fontSize: '20px' },
-            inputProps: {
-              pattern: '^[0-9]*[.]?[0-9]*$',
-              inputMode: 'decimal',
+          sx={{
+            fontSize: '1.1rem',
+            '& input': {
+              textAlign: 'right',
             }
           }}
         />
-      </Stack>
-    </Card>
+      </Paper>
+      {error && helperText && (
+        <Typography 
+          variant="caption" 
+          color="error" 
+          sx={{ ml: 1, mt: 0.5 }}
+        >
+          {helperText}
+        </Typography>
+      )}
+    </Box>
   );
 };
 
