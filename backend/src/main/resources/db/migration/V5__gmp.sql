@@ -15,5 +15,5 @@ CREATE TABLE gmp_info (
     from_address VARCHAR(255) NOT NULL,
     is_received BOOLEAN NOT NULL,
     is_approved BOOLEAN NOT NULL,
-    in_called BOOLEAN NOT NULL,
+    is_called BOOLEAN NOT NULL
 );
