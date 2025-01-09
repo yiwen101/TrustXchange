@@ -4,6 +4,7 @@ package com.trustXchange.controller;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import org.checkerframework.checker.units.qual.g;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -32,23 +33,20 @@ public class GmpInfoController {
         String transactionHash = request.getTransactionHash();
         GmpInfo gmpInfo = gmpInfoRepository.findByTransactionHash(transactionHash);
         if (gmpInfo == null) {
-            return new CheckGmpInfoResponse(false, "not found");
+            return new CheckGmpInfoResponse(false);
         }
         String payloadHashUpper = payloadHash.toUpperCase();
         String gmpInfoPayloadHashUpper = "0X" + gmpInfo.getPayloadHash().toUpperCase();
         if (!payloadHashUpper.equals(gmpInfoPayloadHashUpper)) {
-            return new CheckGmpInfoResponse(false, "not match");
+            return new CheckGmpInfoResponse(false);
         }
-        if (gmpInfo.getIsProcessed()) {
-            return new CheckGmpInfoResponse(true, true, gmpInfo.getEvmTransactionHash());
+        if (gmpInfo.getIsReceived()) {
+            gmpInfo.setIsReceived(true);
+            gmpInfoRepository.save(gmpInfo);
         }
-        if (gmpInfo.getIsProcessing()) {
-            return new CheckGmpInfoResponse(true, "processing");
-        }
-        gmpInfo.setIsProcessing(true);
-        gmpInfoRepository.save(gmpInfo);
+        
         gmpManager.manage(gmpInfo, request.getPayloadString());
-        return new CheckGmpInfoResponse(true, "processing");
+        return new CheckGmpInfoResponse(gmpInfo);
     }
 }
 
@@ -60,18 +58,20 @@ class CheckGmpInfoRequest {
 }
 
 class CheckGmpInfoResponse {
-    public boolean success;
-    public boolean isProcessed;
-    public String message;
+    public boolean isReceived;
+    public boolean isApproved;
+    public boolean isCalled;
+    public String getewayTransactionHash;
+    public String contractTransactionHash;
 
-    public CheckGmpInfoResponse(boolean success, boolean isProcessed, String message) {
-        this.success = success;
-        this.message = message;
-        this.isProcessed = isProcessed;
+    public CheckGmpInfoResponse(GmpInfo gmpInfo) {
+        this.isReceived = gmpInfo.getIsReceived();
+        this.isApproved = gmpInfo.getIsApproved();
+        this.isCalled = gmpInfo.getIsCalled();
+        this.getewayTransactionHash = gmpInfo.getGatewayTransactionHash();
+        this.contractTransactionHash = gmpInfo.getContractTransactionHash();
     }
-    public CheckGmpInfoResponse(boolean success, String message) {
-        this.success = success;
-        this.message = message;
-        this.isProcessed = false;
+    public CheckGmpInfoResponse(boolean isReceived) {
+        this.isReceived = isReceived;
     }
 }

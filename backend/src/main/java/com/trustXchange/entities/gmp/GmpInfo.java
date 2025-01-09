@@ -19,8 +19,10 @@ public class GmpInfo {
     @Id
     @Column(name = "transaction_hash", nullable = false)
     String transactionHash;
-    @Column(name = "evm_transaction_hash", nullable = false)
-    String evmTransactionHash;
+    @Column(name = "contract_transaction_hash", nullable = false)
+    String contractTransactionHash;
+    @Column(name = "gateway_transaction_hash", nullable = false)
+    String gatewayTransactionHash;
     @Column(name = "destination_address", nullable = false)
     String destinationAddress;
     @Column(name = "destination_chain_hex", nullable = false)
@@ -33,21 +35,25 @@ public class GmpInfo {
     Long amount;
     @Column(name = "from_address", nullable = false)
     String from;
-    @Column(name = "is_processing", nullable = false)
-    Boolean isProcessing;
-    @Column(name = "is_processed", nullable = false)
-    Boolean isProcessed;
+    @Column(name = "is_received", nullable = false)
+    Boolean isReceived;
+    @Column(name = "is_approved", nullable = false)
+    Boolean isApproved;
+    @Column(name = "is_called", nullable = false)
+    Boolean isCalled;
 
     public GmpInfo(String transactionHash, GMPCallInfo gmpCallInfo) {
         this.transactionHash = transactionHash;
-        this.evmTransactionHash = "";
+        this.contractTransactionHash = "";
+        this.gatewayTransactionHash = "";
         this.destinationAddress = gmpCallInfo.getDestinationAddress();
         this.destinationChainHex = gmpCallInfo.getDestinationChainHex();
         this.payloadHash = gmpCallInfo.getPayloadHash();
         this.symbol = gmpCallInfo.getSymbol();
         this.amount = gmpCallInfo.getAmount();
         this.from = gmpCallInfo.getFrom();
-        this.isProcessing = false;
-        this.isProcessed = false;
+        this.isReceived = false;
+        this.isApproved = false;
+        this.isCalled = false;
     }
 }

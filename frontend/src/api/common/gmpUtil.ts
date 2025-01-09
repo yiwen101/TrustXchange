@@ -93,15 +93,15 @@ export async function gmp_and_call_backend(
         }
        
         for (let i = 0; i < 5; i++) {
+            await sleep(oneSecond);
             const _result = await callGmp({payloadString: payloadStr, transactionHash: response});
             if(_result.isCalled) {
                 if (afterCallBackend) {
                     await sleep(5 * oneSecond);
-                    afterCallBackend(_result.evmTransactionHash);
+                    afterCallBackend(_result.contractTransactionHash);
                 }
                 return;
             }
-            await sleep(3 * oneSecond);
         }
         return;
     }

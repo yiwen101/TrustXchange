@@ -8,5 +8,5 @@ export interface GmpCallResponse {
     isApproved: boolean;
     isCalled: boolean;
     getewayTransactionHash: string;
-    evmTransactionHash: string;
+    contractTransactionHash: string;
 }
