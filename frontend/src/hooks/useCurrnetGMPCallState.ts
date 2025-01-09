@@ -29,6 +29,7 @@ export const useCurrentGMPCallState = () => {
         reset: () => {
             setXrplTransaction(null);
             setEvmTransaction(null);
+            setGatewayTransaction(null);
         },
         setXrplTransaction,
         setEvmTransaction,

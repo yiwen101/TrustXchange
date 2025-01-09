@@ -24,13 +24,15 @@ const NewRequestForm: React.FC<NewRequestFormProps> = ({open, onClose,onSubmit}:
     const [partialFill, setPartialFill] = useState('');
     const [liquidationThreshold, setLiquidationThreshold] = useState('100');
     
-    const handleSubmit = () => {
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
         console.log("Form Submitted:",{
           amount, collateralRatio, interestRate, duration, partialFill, isLending
         });
     
         if (isLending) {
-            const callback = async () => {
+            const callback =  () => async () => {
+                console.log("Callback invoked.");
                 await handleCreateLendRequest(
                 connectedWallet!,
                  Math.floor(parseFloat(amount)),
@@ -42,10 +44,11 @@ const NewRequestForm: React.FC<NewRequestFormProps> = ({open, onClose,onSubmit}:
                 connectedWallet!.classicAddress,
             );}
             const currencyAmount =Math.floor(parseFloat(amount));
-          onSubmit(callback, currencyAmount + " USD");
+            onSubmit(callback, currencyAmount + " USD");
         } else {
             const currencyAmount =Math.ceil(parseFloat(amount)*parseFloat(collateralRatio)/(xrpPrice!*100));
-            const callback = async () => {
+            const callback = () => async () => {
+                console.log("Callback invoked.");
                 await handleCreateBorrowRequest(
                 connectedWallet!,
                 Math.floor(parseFloat(amount)),
@@ -58,6 +61,7 @@ const NewRequestForm: React.FC<NewRequestFormProps> = ({open, onClose,onSubmit}:
                 connectedWallet!.classicAddress,
             );
         }
+       
         
         onSubmit(callback, currencyAmount + " XRP");
         };

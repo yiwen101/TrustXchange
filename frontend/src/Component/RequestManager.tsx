@@ -5,7 +5,7 @@ import ApproveTransaction from './TransactionProgress';
 
 export interface NewRequestFormProps {
     open: boolean;
-    onSubmit: (callback: () => Promise<void>, currencyStr:string) => void;
+    onSubmit: (callback: ()=>() => Promise<void>, currencyStr:string) => void;
     onClose: () => void;
 }
 interface RequestManagerProps {
@@ -22,7 +22,7 @@ const RequestManager: React.FC<RequestManagerProps> = (props) => {
     const [isFormSubmitted, setIsFormSubmitted] = useState(false);
     const [currencyStr, setCurrencyStr] = useState('');
 
-    const onFormSubmit = (callback: () => Promise<void>, currencyStr:string) => {
+    const onFormSubmit = (callback: ()=>() => Promise<void>, currencyStr:string) => {
         setCallback(callback);
         setCurrencyStr(currencyStr);
         setIsFormSubmitted(true);

@@ -20,18 +20,14 @@ interface ApproveTransactionProps {
 
 const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onClose,open,currencyStr,onBack,contractAddress }) => {
   const [isApproved, setIsApproved] = useState(false);
-  const [isFinished, setIsFinished] = useState(false);
-  const { xrplTransaction, gatewayTransaction,evmTransaction } = useCurrentGMPCallState();
-  const {reset} = useCurrentGMPCallState();
-
+  const { xrplTransaction, gatewayTransaction,evmTransaction, reset } = useCurrentGMPCallState();
   const onFinish = () => {
     onClose();
-    setIsApproved(false);
-    setIsFinished(false);
     reset();
+    setIsApproved(false);
   }
   const handleButtonClicked = async () => {
-    if (isFinished) {
+    if (xrplTransaction && gatewayTransaction && evmTransaction) {
       onFinish();
       return;
     }
@@ -41,8 +37,6 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
       await onApprove();
     } catch (error) {
       console.error("Approval failed:", error);
-    } finally {
-      setIsFinished(true);
     }
   };
   const showLongTxHash = (hash: string) => {
@@ -269,9 +263,9 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
         color="primary"
         fullWidth
         onClick={handleButtonClicked}
-        disabled={isApproved && !isFinished}
+        disabled={isApproved && !(xrplTransaction && gatewayTransaction && evmTransaction)}
       >
-        {isApproved && !isFinished? <CircularProgress size={24} /> : isFinished ? 'Close' : 'Approve'}
+        {isApproved && !(xrplTransaction && gatewayTransaction && evmTransaction) ? <CircularProgress size={24} /> : isApproved ? 'Approve' : 'Finish'}
       </Button>
     </DialogContent>
     <DialogActions  sx={{
