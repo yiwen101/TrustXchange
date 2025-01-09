@@ -7,6 +7,7 @@ import {
     P2pBorrowingRequest,
     P2pLendingRequest,
 } from '../../api/backend/types/p2pTypes';
+import RequestButton from './RequestButton';
 
 type RequestType = P2pBorrowingRequest | P2pLendingRequest;
 
@@ -75,7 +76,8 @@ const P2pPage: React.FC = () => {
          !type.toLowerCase().includes(requestTypeFilter.toLowerCase())) &&
         (statusFilter === "any" ||
             (statusFilter === "Not Filled/Partial Filled" && (status === "Not Filled" || status === "Partial Filled")) ||
-            status.toLowerCase().includes(statusFilter.toLowerCase())) &&
+            (statusFilter == "Filled" && status == statusFilter) ||
+            (statusFilter !== "Filled" && status.toLowerCase().includes(statusFilter.toLowerCase()))) &&
         (durationCondition === "any" ||
           durationFilter === "" ||
           (durationCondition === "greater" &&
@@ -106,10 +108,21 @@ const P2pPage: React.FC = () => {
     return (
         <Box width={'100%'}>
             <Stack display="flex" flexDirection="column" justifyContent="flex-start" p={2}>
-                <Grid container spacing={2} mb={2} style={{ marginTop: "10px" }}>
+                <Tabs
+                    value={activeTab}
+                    onChange={handleChange}
+                    indicatorColor="primary"
+                    textColor="primary"
+                    variant="fullWidth"
+                    centered
+                >
+                    <Tab label="Table View" />
+                    <Tab label="Card View" />
+                </Tabs>
+                <Grid container spacing={2} mb={2} style={{ marginTop: "0px" }}>
                     <Grid item xs={2}>
                     <FormControl fullWidth variant="outlined" size="small">
-                        <InputLabel>Type</InputLabel>
+                        <InputLabel>I want to</InputLabel>
                         <Select
                         label="Borrow/Lend"
                         value={requestTypeFilter}
@@ -259,28 +272,15 @@ const P2pPage: React.FC = () => {
                     borderColor: 'divider',
                     }}
                 >
-                <Tabs
-                    value={activeTab}
-                    onChange={handleChange}
-                    indicatorColor="primary"
-                    textColor="primary"
-                    variant="fullWidth"
-                    centered
-                >
-                    <Tab label="Table View" />
-                    <Tab label="Card View" />
-                </Tabs>
+                
                 </Box>
                 {activeTab === 0 && (
-                    <Box p={2}>
                     <P2pTable  rows={filteredRows}/>
-                    </Box>
                 )}
                 {activeTab === 1 && (
-                    <Box p={2}>
                     <P2pCardGrid rows={filteredRows} />
-                    </Box>
                 )}
+                <RequestButton />
             </Stack>
         </Box>
     );

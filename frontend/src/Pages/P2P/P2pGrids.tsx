@@ -1,10 +1,11 @@
 import React from 'react';
 import {
+  Box,
   Grid,
   Stack
 } from "@mui/material";
 import RequestCard from "./P2pGridCard";
-import RequestButton from "./P2pForm";
+import RequestButton from "./RequestButton";
 import {
     P2pBorrowingRequest,
     P2pLendingRequest
@@ -19,14 +20,14 @@ interface P2pCardGridProps {
 const P2pCardGrid: React.FC<P2pCardGridProps> = ({rows}) => {
 
   return (
-    <Stack display="flex" flexDirection="column" justifyContent="flex-start" p={2}>
+    <Box sx={{ maxHeight: '500px', width: '100%', overflow: 'auto' }}>
       <Grid container spacing={2}>
         {rows.map((row, index) => (
           <RequestCard key={index} row={row} />
         ))}
       </Grid>
-      <RequestButton />
-    </Stack>
+      
+    </Box>
   );
 };
 

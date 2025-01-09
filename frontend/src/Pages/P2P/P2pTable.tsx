@@ -115,7 +115,7 @@ const P2pTable: React.FC<P2pTableProps> = ({ rows }) => {
 
 
   return (
-    <Box>
+    <Box sx={{ maxHeight: '520px', width: '100%', overflow: 'auto' }}>
       <DataGrid
         rows={transformedRows}
         columns={borrowingRequestColumns}
@@ -125,7 +125,7 @@ const P2pTable: React.FC<P2pTableProps> = ({ rows }) => {
         initialState={{
           pagination: { paginationModel: { pageSize: 20 } },
         }}
-        pageSizeOptions={[10, 20, 50]}
+        pageSizeOptions={[10]}
         disableColumnResize
         density="compact"
       />
