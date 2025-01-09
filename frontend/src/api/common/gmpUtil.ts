@@ -62,6 +62,7 @@ export async function gmp_and_call_backend(
         const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
         let latestResponse = null;
         if (beforeCallBackend) {
+            console.log("beforeCallBackend");
             await sleep(oneSecond);
             beforeCallBackend(response);
         }
@@ -80,12 +81,13 @@ export async function gmp_and_call_backend(
             await sleep(3 * oneSecond);
             const result = await callGmp({payloadString: payloadStr, transactionHash: response});
             if (result.isApproved) {
+                console.log("isApproved");
                 latestResponse = result;
                 if (middleCallBackend) {
                     await sleep(10 * oneSecond);
                     middleCallBackend(result.getewayTransactionHash);
                 }
-                return;
+                break;
             }
         }
         if (!latestResponse.isApproved) {
@@ -96,6 +98,7 @@ export async function gmp_and_call_backend(
             await sleep(oneSecond);
             const _result = await callGmp({payloadString: payloadStr, transactionHash: response});
             if(_result.isCalled) {
+                console.log("isCalled");
                 if (afterCallBackend) {
                     await sleep(5 * oneSecond);
                     afterCallBackend(_result.contractTransactionHash);
