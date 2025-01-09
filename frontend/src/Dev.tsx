@@ -17,6 +17,7 @@ import ShareIcon from '@mui/icons-material/Share';
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
+import { OptionPayoffChart } from './components/OptionPayoffChart';
 
 
 const mockWarrantData = {
@@ -26,10 +27,10 @@ const mockWarrantData = {
     volatility: 0.22,
     strike: 10.0,
     maturity: moment().add(15, 'days').unix(),
-    optionType: 'Call',
+    optionType: 'Put',
     intrinsicValue: 2.50,
     contractSize: 100,
-    timeValue: 3.00,
+    timeValue: 1.0,
     quoteData: [
         { time: '9:00', price: 12.45 },
         { time: '10:00', price: 12.55 },
@@ -42,16 +43,81 @@ const mockWarrantData = {
         { type: 'Ask', price: 12.60, quantity: 40, percentage: 48.19 },
     ],
     payoffData: [
-        { underlyingPrice: 8, pnl: -2 },
+        { underlyingPrice: 8, pnl: -1 },
         { underlyingPrice: 9, pnl: -1 },
-        { underlyingPrice: 10, pnl: 0 },
-        { underlyingPrice: 11, pnl: 1 },
-        { underlyingPrice: 12, pnl: 2 },
-        { underlyingPrice: 13, pnl: 3 },
+        { underlyingPrice: 10, pnl: -1 },
+        { underlyingPrice: 11, pnl: -1 },
+        { underlyingPrice: 12, pnl: -1 },
+        { underlyingPrice: 13, pnl: -1 },
     ],
   };
 
-const PriceSection = ({ currentPrice, priceChange, isStarred, handleStarToggle }) => {
+// First, let's define interfaces for our data structures
+interface WarrantData {
+  id: number;
+  currentPrice: number;
+  priceChange: number;
+  volatility: number;
+  strike: number;
+  maturity: number;
+  optionType: string;
+  intrinsicValue: number;
+  contractSize: number;
+  timeValue: number;
+  quoteData: QuoteDataPoint[];
+  bidAskData: BidAskData[];
+  payoffData: PayoffDataPoint[];
+}
+
+interface QuoteDataPoint {
+  time: string;
+  price: number;
+}
+
+interface BidAskData {
+  type: 'Bid' | 'Ask';
+  price: number;
+  quantity: number;
+  percentage: number;
+}
+
+interface PayoffDataPoint {
+  underlyingPrice: number;
+  pnl: number;
+}
+
+// Component Props interfaces
+interface PriceSectionProps {
+  currentPrice: number;
+  priceChange: number;
+  isStarred: boolean;
+  handleStarToggle: () => void;
+}
+
+interface InformationSectionProps {
+  warrant: WarrantData;
+}
+
+interface QuoteSectionProps {
+  quoteData: QuoteDataPoint[];
+}
+
+interface BidAskSectionProps {
+  bidAskData: BidAskData[];
+}
+
+interface PayoffSectionProps {
+  payoffData: PayoffDataPoint[];
+  strike: number;
+}
+
+// Update the styled component to include custom props
+interface BidAskBarProps {
+  percentage: number;
+  type: 'Bid' | 'Ask';
+}
+
+const PriceSection: React.FC<PriceSectionProps> = ({ currentPrice, priceChange, isStarred, handleStarToggle }) => {
     return (
         <Box mb={2} display="flex" alignItems="center">
           <Box flexGrow={1}>
@@ -72,7 +138,7 @@ const PriceSection = ({ currentPrice, priceChange, isStarred, handleStarToggle }
 };
 
 
-const InformationSection = ({ warrant }) => {
+const InformationSection: React.FC<InformationSectionProps> = ({ warrant }) => {
   const daysToExpiry = moment.unix(warrant.maturity).diff(moment(), 'days');
   return (
     <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
@@ -122,7 +188,7 @@ const InformationSection = ({ warrant }) => {
   );
 };
 
-const QuoteSection = ({ quoteData }) => {
+const QuoteSection: React.FC<QuoteSectionProps> = ({ quoteData }) => {
     return (
     <Box mb={2}>
         <Typography variant="h6" mb={1}>Quote</Typography>
@@ -148,14 +214,14 @@ const BidAskContainer = styled(Box)(({ theme }) => ({
     overflow: 'hidden',
 }));
 
-const BidAskBar = styled(Box)(({ theme, percentage, type }) => ({
+const BidAskBar = styled(Box)<BidAskBarProps>(({ theme, percentage, type }) => ({
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     height: '30px',
     backgroundColor: type === 'Bid' ? 'lightgreen' : 'lightcoral',
     width: `${percentage}%`,
-    color:  'black',
+    color: 'black',
     textAlign: 'center',
     fontWeight: 'bold',
 }));
@@ -180,7 +246,7 @@ const BidAskItem = styled(Box)(({ theme }) => ({
 }));
 
 
-const BidAskSection = ({ bidAskData }) => {
+const BidAskSection: React.FC<BidAskSectionProps> = ({ bidAskData }) => {
     const bid = bidAskData.find(item => item.type === 'Bid');
     const ask = bidAskData.find(item => item.type === 'Ask');
 
@@ -229,27 +295,16 @@ const BidAskSection = ({ bidAskData }) => {
 };
 
 
-const PayoffSection = ({ payoffData, strike }) => {
-    const minPrice = Math.min(...payoffData.map(item => item.underlyingPrice));
-    const maxPrice = Math.max(...payoffData.map(item => item.underlyingPrice));
-    const minPnl = Math.min(...payoffData.map(item => item.pnl));
-    const maxPnl = Math.max(...payoffData.map(item => item.pnl));
-
-
+const PayoffSection: React.FC<PayoffSectionProps> = () => {
     return (
         <Box mb={2}>
             <Typography variant="h6" mb={1}>Payoff at Expiry</Typography>
-            <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={payoffData}>
-                     <XAxis dataKey="underlyingPrice" domain={[minPrice, maxPrice]} />
-                    <YAxis domain={[minPnl * 1.2, maxPnl * 1.2]} />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="pnl" stroke="#ff7300" />
-                    {/* Add a vertical line at the strike price */}
-                    <ReferenceLine x={strike} stroke="gray"  />
-                    <ReferenceLine y={0} stroke="black"  />
-                </LineChart>
-            </ResponsiveContainer>
+            <OptionPayoffChart 
+                strikePrice={30}
+                currentPrice={29}
+                premium={1.0}
+                optionType={'Put'}
+            />
         </Box>
     );
 };
@@ -278,19 +333,19 @@ const StyledMenu = styled(Menu)(({ theme }) => ({
      color: 'white',
   }
 }));
-const TradeSection = () => {
-    const [anchorEl, setAnchorEl] = useState(null);
+const TradeSection: React.FC = () => {
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const open = Boolean(anchorEl);
-    const tradeButtonRef = useRef(null);
+    const tradeButtonRef = useRef<HTMLButtonElement>(null);
 
-    const handleTradeClick = (event) => {
+    const handleTradeClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(tradeButtonRef.current);
     };
 
     const handleClose = () => {
         setAnchorEl(null);
     };
-    const handleMenuItemClick = (action) => {
+    const handleMenuItemClick = (action: string) => {
         alert(`perform ${action} action`);
         handleClose();
     }
@@ -331,32 +386,31 @@ const TradeSection = () => {
     );
 };
 
-const WarrantTradingPage = () => {
-  const warrant = mockWarrantData;
+const WarrantTradingPage: React.FC = () => {
     const [isStarred, setIsStarred] = React.useState(false);
 
     const handleStarToggle = () => {
         setIsStarred(!isStarred);
     };
 
-  return (
-      <Container>
-          <PriceSection
-              currentPrice={warrant.currentPrice}
-              priceChange={warrant.priceChange}
-              isStarred={isStarred}
-              handleStarToggle={handleStarToggle}
-          />
-          <InformationSection warrant={warrant} />
-          <Divider style={{ margin: '20px 0'}}/>
-          <QuoteSection quoteData={warrant.quoteData} />
-          <Divider style={{ margin: '20px 0'}}/>
-          <BidAskSection bidAskData={warrant.bidAskData} />
-          <Divider style={{ margin: '20px 0'}}/>
-          <PayoffSection payoffData={warrant.payoffData} strike={warrant.strike} />
-           <TradeSection  />
-      </Container>
-  );
+    return (
+        <Container>
+            <PriceSection
+                currentPrice={mockWarrantData.currentPrice}
+                priceChange={mockWarrantData.priceChange}
+                isStarred={isStarred}
+                handleStarToggle={handleStarToggle}
+            />
+            <InformationSection warrant={mockWarrantData} />
+            <Divider style={{ margin: '20px 0'}}/>
+            <QuoteSection quoteData={mockWarrantData.quoteData} />
+            <Divider style={{ margin: '20px 0'}}/>
+            <BidAskSection bidAskData={mockWarrantData.bidAskData} />
+            <Divider style={{ margin: '20px 0'}}/>
+            <PayoffSection />
+            <TradeSection />
+        </Container>
+    );
 };
 
 export default WarrantTradingPage;
