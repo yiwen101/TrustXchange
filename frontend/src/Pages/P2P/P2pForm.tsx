@@ -3,6 +3,7 @@ import {
   Button,
 } from '@mui/material';
 import NewRequestForm from './p2pRequestForm';
+import RequestManager from '../../Component/RequestManager';
 
 const RequestButton: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -18,7 +19,7 @@ const RequestButton: React.FC = () => {
         <Button variant="contained" color="primary" style={{marginTop: '10px'}} onClick={() => handleClickOpen()}>
             Submit New Borrowing/Lending Request
         </Button>
-       <NewRequestForm open={open} onClose={handleClose} />
+        <RequestManager isWindowOpen={open} closeWindow={handleClose} RequestForm={NewRequestForm} />
     </>
     );
 }

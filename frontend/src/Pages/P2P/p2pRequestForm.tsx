@@ -9,13 +9,9 @@ import {
 } from '@mui/material';
 import { useP2pActions } from '../../hooks/useP2pLendingState';
 import { useConnectedWalletValues } from '../../hooks/useConnectedWallet';
+import {NewRequestFormProps} from '../../Component/RequestManager';
 
-interface NewRequestFormProps {
-    open: boolean;
-    onClose: () => void;
-}
-
-const NewRequestForm: React.FC<NewRequestFormProps> = ({open, onClose}: NewRequestFormProps) => {
+const NewRequestForm: React.FC<NewRequestFormProps> = ({open, onClose,onSubmit}: NewRequestFormProps) => {
     const {handleCreateBorrowRequest, handleCreateLendRequest} = useP2pActions();
     const {connectedWallet} = useConnectedWalletValues();
     const [isLending, setIsLending] = useState(false);
@@ -26,12 +22,13 @@ const NewRequestForm: React.FC<NewRequestFormProps> = ({open, onClose}: NewReque
     const [partialFill, setPartialFill] = useState('');
     const [liquidationThreshold, setLiquidationThreshold] = useState('100');
     
-    const handleSubmit = async () => {
+    const handleSubmit = () => {
         console.log("Form Submitted:",{
           amount, collateralRatio, interestRate, duration, partialFill, isLending
         });
         if (isLending) {
-            await handleCreateLendRequest(
+            const callback = async () => {
+                await handleCreateLendRequest(
                 connectedWallet!,
                  Math.floor(parseFloat(amount)),
                  Math.floor(parseFloat(collateralRatio)),
@@ -40,9 +37,11 @@ const NewRequestForm: React.FC<NewRequestFormProps> = ({open, onClose}: NewReque
                 parseInt(duration),
                 Math.floor(parseFloat(partialFill)),
                 connectedWallet!.classicAddress,
-            );
+            );}
+          onSubmit(callback);
         } else {
-            await handleCreateBorrowRequest(
+            const callback = async () => {
+                await handleCreateBorrowRequest(
                 connectedWallet!,
                 Math.floor(parseFloat(amount)),
                 Math.floor(parseFloat(partialFill) * parseFloat(collateralRatio) / 100),
@@ -54,7 +53,8 @@ const NewRequestForm: React.FC<NewRequestFormProps> = ({open, onClose}: NewReque
                 connectedWallet!.classicAddress,
             );
         }
-        onClose(); 
+        onSubmit(callback);
+        };
     };
 
     return (
