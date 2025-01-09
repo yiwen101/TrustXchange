@@ -137,7 +137,8 @@ public class ContractService {
 
             // Combine nonce and gas price to create the raw transaction
             CompletableFuture<String> signedTxHexFuture = nonceFuture.thenCombine(gasPriceFuture, (nonce, gasPrice) -> {
-                BigInteger gasLimit = BigInteger.valueOf(30000000); 
+                BigInteger gasLimit = BigInteger.valueOf(20000000); 
+                
 
                 RawTransaction rawTransaction = RawTransaction.createTransaction(
                         nonce,
