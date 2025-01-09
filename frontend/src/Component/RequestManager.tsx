@@ -27,10 +27,16 @@ const RequestManager: React.FC<RequestManagerProps> = (props) => {
         setIsFormSubmitted(true);
     }
 
+    const onFinish = () => {
+        setIsFormSubmitted(false);
+        setCallback(dummyCallback);
+        closeWindow();
+    }
+
     return (
         <>
         <RequestForm open={isWindowOpen && !isFormSubmitted} onClose={closeWindow} onSubmit={onFormSubmit} />
-        <ApproveTransaction open = {isWindowOpen && isFormSubmitted} onClose={closeWindow} onApprove={callback}  currencyStr={currencyStr} onBack={() => setIsFormSubmitted(false)} />
+        <ApproveTransaction open = {isWindowOpen && isFormSubmitted} onClose={onFinish} onApprove={callback}  currencyStr={currencyStr} onBack={() => setIsFormSubmitted(false)} />
         </>
     );
 };
