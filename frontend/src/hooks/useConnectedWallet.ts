@@ -118,6 +118,27 @@ export const useConnectedWalletActions = () => {
         return "";
     }
 
+    const contributeToPool = async (xrpAmount: number, usdAmount: number) => {
+        if (!connectedWalletValue) return;
+        await threadPool.run(async () => {
+            await xrp_api.add_usd_to_XRP_USDC_AMM(connectedWalletValue, usdAmount);
+            await xrp_api.add_xrp_to_XRP_USDC_AMM(connectedWalletValue, xrpAmount);
+            await fetchBalances(connectedWalletValue);
+            const userAmmInfo = await xrp_api.get_user_usd_xrp_amm_contribution(connectedWalletValue);
+            setWalletAMMStatus(userAmmInfo);
+        });
+    };
+
+    const withdrawFromPool = async () => {
+        if (!connectedWalletValue) return;
+        await threadPool.run(async () => {
+            await xrp_api.withdraw_from_XRP_USDC_AMM(connectedWalletValue);
+            await fetchBalances(connectedWalletValue);
+            const userAmmInfo = await xrp_api.get_user_usd_xrp_amm_contribution(connectedWalletValue);
+            setWalletAMMStatus(userAmmInfo);
+        });
+    };
+
     return { 
         connectOrCreateWallet, 
         disconnectWallet, 
@@ -141,5 +162,7 @@ export const useConnectedWalletActions = () => {
             await swap_usdc_for_XRP(connectedWalletValue, usdAmount, minXrpReceived, maxSlippageTolerance);
             await fetchBalances(connectedWalletValue);
         },
+        contributeToPool,
+        withdrawFromPool,
     };
 }

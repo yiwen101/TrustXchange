@@ -1,33 +1,51 @@
 import React, { useState } from 'react';
-import { Card, Button, Typography, TextField, Box, Stack } from '@mui/material';
+import { Card, Button, Typography, Box, Stack } from '@mui/material';
 import { XrpIcon, UsdcIcon } from '../../icons/Icons';
-import { useConnectedWalletValues } from '../../hooks/useConnectedWallet';
+import { useConnectedWalletValues, useConnectedWalletActions } from '../../hooks/useConnectedWallet';
 import { useXrpPriceValue } from '../../hooks/usePriceState';
 import xrp_api from '../../api/xrp';
 import PieInfo from '../../Component/PieInfo';
-import { add_usd_to_XRP_USDC_AMM, add_xrp_to_XRP_USDC_AMM } from '../../api/xrp/amm_transection';
+import InputCard from '../Swap/InputCard';
+import { useThreadPool } from '../../utils';
 
 const PoolPage = () => {
-  const { connectedWallet, connectionStatus } = useConnectedWalletValues();
+  const { connectedWallet, connectionStatus, walletAMMnStatus } = useConnectedWalletValues();
   const { ammInfo } = useXrpPriceValue();
   const [xrpValueInput, setXrpValueInput] = useState('');
   const [usdValueInput, setUsdValueInput] = useState('');
   const [dp, setDp] = useState(2);
   const [isAdding, setIsAdding] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const threadPool = useThreadPool(8);
+  const [inputError, setInputError] = useState('');
+  const { withdrawFromPool, contributeToPool } = useConnectedWalletActions();
 
-  const handleXrpValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (parseFloat(value) < 0) return;
+  const handleXrpValueChange = (value: string) => {
+    setInputError('');
+    if (value === '') {
+      setXrpValueInput('');
+      setUsdValueInput('');
+      return;
+    }
+
+    const numValue = parseFloat(value);
+    if (isNaN(numValue) || numValue < 0) {
+      setInputError('Please enter a valid amount');
+      return;
+    }
     
     if (ammInfo && value) {
-      const usd_can_add = xrp_api.get_usd_can_get_with_xrp(parseFloat(value), ammInfo);
-      setUsdValueInput(usd_can_add.toFixed(dp));
+      try {
+        const usd_can_add = xrp_api.get_usd_can_get_with_xrp(numValue, ammInfo);
+        setUsdValueInput(usd_can_add.toFixed(dp));
+      } catch (error) {
+        setInputError('Error calculating amounts');
+      }
     }
     setXrpValueInput(value);
   };
 
-  const handleUsdValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+  const handleUsdValueChange = (value: string) => {
     if (parseFloat(value) < 0) return;
     
     if (ammInfo && value) {
@@ -38,33 +56,18 @@ const PoolPage = () => {
   };
 
   const handleAddLiquidity = async () => {
-    if (connectionStatus !== 'connected' || !connectedWallet) {
-      console.log('No connected wallet');
-      return;
-    }
-
-    if (!ammInfo) {
-      console.log('AMM data unavailable');
-      return;
-    }
+    if (connectionStatus !== 'connected' || !connectedWallet) return;
+    if (!ammInfo) return;
 
     const xrpAmount = parseFloat(xrpValueInput);
     const usdAmount = parseFloat(usdValueInput);
     if (isNaN(xrpAmount) || isNaN(usdAmount) || xrpAmount <= 0 || usdAmount <= 0) {
-      alert('Invalid input amounts');
       return;
     }
 
     try {
       setIsAdding(true);
-      
-      // Add both USD and XRP to maintain pool ratio
-      await Promise.all([
-        add_usd_to_XRP_USDC_AMM(connectedWallet, usdAmount),
-        add_xrp_to_XRP_USDC_AMM(connectedWallet, xrpAmount)
-      ]);
-
-      // Reset inputs after successful addition
+      await contributeToPool(xrpAmount, usdAmount);
       setXrpValueInput('');
       setUsdValueInput('');
       alert('Successfully added liquidity to pool');
@@ -76,43 +79,45 @@ const PoolPage = () => {
     }
   };
 
+  const handleWithdraw = async () => {
+    if (!connectedWallet) return;
+    try {
+      setIsWithdrawing(true);
+      await withdrawFromPool();
+      alert('Successfully withdrawn from pool');
+    } catch (error) {
+      console.error('Error withdrawing:', error);
+      alert('Failed to withdraw: ' + (error as Error).message);
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
+
   return (
     <Card style={{ padding: '20px', width: '300px', margin: 'auto' }}>
       <PieInfo usd_amount={ammInfo?.usd_amount || 0} xrp_amount={ammInfo?.xrp_amount || 0} />
       <Box mt={3}>
         <Typography variant="h6">Add Liquidity</Typography>
-        <TextField
-          label="XRP Amount"
-          type="number"
+        <InputCard
+          icon={<XrpIcon />}
           value={xrpValueInput}
           onChange={handleXrpValueChange}
-          InputProps={{
-            startAdornment: <Box mr={1}><XrpIcon /></Box>,
-            inputProps: { min: "0" }
-          }}
-          fullWidth
-          margin="normal"
-          disabled={isAdding}
+          error={!!inputError}
+          helperText={inputError}
         />
-        <TextField
-          label="USD Amount"
-          type="number"
+        <InputCard
+          icon={<UsdcIcon />}
           value={usdValueInput}
           onChange={handleUsdValueChange}
-          InputProps={{
-            startAdornment: <Box mr={1}><UsdcIcon /></Box>,
-            inputProps: { min: "0" }
-          }}
-          fullWidth
-          margin="normal"
-          disabled={isAdding}
+          error={!!inputError}
+          helperText={inputError}
         />
         <Button
           variant="contained"
           color="primary"
           onClick={handleAddLiquidity}
           style={{ marginTop: '10px', width: "100%" }}
-          disabled={connectionStatus !== 'connected' || isAdding}
+          disabled={connectionStatus !== 'connected' || isAdding || !!inputError}
         >
           {connectionStatus !== 'connected' ? 'Connect Wallet' : 
            isAdding ? 'Adding Liquidity...' : 'Add Liquidity'}
@@ -126,6 +131,29 @@ const PoolPage = () => {
           </Box>
         )}
       </Box>
+
+      {connectedWallet && walletAMMnStatus && walletAMMnStatus.user_share > 0 && (
+        <Box mt={2} p={2} border={1} borderColor="divider" borderRadius={1}>
+          <Typography variant="body2">
+            Your Position: {(walletAMMnStatus.user_share * 100).toFixed(2)}%
+          </Typography>
+          <Typography variant="body2">
+            {walletAMMnStatus.xrp_claimable.toFixed(6)} XRP
+          </Typography>
+          <Typography variant="body2" mb={1}>
+            {walletAMMnStatus.usd_claimable.toFixed(6)} USD
+          </Typography>
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={handleWithdraw}
+            disabled={isWithdrawing}
+            fullWidth
+          >
+            {isWithdrawing ? 'Withdrawing...' : 'Withdraw All'}
+          </Button>
+        </Box>
+      )}
     </Card>
   );
 };

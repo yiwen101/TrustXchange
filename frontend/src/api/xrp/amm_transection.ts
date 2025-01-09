@@ -568,3 +568,33 @@ function swapIn(asset_in_bn: BigNumber, pool_in_bn: BigNumber, pool_out_bn: BigN
     );
     return outputAmount;
 }
+
+export async function withdraw_from_XRP_USDC_AMM(wallet: Wallet): Promise<void> {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+        
+        const ammwithdraw = {
+            "TransactionType": "AMMWithdraw",
+            "Account": wallet.address,
+            "Asset": {
+                currency: USDC_currency_code,
+                issuer: USDC_issuer.address
+            },
+            "Asset2": {
+                "currency": "XRP"
+            },
+            "Flags": 0x00040000  // tfWithdrawAll flag
+        };
+
+        const prepared = await client.autofill(ammwithdraw as SubmittableTransaction);
+        const signed = wallet.sign(prepared);
+        const result = await client.submitAndWait(signed.tx_blob);
+        logResponse(result);
+    } catch (error) {
+        console.error("Error in withdraw_from_XRP_USDC_AMM:", error);
+        throw error;
+    } finally {
+        await client.disconnect();
+    }
+}
