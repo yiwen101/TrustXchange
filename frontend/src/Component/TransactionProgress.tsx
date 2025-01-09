@@ -8,6 +8,7 @@ import HourglassBottomIcon from '@mui/icons-material/HourglassBottom';
 import InfoIcon from '@mui/icons-material/Info';
 import { USDC_issuer } from "../const";
 import { useCurrentGMPCallState } from '../hooks/useCurrnetGMPCallState';
+import { Link } from 'react-router-dom';
 
 interface ApproveTransactionProps {
   open: boolean;
@@ -21,11 +22,13 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
   const [isApproved, setIsApproved] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   const { xrplTransaction, evmTransaction } = useCurrentGMPCallState();
+  const {reset} = useCurrentGMPCallState();
 
   const onFinish = () => {
+    onClose();
     setIsApproved(false);
     setIsFinished(false);
-    onClose();
+    reset();
   }
   const handleButtonClicked = async () => {
     if (isFinished) {
@@ -42,6 +45,16 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
       setIsFinished(true);
     }
   };
+  const showLongTxHash = (hash: string) => {
+    return hash.slice(0, 25) + "..." + hash.slice(-20);
+  }
+  const evmExplorerUrlOf = (hash: string) => {
+    return `https://explorer.xrplevm.org/tx/${hash}`;
+  }
+  const xrplExplorerUrlOf = (hash: string) => {
+    return `https://testnet.xrpl.org/transactions/${hash}`;
+  }
+
 
   return (
     <Dialog open={open} onClose={onClose}>
@@ -74,7 +87,17 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
               Signed
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {xrplTransaction}
+              <Link to = {xrplExplorerUrlOf(xrplTransaction)}>
+                {showLongTxHash(xrplTransaction)}
+              </Link>
+            </Typography>
+          </Box>
+        )}
+        {isApproved && !xrplTransaction && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CircularProgress size={20} />
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              Signing and Creating GMP Call on XRPL Testnet
             </Typography>
           </Box>
         )}
@@ -88,7 +111,9 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
         )}
         <Chip label="XRPL Devnet" color="secondary" size="small" sx={{ mt: 1 }} />
         <Typography variant="body2" sx={{ mt: 1 }}>
-          {USDC_issuer.address}
+          <Link to="https://testnet.xrpl.org/accounts/rGo4HdEE3wXToTqcEGxCAeaFYfqiRGdWSX" >
+            {USDC_issuer.address}
+          </Link>
         </Typography>
       </Box>
 
@@ -125,7 +150,9 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
               Signed
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {evmTransaction}
+              <Link to = {evmExplorerUrlOf(evmTransaction)}>
+                {showLongTxHash(evmTransaction)}
+              </Link>
             </Typography>
           </Box>
         )}
@@ -139,7 +166,9 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
         )}
         <Chip label="EVM Sidechain Devnet" color="primary" size="small" sx={{ mt: 1 }} />
         <Typography variant="body2" sx={{ mt: 1 }}>
-          0x31126a0BCf78cF10c8dC4381BF8A48a710df5978
+          <Link to = "https://explorer.xrplevm.org/address/0x31126a0BCf78cF10c8dC4381BF8A48a710df5978">
+             0x31126a0BCf78cF10c8dC4381BF8A48a710df5978
+          </Link>
         </Typography>
       </Box>
 
