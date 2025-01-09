@@ -203,7 +203,7 @@ public class GmpUtil {
         if (gmpCount.isEmpty()) {
             GmpCount newGmpCount = new GmpCount();
             newGmpCount.setName(name);
-            newGmpCount.setCount(1L);
+            newGmpCount.setCount(100L);
             gmpCountRepository.save(newGmpCount);
             return 0L;
         }

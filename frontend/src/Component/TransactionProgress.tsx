@@ -1,7 +1,7 @@
 // src/components/ApproveTransaction.tsx
 
 import React, { useState } from 'react';
-import { Box, Typography, Paper, Divider, Button, Tooltip, Chip } from '@mui/material';
+import { Box, Typography, Paper, Divider, Button, Tooltip, Chip, Dialog, DialogContent, DialogActions } from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CircularProgress from '@mui/material/CircularProgress';
 import HourglassBottomIcon from '@mui/icons-material/HourglassBottom';
@@ -10,11 +10,14 @@ import { USDC_issuer } from "../const";
 import { useCurrentGMPCallState } from '../hooks/useCurrnetGMPCallState';
 
 interface ApproveTransactionProps {
+  open: boolean;
+  currencyStr: string;
   onApprove: () => Promise<void>;
   onClose: () => void;
+  onBack: () => void;
 }
 
-const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onClose }) => {
+const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onClose,open,currencyStr,onBack }) => {
   const [isApproved, setIsApproved] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   const { xrplTransaction, evmTransaction } = useCurrentGMPCallState();
@@ -36,8 +39,9 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
   };
 
   return (
-    <Paper elevation={3} sx={{ maxWidth: 600, padding: 3, margin: '20px auto' }}>
-      <Typography variant="h6" gutterBottom>
+    <Dialog open={open} onClose={onClose}>
+    <DialogContent sx={{ maxWidth: 600, padding: 3, margin: '20px auto' }}>
+      <Typography variant="h6" gutterBottom align="center">
         Approve the Transaction
       </Typography>
 
@@ -54,7 +58,7 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
         <Typography variant="subtitle1" gutterBottom>
           Sign and create GMP call
         </Typography>
-        {xrplTransaction && (
+        {isApproved&&xrplTransaction && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <CheckCircleOutlineIcon color="success" />
             <Typography variant="body1" sx={{ fontWeight: 500 }}>
@@ -65,7 +69,7 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
             </Typography>
           </Box>
         )}
-        {!xrplTransaction && (
+        {!isApproved||!xrplTransaction && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <HourglassBottomIcon />
             <Typography variant="body1" sx={{ fontWeight: 500 }}>
@@ -136,7 +140,7 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
       <Box sx={{ marginBottom: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Typography variant="body1">Send</Typography>
-          <Typography variant="body1">90 XRP</Typography>
+          <Typography variant="body1">{currencyStr}</Typography>
         </Box>
       </Box>
 
@@ -170,7 +174,16 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
       >
         {isFinished? "Finish" : isApproved ? <CircularProgress size={24} /> : "Approve"}
       </Button>
-    </Paper>
+    </DialogContent>
+    <DialogActions>
+        <Button onClick={onClose} color="primary">
+            Cancel
+        </Button>
+        <Button onClick={onBack} color="primary">
+            Back
+        </Button>
+    </DialogActions>
+    </Dialog>
   );
 };
 

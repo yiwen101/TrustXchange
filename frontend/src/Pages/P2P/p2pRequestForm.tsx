@@ -10,9 +10,11 @@ import {
 import { useP2pActions } from '../../hooks/useP2pLendingState';
 import { useConnectedWalletValues } from '../../hooks/useConnectedWallet';
 import {NewRequestFormProps} from '../../Component/RequestManager';
+import { useXrpPriceValue} from '../../hooks/usePriceState';
 
 const NewRequestForm: React.FC<NewRequestFormProps> = ({open, onClose,onSubmit}: NewRequestFormProps) => {
     const {handleCreateBorrowRequest, handleCreateLendRequest} = useP2pActions();
+    const {xrpPrice} = useXrpPriceValue();
     const {connectedWallet} = useConnectedWalletValues();
     const [isLending, setIsLending] = useState(false);
     const [amount, setAmount] = useState('');
@@ -26,6 +28,7 @@ const NewRequestForm: React.FC<NewRequestFormProps> = ({open, onClose,onSubmit}:
         console.log("Form Submitted:",{
           amount, collateralRatio, interestRate, duration, partialFill, isLending
         });
+    
         if (isLending) {
             const callback = async () => {
                 await handleCreateLendRequest(
@@ -38,13 +41,15 @@ const NewRequestForm: React.FC<NewRequestFormProps> = ({open, onClose,onSubmit}:
                 Math.floor(parseFloat(partialFill)),
                 connectedWallet!.classicAddress,
             );}
-          onSubmit(callback);
+            const currencyAmount =Math.floor(parseFloat(amount));
+          onSubmit(callback, currencyAmount + " USD");
         } else {
+            const currencyAmount =Math.ceil(parseFloat(amount)*parseFloat(collateralRatio)/(xrpPrice!*100));
             const callback = async () => {
                 await handleCreateBorrowRequest(
                 connectedWallet!,
                 Math.floor(parseFloat(amount)),
-                Math.floor(parseFloat(partialFill) * parseFloat(collateralRatio) / 100),
+                currencyAmount,
                 Math.floor(parseFloat(collateralRatio)),
                 parseInt(liquidationThreshold),
                 100 + Math.floor(parseFloat(interestRate)),
@@ -53,7 +58,8 @@ const NewRequestForm: React.FC<NewRequestFormProps> = ({open, onClose,onSubmit}:
                 connectedWallet!.classicAddress,
             );
         }
-        onSubmit(callback);
+        
+        onSubmit(callback, currencyAmount + " XRP");
         };
     };
 
