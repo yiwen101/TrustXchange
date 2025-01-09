@@ -13,7 +13,7 @@ import Dev from './Pages/Future/Dev';
 import PledgePage from './Pages/Pledge/PledgePage';
 import P2pMarketplace from './Pages/P2P_new/P2pMarketplace';
 import {  useP2pActions } from "./hooks/useP2pLendingState";
-import OptionDetail from './Pages/Future/OptionDetail';
+import OptionDetailPage from './OptionDetailPage';
 
 
 const InitLoader = () => {
@@ -42,7 +42,7 @@ const InitLoader = () => {
               <Route path="/dev" element={<Dev />} />
               <Route path="/p2p" element={<P2pPage />} />
               <Route path="/swap" element={<SwapPage />} />
-              <Route path="/future/option" element={<OptionDetail />} />
+              <Route path="/future/option" element={<OptionDetailPage />} />
             </Routes>
           </Box>
         </Box>

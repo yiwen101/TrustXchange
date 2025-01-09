@@ -5,8 +5,8 @@ import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper
 const OptionTable: React.FC = () => {
     const navigate = useNavigate();
 
-    const handleOptionClick = (strikePrice: number, optionType: string) => {
-        navigate(`/future/option?strike=${strikePrice}&type=${optionType}`);
+    const handleOptionClick = (strikePrice: number, optionType: string, expirationDate: string) => {
+        navigate(`/future/option?strike=${strikePrice}&type=${optionType}&expiration=${expirationDate}`);
     };
 
     return (
@@ -31,14 +31,14 @@ const OptionTable: React.FC = () => {
                         <TableCell>0.57</TableCell>
                         <TableCell>398</TableCell>
                         <TableCell 
-                            onClick={() => handleOptionClick(1.90, 'Call')}
+                            onClick={() => handleOptionClick(1.90, 'Call', '2024-03-15')}
                             style={{ cursor: 'pointer', color: 'blue' }}
                         >
                             0.61
                         </TableCell>
                         <TableCell>1.90</TableCell>
                         <TableCell 
-                            onClick={() => handleOptionClick(1.90, 'Put')}
+                            onClick={() => handleOptionClick(1.90, 'Put', '2024-03-15')}
                             style={{ cursor: 'pointer', color: 'blue' }}
                         >
                             0.24

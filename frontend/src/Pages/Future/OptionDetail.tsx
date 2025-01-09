@@ -1,20 +1,28 @@
 import React from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Container, IconButton, Box, Typography } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { OptionPayoffChart } from '../../components/OptionPayoffChart';
+import { useOptionParams } from '../../hooks/useOptionParams';
 
 const OptionDetail: React.FC = () => {
-    const [searchParams] = useSearchParams();
+    const { optionType, strikePrice, expirationDate, isValid } = useOptionParams();
     const navigate = useNavigate();
-    const strikePrice = Number(searchParams.get('strike'));
-    const optionType = searchParams.get('type') as 'Call' | 'Put';
+
+    // 如果参数无效，返回到期权表格页面
+    if (!isValid) {
+        navigate('/future');
+        return null;
+    }
 
     return (
         <Container>
             <IconButton onClick={() => navigate('/future')}>
                 <ArrowBackIcon /> Back
             </IconButton>
+            <Typography variant="h6">
+                {optionType} Option (Strike: ${strikePrice}, Expires: {expirationDate})
+            </Typography>
             <OptionPayoffChart 
                 strikePrice={strikePrice}
                 currentPrice={29}

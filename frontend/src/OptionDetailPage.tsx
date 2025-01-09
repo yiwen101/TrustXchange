@@ -18,6 +18,8 @@ import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
 import { OptionPayoffChart } from './components/OptionPayoffChart';
+import { useOptionParams } from './hooks/useOptionParams';
+import { useNavigate } from 'react-router-dom';
 
 
 const mockWarrantData = {
@@ -106,7 +108,9 @@ interface BidAskSectionProps {
   bidAskData: BidAskData[];
 }
 
-interface PayoffSectionProps {}
+interface PayoffSectionProps {
+    currentPrice: number;
+}
 
 // Update the styled component to include custom props
 interface BidAskBarProps {
@@ -293,15 +297,17 @@ const BidAskSection: React.FC<BidAskSectionProps> = ({ bidAskData }) => {
 };
 
 
-const PayoffSection: React.FC = () => {
+const PayoffSection: React.FC<PayoffSectionProps> = ({ currentPrice }) => {
+    const { optionType, strikePrice } = useOptionParams();
+    
     return (
         <Box mb={2}>
             <Typography variant="h6" mb={1}>Payoff at Expiry</Typography>
             <OptionPayoffChart 
-                strikePrice={30}
-                currentPrice={29}
+                strikePrice={strikePrice}
+                currentPrice={currentPrice}
                 premium={1.0}
-                optionType={'Put'}
+                optionType={optionType}
             />
         </Box>
     );
@@ -384,31 +390,48 @@ const TradeSection: React.FC = () => {
     );
 };
 
-const WarrantTradingPage: React.FC = () => {
+const OptionDetailPage: React.FC = () => {
     const [isStarred, setIsStarred] = React.useState(false);
+    const { optionType, strikePrice, expirationDate, isValid } = useOptionParams();
+    const navigate = useNavigate();
+
+    // 如果参数无效，返回到期权表格页面
+    if (!isValid) {
+        navigate('/future');
+        return null;
+    }
 
     const handleStarToggle = () => {
         setIsStarred(!isStarred);
     };
 
+    // 使用 URL 参数创建模拟数据
+    const optionData = {
+        ...mockWarrantData,
+        currentPrice: strikePrice,
+        strike: strikePrice,
+        optionType: optionType,
+        maturity: moment(expirationDate).unix()
+    };
+
     return (
         <Container>
             <PriceSection
-                currentPrice={mockWarrantData.currentPrice}
-                priceChange={mockWarrantData.priceChange}
+                currentPrice={optionData.currentPrice}
+                priceChange={optionData.priceChange}
                 isStarred={isStarred}
                 handleStarToggle={handleStarToggle}
             />
-            <InformationSection warrant={mockWarrantData} />
+            <InformationSection warrant={optionData} />
             <Divider style={{ margin: '20px 0'}}/>
-            <QuoteSection quoteData={mockWarrantData.quoteData} />
+            <QuoteSection quoteData={optionData.quoteData} />
             <Divider style={{ margin: '20px 0'}}/>
-            <BidAskSection bidAskData={mockWarrantData.bidAskData} />
+            <BidAskSection bidAskData={optionData.bidAskData} />
             <Divider style={{ margin: '20px 0'}}/>
-            <PayoffSection />
+            <PayoffSection currentPrice={optionData.currentPrice} />
             <TradeSection />
         </Container>
     );
 };
 
-export default WarrantTradingPage;
+export default OptionDetailPage;

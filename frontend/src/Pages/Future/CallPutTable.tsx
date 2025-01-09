@@ -2,6 +2,7 @@
 
 import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 import React, { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface OptionData {
   type: 'Call' | 'Put';
@@ -70,6 +71,8 @@ const itemsInSeq = ["price", "volume", "firstBid", "firstAsk"];
 const CallPutTable: React.FC = () => {
   const options = getOptionMocks();
   const currentPriceRef = useRef<HTMLTableRowElement>(null);
+  const navigate = useNavigate();
+
   useEffect(() => {
     currentPriceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, []);
@@ -85,13 +88,24 @@ const CallPutTable: React.FC = () => {
   );
 
   const handleCellClick = (type: 'Call' | 'Put', strikePrice: number) => {
-    alert(`${type} with strike price ${strikePrice.toFixed(2)} clicked`);
+    const params = new URLSearchParams({
+      strike: strikePrice.toString(),
+      type: type,
+      expiration: '2024-03-15'
+    });
+    navigate(`/future/option?${params.toString()}`);
   };
 
   const renderRows = (opts: OptionRow[]) =>
     opts.map((option, index) => (
       <TableRow key={index}>
-        <TableCell align="center" onClick={() => handleCellClick('Call', option.strikePrice)}>{option.call.firstAsk.toFixed(2)}</TableCell>
+        <TableCell 
+          align="center" 
+          onClick={() => handleCellClick('Call', option.strikePrice)}
+          sx={{ cursor: 'pointer', '&:hover': { color: 'blue' } }}
+        >
+          {option.call.firstAsk.toFixed(2)}
+        </TableCell>
         <TableCell align="center" onClick={() => handleCellClick('Call', option.strikePrice)}>{option.call.firstBid.toFixed(2)}</TableCell>
         <TableCell align="center" onClick={() => handleCellClick('Call', option.strikePrice)}>{option.call.volume}</TableCell>
         <TableCell align="center" onClick={() => handleCellClick('Call', option.strikePrice)}>{option.call.lastPrice.toFixed(2)}</TableCell>
