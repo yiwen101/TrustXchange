@@ -37,7 +37,7 @@ function renderType(type: "Borrow" | "Lend") {
       Lend: "secondary",
     };
   
-    return <Chip label={type} color={colors[type]} size="small" />;
+    return <Chip label={type + " request"} color={colors[type]} size="small" />;
   }
   
   function renderStatus(

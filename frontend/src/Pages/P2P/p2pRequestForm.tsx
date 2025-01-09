@@ -9,14 +9,12 @@ import {
 } from '@mui/material';
 import { useP2pActions } from '../../hooks/useP2pLendingState';
 import { useConnectedWalletValues } from '../../hooks/useConnectedWallet';
+import {NewRequestFormProps} from '../../Component/RequestManager';
+import { useXrpPriceValue} from '../../hooks/usePriceState';
 
-interface NewRequestFormProps {
-    open: boolean;
-    onClose: () => void;
-}
-
-const NewRequestForm: React.FC<NewRequestFormProps> = ({open, onClose}: NewRequestFormProps) => {
+const NewRequestForm: React.FC<NewRequestFormProps> = ({open, onClose,onSubmit}: NewRequestFormProps) => {
     const {handleCreateBorrowRequest, handleCreateLendRequest} = useP2pActions();
+    const {xrpPrice} = useXrpPriceValue();
     const {connectedWallet} = useConnectedWalletValues();
     const [isLending, setIsLending] = useState(false);
     const [amount, setAmount] = useState('');
@@ -26,12 +24,16 @@ const NewRequestForm: React.FC<NewRequestFormProps> = ({open, onClose}: NewReque
     const [partialFill, setPartialFill] = useState('');
     const [liquidationThreshold, setLiquidationThreshold] = useState('100');
     
-    const handleSubmit = async () => {
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
         console.log("Form Submitted:",{
           amount, collateralRatio, interestRate, duration, partialFill, isLending
         });
+    
         if (isLending) {
-            await handleCreateLendRequest(
+            const callback =  () => async () => {
+                console.log("Callback invoked.");
+                await handleCreateLendRequest(
                 connectedWallet!,
                  Math.floor(parseFloat(amount)),
                  Math.floor(parseFloat(collateralRatio)),
@@ -40,12 +42,17 @@ const NewRequestForm: React.FC<NewRequestFormProps> = ({open, onClose}: NewReque
                 parseInt(duration),
                 Math.floor(parseFloat(partialFill)),
                 connectedWallet!.classicAddress,
-            );
+            );}
+            const currencyAmount =Math.floor(parseFloat(amount));
+            onSubmit(callback, currencyAmount + " USD");
         } else {
-            await handleCreateBorrowRequest(
+            const currencyAmount =Math.ceil(parseFloat(amount)*parseFloat(collateralRatio)/(xrpPrice!*100));
+            const callback = () => async () => {
+                console.log("Callback invoked.");
+                await handleCreateBorrowRequest(
                 connectedWallet!,
                 Math.floor(parseFloat(amount)),
-                Math.floor(parseFloat(partialFill) * parseFloat(collateralRatio) / 100),
+                currencyAmount,
                 Math.floor(parseFloat(collateralRatio)),
                 parseInt(liquidationThreshold),
                 100 + Math.floor(parseFloat(interestRate)),
@@ -54,7 +61,10 @@ const NewRequestForm: React.FC<NewRequestFormProps> = ({open, onClose}: NewReque
                 connectedWallet!.classicAddress,
             );
         }
-        onClose(); 
+       
+        
+        onSubmit(callback, currencyAmount + " XRP");
+        };
     };
 
     return (

@@ -34,7 +34,7 @@ export const XRP_LENDING_POOL = '0x73f58074490bA15216B5eE88f6Be96FbD729e6A6'
 export const OPTION_TRADING = '0x82189dEeeC0310fd147f2423093f4B1F8F95BFc8'
 export const XRPL_RPC_URL = 'wss://s.devnet.rippletest.net:51233/'
 export const XRPL_MULTISIG_ADDRESS = "rfv9EskzSdWEsZsyBrujtidD2qdgiz8v7W";
-
+export const MY_GATEWAY_IMPL_ADDRESS = "0x31126a0BCf78cF10c8dC4381BF8A48a710df5978";
 export const usdIssuedCurrency = (amount:number) : IssuedCurrencyAmount => {
     return {
         value: amount.toString(),

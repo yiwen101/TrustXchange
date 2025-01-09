@@ -203,9 +203,9 @@ public class GmpUtil {
         if (gmpCount.isEmpty()) {
             GmpCount newGmpCount = new GmpCount();
             newGmpCount.setName(name);
-            newGmpCount.setCount(1L);
+            newGmpCount.setCount(150L);
             gmpCountRepository.save(newGmpCount);
-            return 0L;
+            return 150L;
         }
         GmpCount gmpCountObj = gmpCount.get();
         Long count = gmpCountObj.getCount();

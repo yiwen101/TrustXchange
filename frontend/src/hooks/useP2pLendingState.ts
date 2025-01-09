@@ -14,6 +14,7 @@ import {
 } from '../api/backend/types/p2pTypes';
 import { cancelBorrowRequest, cancelLendRequest, createBorrowRequest, createLendRequest, liquidateLoan, repayLoan } from '../api/contract/p2p';
 import { xrpCurrency, usdIssuedCurrency } from '../const';
+import { useCurrentGMPCallState } from './useCurrnetGMPCallState';
 
 export const allRequestsState = atom<AllRequestsResponse | null>({
     key: 'P2P_allRequestsState',
@@ -48,6 +49,7 @@ export const useP2pActions = () => {
     const setAllRequests = useSetRecoilState(allRequestsState);
     const setLoansByAddress = useSetRecoilState(loansByAddressState);
     const setEventsByAddress = useSetRecoilState(eventsByAddressState);
+    const {setXrplTransaction, setGatewayTransaction, setEvmTransaction} = useCurrentGMPCallState();
 
     const fetchAllRequests = async () => {
         const requests = await getAllRequests();
@@ -112,27 +114,30 @@ export const useP2pActions = () => {
             paymentDuration,
             minimalPartialFill,
             xrpCurrency(collateralAmountXrp),
+            setXrplTransaction,
+            setEvmTransaction,
+            setGatewayTransaction,
         ), address);
     };
 
     const handleCreateLendRequest = async (user: xrpl.Wallet, amountToLendUsd: number, minCollateralRatio: number,liquidationThreshold:number, desiredInterestRate: number, paymentDuration: number, minimalPartialFill:number, address?: string) => {
-      await executeAndRefetch(() => createLendRequest(user,minCollateralRatio,liquidationThreshold, desiredInterestRate, paymentDuration,minimalPartialFill,usdIssuedCurrency(amountToLendUsd)), address);
+      await executeAndRefetch(() => createLendRequest(user,minCollateralRatio,liquidationThreshold, desiredInterestRate, paymentDuration,minimalPartialFill,usdIssuedCurrency(amountToLendUsd),setXrplTransaction,setEvmTransaction,setGatewayTransaction), address);
   };
 
     const handleCancelBorrowRequest = async (user: xrpl.Wallet, requestId: number, address?: string) => {
-        await executeAndRefetch(() => cancelBorrowRequest(user, requestId), address);
+        await executeAndRefetch(() => cancelBorrowRequest(user, requestId,setXrplTransaction,setEvmTransaction,setGatewayTransaction), address);
     };
 
      const handleCancelLendRequest = async (user: xrpl.Wallet, requestId: number, address?: string) => {
-       await executeAndRefetch(() => cancelLendRequest(user, requestId), address);
+       await executeAndRefetch(() => cancelLendRequest(user, requestId,setXrplTransaction,setEvmTransaction,setGatewayTransaction), address);
      };
 
     const handleRepayLoan = async (user: xrpl.Wallet, repayamount:number, loanId:number, address?: string) => {
-        await executeAndRefetch(() => repayLoan(user, repayamount, loanId,usdIssuedCurrency(repayamount)), address);
+        await executeAndRefetch(() => repayLoan(user, repayamount, loanId,usdIssuedCurrency(repayamount),setXrplTransaction,setEvmTransaction,setGatewayTransaction), address);
     };
 
     const handleLiquidateLoan = async (user: xrpl.Wallet, payamount:number, loanId: number, address?: string) => {
-        await executeAndRefetch(() => liquidateLoan(user, loanId,xrpCurrency(payamount)), address);
+        await executeAndRefetch(() => liquidateLoan(user, loanId,xrpCurrency(payamount),setXrplTransaction,setEvmTransaction,setGatewayTransaction), address);
     };
 
 

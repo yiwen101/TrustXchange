@@ -67,7 +67,7 @@ public class EventListener {
                 return;
             }
             long toBlock = latestBlock - fromBlock >= 3000 ? fromBlock + 2999 : latestBlock;
-            logger.info("fromBlock: " + fromBlock + " toBlock: " + toBlock);
+            //logger.info("fromBlock: " + fromBlock + " toBlock: " + toBlock);
             EthFilter historicFilter = new EthFilter(
                 DefaultBlockParameter.valueOf(BigInteger.valueOf(fromBlock)),
                 DefaultBlockParameter.valueOf(BigInteger.valueOf(toBlock)),

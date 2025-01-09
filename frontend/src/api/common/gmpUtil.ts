@@ -2,9 +2,10 @@ import * as xrpl from "xrpl";
 import { ethers } from "ethers";
 import {callGmp} from "../backend/gmp";
 import {testnet_url, USDC_issuer} from "../../const";
-async function gmp(user: xrpl.Wallet, contractAddress:string, payloadStr:string,currencyAmount:xrpl.IssuedCurrencyAmount | string, callback: (response: string) => void = console.log): Promise<void> {
+async function gmp(user: xrpl.Wallet, contractAddress:string, payloadStr:string,currencyAmount:xrpl.IssuedCurrencyAmount | string): Promise<string> {
     const DESTINATION_ADDRESS = USDC_issuer.address;
     const client = new xrpl.Client(testnet_url);
+    try{
     await client.connect();
     const payloadHash = ethers.keccak256(payloadStr).replace("0x", "");
     console.log(contractAddress, payloadHash);
@@ -40,25 +41,72 @@ async function gmp(user: xrpl.Wallet, contractAddress:string, payloadStr:string,
     console.log("Submitting transaction...");
     const result = await client.submitAndWait(signed.tx_blob)
     console.log("Transaction submitted. Result:", result);
-
-    callback(result.result.hash)
-    await client.disconnect();
+    return result.result.hash;
+    } finally {
+        await client.disconnect();
+    }
 }
 
-export async function gmp_and_call_backend(user: xrpl.Wallet, contractAddress:string, payloadStr:string,currencyAmount:xrpl.IssuedCurrencyAmount | string = "0"): Promise<void> {
-    const callback = async (response: string) => {
-        const maxRetries = 10;
+export async function gmp_and_call_backend(
+    user: xrpl.Wallet, 
+    contractAddress:string,
+    payloadStr:string,
+    currencyAmount:xrpl.IssuedCurrencyAmount | string = "0",
+    beforeCallBackend: undefined | ((response: string) => void) = undefined,
+    afterCallBackend: undefined | ((response: string) => void) = undefined,
+    middleCallBackend: undefined | ((response: string) => void) = undefined
+): Promise<void> {
+    console.log(afterCallBackend);
+    const callBackend = async (response: string) => {
         const oneSecond = 1000;
         const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-        for (let i = 0; i < maxRetries; i++) {
+        let latestResponse = null;
+        if (beforeCallBackend) {
+            console.log("beforeCallBackend");
+            await sleep(oneSecond);
+            beforeCallBackend(response);
+        }
+        for (let i = 0; i < 10; i++) {
             await sleep(oneSecond);
             const result = await callGmp({payloadString: payloadStr, transactionHash: response});
-            if (result.success) {
-                await sleep(oneSecond*5);
+            if (result.isReceived) {
+                latestResponse = result;
+                break;
+            }
+        }
+        if (latestResponse === null || !latestResponse.isReceived) {
+            throw new Error("GMP call to backend failed");
+        }
+        for (let i = 0; i < 5; i++) {
+            await sleep(3 * oneSecond);
+            const result = await callGmp({payloadString: payloadStr, transactionHash: response});
+            if (result.isApproved) {
+                console.log("isApproved");
+                latestResponse = result;
+                if (middleCallBackend) {
+                    await sleep(10 * oneSecond);
+                    middleCallBackend(result.getewayTransactionHash);
+                }
+                break;
+            }
+        }
+        if (!latestResponse.isApproved) {
+            throw new Error("GMP call to backend failed");
+        }
+       
+        for (let i = 0; i < 5; i++) {
+            await sleep(oneSecond);
+            const _result = await callGmp({payloadString: payloadStr, transactionHash: response});
+            if(_result.isCalled) {
+                console.log("isCalled");
+                if (afterCallBackend) {
+                    await sleep(5 * oneSecond);
+                    afterCallBackend(_result.contractTransactionHash);
+                }
                 return;
             }
-            console.log(`GMP call to backend failed: ${result.message}`); 
         }
+        return;
     }
-    return gmp(user, contractAddress, payloadStr, currencyAmount, callback);
+    return gmp(user, contractAddress, payloadStr, currencyAmount).then(hash => callBackend(hash));
 }

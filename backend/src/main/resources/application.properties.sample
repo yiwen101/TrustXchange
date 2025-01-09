@@ -15,6 +15,10 @@ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 flyway.enabled=true
 flyway.locations=classpath:db/migration
 
+# Hibernate Logging
+logging.level.org.hibernate=ERROR
+logging.level.org.hibernate.SQL=ERROR
+logging.level.org.hibernate.type.descriptor.sql.BasicBinder=ERROR
 
 # Server Port (optional)
 server.port=8080

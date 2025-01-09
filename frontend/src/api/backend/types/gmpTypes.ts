@@ -4,6 +4,9 @@ export interface GmpCallRequest {
 }
 
 export interface GmpCallResponse {
-    success: boolean;
-    message: string;
+    isReceived: boolean;
+    isApproved: boolean;
+    isCalled: boolean;
+    getewayTransactionHash: string;
+    contractTransactionHash: string;
 }
