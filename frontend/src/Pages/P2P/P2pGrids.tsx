@@ -256,8 +256,8 @@ const P2pCardGrid: React.FC = () => {
         </Grid>
       </Grid>
       <Grid container spacing={2}>
-        {filteredRows.map((row) => (
-          <RequestCard key={row.requestId} row={row} />
+        {filteredRows.map((row, index) => (
+          <RequestCard key={index} row={row} />
         ))}
       </Grid>
       <RequestButton />
