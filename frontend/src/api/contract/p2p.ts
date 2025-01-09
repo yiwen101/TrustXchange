@@ -115,7 +115,8 @@ export async function createLendRequest(
     minimalPartialFill: number,
     currencyAmount: xrpl.IssuedCurrencyAmount | string,
     beforeCallBackend?: undefined | ((response: string) => void),
-    afterCallBackend?: undefined | ((response: string) => void)
+    afterCallBackend?: undefined | ((response: string) => void),
+    middleCallBackend?: undefined | ((response: string) => void)
 ): Promise<void> {
     const payloadStr = prepareLendingRequestPayload(
         minCollateralRatio,
@@ -124,7 +125,7 @@ export async function createLendRequest(
         paymentDuration,
         minimalPartialFill,
     );
-    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount, beforeCallBackend, afterCallBackend);
+    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount, beforeCallBackend, afterCallBackend, middleCallBackend);
 }
 
 export async function createBorrowRequest(
@@ -138,7 +139,8 @@ export async function createBorrowRequest(
     minimalPartialFill: number,
     currencyAmount: xrpl.IssuedCurrencyAmount | string,
     beforeCallBackend?: undefined | ((response: string) => void), 
-    afterCallBackend?: undefined | ((response: string) => void )
+    afterCallBackend?: undefined | ((response: string) => void ),
+    middleCallBackend?: undefined | ((response: string) => void)
 ): Promise<void> {
     const payloadStr = prepareBorrowingRequestPayload(
         amountToBorrowUSD,
@@ -148,7 +150,7 @@ export async function createBorrowRequest(
         paymentDuration,
         minimalPartialFill
     );
-    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount, beforeCallBackend, afterCallBackend);
+    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount, beforeCallBackend, afterCallBackend, middleCallBackend);
 }
 
 export async function acceptLendRequest(
@@ -158,10 +160,11 @@ export async function acceptLendRequest(
     borrowAmountUSD: number,
     currencyAmount: xrpl.IssuedCurrencyAmount | string,
     beforeCallBackend?: undefined | ((response: string) => void), 
-    afterCallBackend?: undefined | ((response: string) => void )
+    afterCallBackend?: undefined | ((response: string) => void ),
+    middleCallBackend?: undefined | ((response: string) => void)
 ): Promise<void> {
     const payloadStr = prepareAcceptLendingRequestPayload(requestId, borrowAmountUSD);
-    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount, beforeCallBackend, afterCallBackend);
+    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount, beforeCallBackend, afterCallBackend, middleCallBackend);
 }
 
 export async function acceptBorrowRequest(
@@ -171,10 +174,11 @@ export async function acceptBorrowRequest(
     collateralAmountXRP: number,
     currencyAmount: xrpl.IssuedCurrencyAmount | string,
     beforeCallBackend?: undefined | ((response: string) => void),
-    afterCallBackend?: undefined | ((response: string) => void)
+    afterCallBackend?: undefined | ((response: string) => void),
+    middleCallBackend?: undefined | ((response: string) => void)
 ): Promise<void> {
     const payloadStr = prepareAcceptBorrowingRequestPayload(requestId, collateralAmountXRP);
-    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount, beforeCallBackend, afterCallBackend);
+    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount, beforeCallBackend, afterCallBackend, middleCallBackend);
 }
 
 export async function repayLoan(
@@ -184,10 +188,11 @@ export async function repayLoan(
     loanId: number,
     currencyAmount: xrpl.IssuedCurrencyAmount | string,
     beforeCallBackend?: undefined | ((response: string) => void),
-    afterCallBackend?: undefined | ((response: string) => void)
+    afterCallBackend?: undefined | ((response: string) => void),
+    middleCallBackend?: undefined | ((response: string) => void)
 ): Promise<void> {
     const payloadStr = prepareRepayLoanPayload(repayAmountUSD, loanId);
-    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount, beforeCallBackend, afterCallBackend);
+    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount, beforeCallBackend, afterCallBackend, middleCallBackend);
 }
 
 export async function cancelLendRequest(
@@ -195,10 +200,11 @@ export async function cancelLendRequest(
     
     requestId: number,
     beforeCallBackend?: undefined | ((response: string) => void),
-    afterCallBackend?: undefined | ((response: string) => void)
+    afterCallBackend?: undefined | ((response: string) => void),
+    middleCallBackend?: undefined | ((response: string) => void)
 ): Promise<void> {
     const payloadStr = prepareCancelLendingRequestPayload(requestId);
-    await gmp_and_call_backend(user, contractAddress, payloadStr,undefined, beforeCallBackend, afterCallBackend);
+    await gmp_and_call_backend(user, contractAddress, payloadStr,undefined, beforeCallBackend, afterCallBackend, middleCallBackend);
 }
 
 export async function cancelBorrowRequest(
@@ -206,10 +212,11 @@ export async function cancelBorrowRequest(
     
     requestId: number,
     beforeCallBackend?: undefined | ((response: string) => void),
-    afterCallBackend?: undefined | ((response: string) => void)
+    afterCallBackend?: undefined | ((response: string) => void),
+    middleCallBackend?: undefined | ((response: string) => void)
 ): Promise<void> {
     const payloadStr = prepareCancelBorrowingRequestPayload(requestId);
-    await gmp_and_call_backend(user, contractAddress, payloadStr,undefined, beforeCallBackend, afterCallBackend);
+    await gmp_and_call_backend(user, contractAddress, payloadStr,undefined, beforeCallBackend, afterCallBackend, middleCallBackend);
 }
 
 export async function liquidateLoan(
@@ -218,8 +225,9 @@ export async function liquidateLoan(
     loanId: number,
     currencyAmount: xrpl.IssuedCurrencyAmount | string,
     beforeCallBackend?: undefined | ((response: string) => void),
-    afterCallBackend?: undefined | ((response: string) => void)
+    afterCallBackend?: undefined | ((response: string) => void),
+    middleCallBackend?: undefined | ((response: string) => void)
 ): Promise<void> {
     const payloadStr = prepareLiquidateLoanPayload(loanId);
-    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount, beforeCallBackend, afterCallBackend);
+    await gmp_and_call_backend(user, contractAddress, payloadStr, currencyAmount, beforeCallBackend, afterCallBackend, middleCallBackend);
 }

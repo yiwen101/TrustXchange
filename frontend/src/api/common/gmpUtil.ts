@@ -54,37 +54,56 @@ export async function gmp_and_call_backend(
     currencyAmount:xrpl.IssuedCurrencyAmount | string = "0",
     beforeCallBackend: undefined | ((response: string) => void) = undefined,
     afterCallBackend: undefined | ((response: string) => void) = undefined,
+    middleCallBackend: undefined | ((response: string) => void) = undefined
 ): Promise<void> {
     console.log(afterCallBackend);
     const callBackend = async (response: string) => {
-        if (beforeCallBackend) {
-            beforeCallBackend(response);
-        }
-        const maxRetries = 10;
         const oneSecond = 1000;
         const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-        for (let i = 0; i < maxRetries; i++) {
+        let latestResponse = null;
+        if (beforeCallBackend) {
+            await sleep(oneSecond);
+            beforeCallBackend(response);
+        }
+        for (let i = 0; i < 10; i++) {
             await sleep(oneSecond);
             const result = await callGmp({payloadString: payloadStr, transactionHash: response});
-            
-            if (result.success) {
-                console.log(`GMP call to backend succeeded, sleeping for 10 seconds...`);
-                await sleep(3 * oneSecond);
-                for (let i = 0; i < 3; i++) {
-                    const _result = await callGmp({payloadString: payloadStr, transactionHash: response});
-                    console.log(`GMP call to backend result: ${_result.message}`);
-                    if(_result.isProcessed) {
-                        if (afterCallBackend) {
-                            afterCallBackend(_result.message);
-                        }
-                        return;
-                    }
-                    await sleep(3 * oneSecond);
+            if (result.isReceived) {
+                latestResponse = result;
+                break;
+            }
+        }
+        if (latestResponse === null || !latestResponse.isReceived) {
+            throw new Error("GMP call to backend failed");
+        }
+        for (let i = 0; i < 5; i++) {
+            await sleep(3 * oneSecond);
+            const result = await callGmp({payloadString: payloadStr, transactionHash: response});
+            if (result.isApproved) {
+                latestResponse = result;
+                if (middleCallBackend) {
+                    await sleep(10 * oneSecond);
+                    middleCallBackend(result.getewayTransactionHash);
                 }
                 return;
             }
-            console.log(`GMP call to backend failed: ${result.message}`); 
         }
+        if (!latestResponse.isApproved) {
+            throw new Error("GMP call to backend failed");
+        }
+       
+        for (let i = 0; i < 5; i++) {
+            const _result = await callGmp({payloadString: payloadStr, transactionHash: response});
+            if(_result.isCalled) {
+                if (afterCallBackend) {
+                    await sleep(5 * oneSecond);
+                    afterCallBackend(_result.evmTransactionHash);
+                }
+                return;
+            }
+            await sleep(3 * oneSecond);
+        }
+        return;
     }
     return gmp(user, contractAddress, payloadStr, currencyAmount).then(hash => callBackend(hash));
 }

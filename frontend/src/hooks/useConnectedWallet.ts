@@ -4,7 +4,7 @@ import xrp_api from "../api/xrp";
 import { testnet_url } from "../const";
 import { useThreadPool } from "../utils";
 import { userUsdXrpAMMInfo } from "../api/xrp/amm_transection";
-import { getRandomeWallet, getWallet } from "../testWallets";
+import { getWallet } from "../testWallets";
 import { usePoolLendingActions } from "./usePoolLendingState";
 
 const connectedWalletState = atom({
@@ -47,7 +47,14 @@ export const useConnectedWalletActions = () => {
             const info = getWallet(0);
             const wallet = Wallet.fromSeed(info.secret);
             //const wallet = await xrp_api.create_wallet();
-            //await xrp_api.fund_wallet(wallet);
+            await xrp_api.fund_wallet(wallet);
+            await xrp_api.fund_wallet(wallet);
+            await xrp_api.fund_wallet(wallet);
+            await xrp_api.fund_wallet(wallet);
+            await xrp_api.fund_wallet(wallet);
+            await xrp_api.fund_wallet(wallet);
+            await xrp_api.fund_wallet(wallet);
+            await xrp_api.fund_wallet(wallet);
             setConnectedWalletValue(wallet!);
             setConnectionStatus("connected");
             console.log("Connected wallet:", wallet);

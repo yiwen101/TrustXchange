@@ -6,22 +6,22 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CircularProgress from '@mui/material/CircularProgress';
 import HourglassBottomIcon from '@mui/icons-material/HourglassBottom';
 import InfoIcon from '@mui/icons-material/Info';
-import { USDC_issuer } from "../const";
+import { USDC_issuer,MY_GATEWAY_IMPL_ADDRESS } from "../const";
 import { useCurrentGMPCallState } from '../hooks/useCurrnetGMPCallState';
 import { Link } from 'react-router-dom';
-
 interface ApproveTransactionProps {
   open: boolean;
   currencyStr: string;
   onApprove: () => Promise<void>;
   onClose: () => void;
   onBack: () => void;
+  contractAddress: string;
 }
 
-const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onClose,open,currencyStr,onBack }) => {
+const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onClose,open,currencyStr,onBack,contractAddress }) => {
   const [isApproved, setIsApproved] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
-  const { xrplTransaction, evmTransaction } = useCurrentGMPCallState();
+  const { xrplTransaction, gatewayTransaction,evmTransaction } = useCurrentGMPCallState();
   const {reset} = useCurrentGMPCallState();
 
   const onFinish = () => {
@@ -48,12 +48,19 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
   const showLongTxHash = (hash: string) => {
     return hash.slice(0, 25) + "..." + hash.slice(-20);
   }
-  const evmExplorerUrlOf = (hash: string) => {
+  const evmExplorerUrlOfTx = (hash: string) => {
     return `https://explorer.xrplevm.org/tx/${hash}`;
   }
-  const xrplExplorerUrlOf = (hash: string) => {
+  const evmExplorerUrlOfContract = (address: string) => {
+    return `https://explorer.xrplevm.org/address/${address}`;
+  }
+  const xrplExplorerUrlOfTx = (hash: string) => {
     return `https://testnet.xrpl.org/transactions/${hash}`;
   }
+  const xrplExplorerUrlOfAccount = (address: string) => {
+    return `https://testnet.xrpl.org/accounts/${address}`;
+  }
+
 
 
   return (
@@ -66,7 +73,8 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
       {/* Sign and Create GMP Call Section */}
       <Box
         sx={{
-          marginBottom: 3,
+          marginTop: 0,
+          marginBottom: 0,
           padding: 2,
           borderRadius: 1,
           color: !xrplTransaction ? 'grey.500' : 'inherit',
@@ -87,7 +95,7 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
               Signed
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              <Link to = {xrplExplorerUrlOf(xrplTransaction)}>
+              <Link to = {xrplExplorerUrlOfTx(xrplTransaction)}>
                 {showLongTxHash(xrplTransaction)}
               </Link>
             </Typography>
@@ -111,18 +119,19 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
         )}
         <Chip label="XRPL Devnet" color="secondary" size="small" sx={{ mt: 1 }} />
         <Typography variant="body2" sx={{ mt: 1 }}>
-          <Link to="https://testnet.xrpl.org/accounts/rGo4HdEE3wXToTqcEGxCAeaFYfqiRGdWSX" >
+          <Link to={xrplExplorerUrlOfAccount(USDC_issuer.address)}>
             {USDC_issuer.address}
           </Link>
         </Typography>
       </Box>
 
-      <Divider sx={{ my: 2 }} />
+      <Divider sx={{ my: 0 }} />
 
-      {/* Approval and Execution of Contract Section */}
+      {/* Approval Contract Call Section */}
       <Box
         sx={{
-          marginBottom: 3,
+          marginTop: 0,
+          marginBottom: 0,
           padding: 2,
           borderRadius: 1,
           color: !xrplTransaction ? 'grey.500' : 'inherit',
@@ -133,7 +142,7 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
         }}
       >
         <Typography variant="subtitle1" gutterBottom>
-          Approval and Execution of Contract
+          Approval and Execution of GMP Call
         </Typography>
         {!xrplTransaction && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -143,36 +152,88 @@ const ApproveTransaction: React.FC<ApproveTransactionProps> = ({ onApprove, onCl
             </Typography>
           </Box>
         )}
-        {xrplTransaction && evmTransaction && (
+        {xrplTransaction && gatewayTransaction && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <CheckCircleOutlineIcon color="success" />
             <Typography variant="body1" sx={{ fontWeight: 500 }}>
               Signed
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              <Link to = {evmExplorerUrlOf(evmTransaction)}>
-                {showLongTxHash(evmTransaction)}
+              <Link to = {evmExplorerUrlOfTx(gatewayTransaction)}>
+                {showLongTxHash(gatewayTransaction)}
               </Link>
             </Typography>
           </Box>
         )}
-        {xrplTransaction && !evmTransaction && (
+        {xrplTransaction && !gatewayTransaction && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <CircularProgress size={20} />
             <Typography variant="body1" sx={{ fontWeight: 500 }}>
-              Axaler is approving and executing the transaction
+              Axaler is approving the GMP Call to EVM Contract
             </Typography>
           </Box>
         )}
         <Chip label="EVM Sidechain Devnet" color="primary" size="small" sx={{ mt: 1 }} />
         <Typography variant="body2" sx={{ mt: 1 }}>
-          <Link to = "https://explorer.xrplevm.org/address/0x31126a0BCf78cF10c8dC4381BF8A48a710df5978">
-             0x31126a0BCf78cF10c8dC4381BF8A48a710df5978
+          <Link to = {evmExplorerUrlOfContract(MY_GATEWAY_IMPL_ADDRESS)}>
+              {MY_GATEWAY_IMPL_ADDRESS}
           </Link>
         </Typography>
       </Box>
 
-      <Divider sx={{ my: 2 }} />
+      <Box
+        sx={{
+          marginTop: 0,
+          marginBottom: 0,
+          padding: 2,
+          borderRadius: 1,
+          color: !gatewayTransaction ? 'grey.500' : 'inherit',
+          opacity: !gatewayTransaction ? 0.6 : 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1,
+        }}
+      >
+        <Typography variant="subtitle1" gutterBottom>
+          Approval of GMP Call to Contract
+        </Typography>
+        {!gatewayTransaction && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <HourglassBottomIcon />
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              Waiting for GMP Call to be Approved by Gateway on EVM Sidechain
+            </Typography>
+          </Box>
+        )}
+        {gatewayTransaction && evmTransaction && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CheckCircleOutlineIcon color="success" />
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              Signed
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              <Link to = {evmExplorerUrlOfTx(evmTransaction)}>
+                {showLongTxHash(evmTransaction)}
+              </Link>
+            </Typography>
+          </Box>
+        )}
+        {gatewayTransaction && !evmTransaction && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CircularProgress size={20} />
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              Axaler is executing the GMP Call to EVM Contract
+            </Typography>
+          </Box>
+        )}
+        <Chip label="EVM Sidechain Devnet" color="primary" size="small" sx={{ mt: 1 }} />
+        <Typography variant="body2" sx={{ mt: 1 }}>
+          <Link to = {evmExplorerUrlOfContract(contractAddress)}>
+             {contractAddress}
+          </Link>
+        </Typography>
+      </Box>
+
 
       {/* Transaction Details */}
       <Box sx={{ marginBottom: 3 }}>

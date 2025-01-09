@@ -6,6 +6,11 @@ export const XrplTransaction = atom<string|null>({
     default: null,
 });
 
+export const GatewayTransaction = atom<string|null>({
+    key: 'GATEWAY_TRANSACTION',
+    default: null,
+});
+
 export const EvmTransaction = atom< string|null>({
     key: 'EVM_TRANSACTION',
     default: null,
@@ -15,23 +20,18 @@ export const EvmTransaction = atom< string|null>({
 export const useCurrentGMPCallState = () => {
     const [xrplTransaction, setXrplTransaction] = useRecoilState(XrplTransaction);
     const [evmTransaction, setEvmTransaction] = useRecoilState(EvmTransaction);
-    const beforeCallBackend = (hash:string) => {
-        console.log("beforeCallBackend", hash);
-        setXrplTransaction(hash);
-    }
-    const afterCallBackend = (hash:string) => {
-        console.log("afterCallBackend", hash);
-        setEvmTransaction(hash);
-    }
+    const [gatewayTransaction, setGatewayTransaction] = useRecoilState(GatewayTransaction);
 
     return { 
         xrplTransaction,
         evmTransaction,
+        gatewayTransaction,
         reset: () => {
             setXrplTransaction(null);
             setEvmTransaction(null);
         },
-        beforeCallBackend,
-        afterCallBackend
+        setXrplTransaction,
+        setEvmTransaction,
+        setGatewayTransaction,
     }
 };
