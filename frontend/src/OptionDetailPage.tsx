@@ -21,6 +21,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { OptionPayoffChart } from './components/OptionPayoffChart';
 import { useOptionParams } from './hooks/useOptionParams';
 import { useNavigate } from 'react-router-dom';
+import { useXrpPriceValue } from './hooks/usePriceState';
 
 
 const mockWarrantData = {
@@ -394,9 +395,10 @@ const TradeSection: React.FC = () => {
 const OptionDetailPage: React.FC = () => {
     const [isStarred, setIsStarred] = React.useState(false);
     const { optionType, strikePrice, expirationDate, isValid } = useOptionParams();
+    const { xrpPrice, xrpPriceYesterday } = useXrpPriceValue();
     const navigate = useNavigate();
 
-    if (!isValid) {
+    if (!isValid || !xrpPrice) {
         navigate('/future');
         return null;
     }
@@ -411,10 +413,32 @@ const OptionDetailPage: React.FC = () => {
 
     const optionData = {
         ...mockWarrantData,
-        currentPrice: strikePrice,
+        currentPrice: xrpPrice,
+        priceChange: xrpPriceYesterday ? xrpPrice - xrpPriceYesterday : 0,
         strike: strikePrice,
         optionType: optionType,
-        maturity: moment(expirationDate).unix()
+        maturity: moment(expirationDate).unix(),
+        bidAskData: [
+            { 
+                type: 'Bid' as const, 
+                price: xrpPrice * 0.98, 
+                quantity: 50, 
+                percentage: 51.81 
+            },
+            { 
+                type: 'Ask' as const, 
+                price: xrpPrice * 1.02, 
+                quantity: 40, 
+                percentage: 48.19 
+            },
+        ],
+        quoteData: [
+            { time: '9:00', price: xrpPrice * 0.99 },
+            { time: '10:00', price: xrpPrice * 1.01 },
+            { time: '11:00', price: xrpPrice * 0.98 },
+            { time: '12:00', price: xrpPrice * 1.02 },
+            { time: '13:00', price: xrpPrice },
+        ],
     };
 
     return (
@@ -424,7 +448,7 @@ const OptionDetailPage: React.FC = () => {
                     <ArrowBackIcon />
                 </IconButton>
                 <Typography variant="h6">
-                    {optionType} Option Details
+                    {optionType} Option Details (XRP: ${xrpPrice?.toFixed(2)})
                 </Typography>
             </Box>
 
@@ -440,7 +464,7 @@ const OptionDetailPage: React.FC = () => {
             <Divider style={{ margin: '20px 0'}}/>
             <BidAskSection bidAskData={optionData.bidAskData} />
             <Divider style={{ margin: '20px 0'}}/>
-            <PayoffSection currentPrice={optionData.currentPrice} />
+            <PayoffSection currentPrice={xrpPrice} />
             <TradeSection />
         </Container>
     );
