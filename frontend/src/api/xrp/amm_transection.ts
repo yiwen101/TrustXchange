@@ -17,12 +17,22 @@ export interface AMMInfo {
  * @param wallet - The wallet initiating the swap.
  * @param usd_amount - The amount of USDC to swap.
  * @param intended_xrp_amount - The intended amount of XRP to receive.
+ * @param slippage - The slippage percentage.
  */
-export async function swap_usdc_for_XRP(wallet: Wallet, usd_amount: number, intended_xrp_amount: number): Promise<void> {
+export async function swap_usdc_for_XRP(
+    wallet: Wallet, 
+    usd_amount: number, 
+    intended_xrp_amount: number,
+    slippage: number = 0.5
+): Promise<void> {
     const client = new Client(testnet_url);
     try {
         await client.connect();
-        console.log(`Swapping ${usd_amount} USDC for ${intended_xrp_amount} XRP...`);
+        
+        // Calculate minimum XRP to receive with slippage
+        const minXrpAmount = intended_xrp_amount * (1 - slippage/100);
+        
+        console.log(`Swapping ${usd_amount} USDC for minimum ${minXrpAmount} XRP (${slippage}% slippage)...`);
 
         const takerGets = {
             currency: USDC_currency_code,
@@ -30,7 +40,7 @@ export async function swap_usdc_for_XRP(wallet: Wallet, usd_amount: number, inte
             value: usdStrOf(usd_amount),
         };
 
-        const takerPays = xrpStrOf(intended_xrp_amount);
+        const takerPays = xrpStrOf(minXrpAmount);
 
         const offer_result = await client.submitAndWait({
             TransactionType: "OfferCreate",

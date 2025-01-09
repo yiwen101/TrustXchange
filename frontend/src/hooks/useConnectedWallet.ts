@@ -1,13 +1,12 @@
 import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { Client, Wallet } from 'xrpl';
 import xrp_api from "../api/xrp";
-import { testnet_url} from "../const";
+import { testnet_url, currencyCode } from "../const";
 import { useThreadPool } from "../utils";
-import { userUsdXrpAMMInfo } from "../api/xrp/amm_transection";
+import { userUsdXrpAMMInfo, swap_XRP_for_usdc, swap_usdc_for_XRP } from "../api/xrp/amm_transection";
 import { getWallet } from "../testWallets";
 import { usePoolLendingActions } from "./usePoolLendingState";
 import { getXRPBalance, getUSDBalance } from "../api/xrp/wallet";
-import {swap_usdc_for_XRP,swap_XRP_for_usdc } from '../api/xrp/amm_transection'
 
 const walletBalanceState = atom({
     key: "WALLET_BALANCE",
@@ -76,10 +75,14 @@ export const useConnectedWalletActions = () => {
             const wallet = Wallet.fromSeed(info.secret);
             setConnectedWalletValue(wallet!);
             
-            await fetchBalances(wallet);
             
             setConnectionStatus("connected");
             console.log("Connected wallet:", wallet);
+            
+            threadPool.run(async () => {
+                await fetchBalances(wallet!);
+            });
+
             
             threadPool.run(async () => {
                 const userAmmInfo = await xrp_api.get_user_usd_xrp_amm_contribution(wallet!);
@@ -115,41 +118,28 @@ export const useConnectedWalletActions = () => {
         return "";
     }
 
-    const swapForXrp = async (usdAmount: number, xrpAmount: number) => {
-        if (!connectedWalletValue) {
-            throw new Error('Wallet not connected or AMM not loaded');
-        }
-        swap_usdc_for_XRP(
-            connectedWalletValue,
-            usdAmount,
-            xrpAmount
-        ).then(() => {
-            fetchBalances(connectedWalletValue!);
-        });
-    }
-
-    const swapForUsd = async (usdAmount: number, xrpAmount: number) => {
-        if (!connectedWalletValue) {
-            throw new Error('Wallet not connected or AMM not loaded');
-        }
-        swap_XRP_for_usdc(
-            connectedWalletValue,
-            xrpAmount,
-            usdAmount
-        ).then(() => {
-            fetchBalances(connectedWalletValue!);
-    });
-    }
-
     return { 
         connectOrCreateWallet, 
         disconnectWallet, 
         getTruncatedAddress,
+        fetchBalances: async () => {
+            if (connectedWalletValue) {
+                await fetchBalances(connectedWalletValue);
+            }
+        },
         get_connected_wallet: async () => {
             await connectOrCreateWallet();
             return connectedWalletValue;
         },
-        swapForXrp,
-        swapForUsd
+        swapForXrp: async (xrpAmount: number, minUsdReceived: number) => {
+            if (!connectedWalletValue) return;
+            await swap_XRP_for_usdc(connectedWalletValue, xrpAmount, minUsdReceived);
+            await fetchBalances(connectedWalletValue);
+        },
+        swapForUsd: async (usdAmount: number, minXrpReceived: number) => {
+            if (!connectedWalletValue) return;
+            await swap_usdc_for_XRP(connectedWalletValue, usdAmount, minXrpReceived);
+            await fetchBalances(connectedWalletValue);
+        },
     };
 }

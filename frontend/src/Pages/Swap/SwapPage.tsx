@@ -1,6 +1,6 @@
 // SwapPage.tsx
 import React, { useState } from 'react';
-import { Card, Button, IconButton, Typography, Stack } from '@mui/material';
+import { Card, Button, IconButton, Typography, Stack, Box } from '@mui/material';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 import { XrpIcon, UsdcIcon } from '../../icons/Icons';
 import InputCard from './InputCard';
@@ -17,6 +17,11 @@ const SwapPage = () => {
   const { xrpPrice, xrpPriceYesterday, ammInfo } = useXrpPriceValue();
   const { connectedWallet } = useConnectedWalletValues();
   const { swapForXrp,swapForUsd,connectOrCreateWallet } = useConnectedWalletActions();
+  const [slippage, setSlippage] = useState(0.5); // Default 0.5%
+  const [showSlippageSettings, setShowSlippageSettings] = useState(false);
+
+  // Add slippage options
+  const slippageOptions = [0.1, 0.5, 1.0];
 
   const handleSwitch = () => {
     setIsXrpToUsd(!isXrpToUsd);
@@ -80,8 +85,6 @@ const SwapPage = () => {
     }
 
     try {
-      setIsSwapping(true);
-      
       const usdAmount = parseFloat(usdValueInput);
       const xrpAmount = parseFloat(xrpValueInput);
       
@@ -89,21 +92,28 @@ const SwapPage = () => {
         throw new Error('Invalid input amounts');
       }
 
+      // Calculate minimum amount with slippage
+      const minReceived = isXrpToUsd 
+        ? usdAmount * (1 - slippage/100)  // min USD to receive
+        : xrpAmount * (1 - slippage/100); // min XRP to receive
+
+      // Show confirmation dialog with slippage info
+      const confirmed = window.confirm(
+        `You will receive at least ${minReceived.toFixed(4)} ${isXrpToUsd ? 'USD' : 'XRP'}\n` +
+        `Slippage: ${slippage}%\n` +
+        `Continue with swap?`
+      );
+
+      if (!confirmed) return;
+
+      setIsSwapping(true);
+      
       if (isXrpToUsd) {
-        // XRP to USD swap
-        await swapForXrp(
-          xrpAmount,
-          usdAmount
-        );
+        await swapForXrp(xrpAmount, minReceived);
       } else {
-        // USD to XRP swap
-        await swapForUsd(
-          usdAmount,
-          xrpAmount
-        );
+        await swapForUsd(usdAmount, minReceived);
       }
 
-      // Clear inputs after successful swap
       setUsdValueInput('');
       setXrpValueInput('');
       alert('Swap successful!');
@@ -119,9 +129,43 @@ const SwapPage = () => {
   const price_diff = xrpPrice && xrpPriceYesterday ? xrpPrice - xrpPriceYesterday : 0
   const price_diff_2dp = price_diff.toFixed(2)
 
+  const handleSlippageChange = (value: number) => {
+    setSlippage(value);
+    setShowSlippageSettings(false);
+  };
+
   return (
     <Card style={{ padding: '20px', width: '250px', margin: 'auto' }}>
       <Typography variant="h5">Swap</Typography>
+      
+      {/* Make slippage settings more visible */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center',
+        my: 2,
+        p: 1,
+        border: '1px solid #eee',
+        borderRadius: 1
+      }}>
+        <Typography variant="body2" gutterBottom>
+          Slippage Tolerance
+        </Typography>
+        <Stack direction="row" spacing={1}>
+          {[0.1, 0.5, 1.0].map((value) => (
+            <Button
+              key={value}
+              size="small"
+              variant={slippage === value ? "contained" : "outlined"}
+              onClick={() => setSlippage(value)}
+              sx={{ minWidth: '60px' }}
+            >
+              {value}%
+            </Button>
+          ))}
+        </Stack>
+      </Box>
+
       {isXrpToUsd ? (
         <InputCard icon={<XrpIcon />} value={xrpValueInput} onChange={handleXrpValueChange} />
       ) : (
