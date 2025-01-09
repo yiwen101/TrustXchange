@@ -1,14 +1,14 @@
 // hooks/useP2p.ts
 import { atom, useRecoilState } from 'recoil';
 
-export const XrplTransaction = atom<string>({
+export const XrplTransaction = atom<string|null>({
     key: 'XRPL_TRANSACTION',
-    default: '',
+    default: null,
 });
 
-export const EvmTransaction = atom< string>({
+export const EvmTransaction = atom< string|null>({
     key: 'EVM_TRANSACTION',
-    default: '',
+    default: null,
 });
 
 
@@ -19,8 +19,8 @@ export const useCurrentGMPCallState = () => {
         xrplTransaction,
         evmTransaction,
         reset: () => {
-            setXrplTransaction('');
-            setEvmTransaction('');
+            setXrplTransaction(null);
+            setEvmTransaction(null);
         }
     }
 };
