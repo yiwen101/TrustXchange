@@ -17,6 +17,7 @@ import ShareIcon from '@mui/icons-material/Share';
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { OptionPayoffChart } from './components/OptionPayoffChart';
 import { useOptionParams } from './hooks/useOptionParams';
 import { useNavigate } from 'react-router-dom';
@@ -395,7 +396,6 @@ const OptionDetailPage: React.FC = () => {
     const { optionType, strikePrice, expirationDate, isValid } = useOptionParams();
     const navigate = useNavigate();
 
-    // 如果参数无效，返回到期权表格页面
     if (!isValid) {
         navigate('/future');
         return null;
@@ -405,7 +405,10 @@ const OptionDetailPage: React.FC = () => {
         setIsStarred(!isStarred);
     };
 
-    // 使用 URL 参数创建模拟数据
+    const handleBack = () => {
+        navigate('/future');
+    };
+
     const optionData = {
         ...mockWarrantData,
         currentPrice: strikePrice,
@@ -416,6 +419,15 @@ const OptionDetailPage: React.FC = () => {
 
     return (
         <Container>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, mt: 2 }}>
+                <IconButton onClick={handleBack} sx={{ mr: 1 }}>
+                    <ArrowBackIcon />
+                </IconButton>
+                <Typography variant="h6">
+                    {optionType} Option Details
+                </Typography>
+            </Box>
+
             <PriceSection
                 currentPrice={optionData.currentPrice}
                 priceChange={optionData.priceChange}
