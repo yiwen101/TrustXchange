@@ -4,7 +4,6 @@ import {
     Line,
     XAxis,
     YAxis,
-    Tooltip,
     ResponsiveContainer,
     ReferenceLine,
 } from 'recharts';
@@ -22,57 +21,68 @@ export const OptionPayoffChart: React.FC<OptionPayoffChartProps> = ({
     premium,
     optionType
 }) => {
-    // 生成损益数据点
     const generatePayoffData = () => {
         const data = [];
-        // 生成从0.7倍执行价到1.3倍执行价的点，使曲线更平滑
-        for (let price = strikePrice * 0.7; price <= strikePrice * 1.3; price += strikePrice * 0.02) {
+        // 使用传入的 strikePrice 来确定范围
+        const minPrice = strikePrice * 0.8;
+        const maxPrice = strikePrice * 1.2;
+        
+        for (let price = minPrice; price <= maxPrice; price += strikePrice * 0.01) {
             let pnl = 0;
-            if (optionType === 'Call') {
-                pnl = price <= strikePrice 
-                    ? -premium  // 价格低于执行价时，损失固定为期权费
-                    : price - strikePrice - premium;  // 价格高于执行价时，收益线性增加
+            if (optionType === 'Put') {
+                if (price >= strikePrice) {
+                    pnl = -premium;  // 使用传入的 premium 作为固定损失
+                } else {
+                    pnl = strikePrice - price - premium;  // 使用传入的 strikePrice 和 premium
+                }
             } else {
-                pnl = price >= strikePrice 
-                    ? -premium  // 价格高于执行价时，损失固定为期权费
-                    : strikePrice - price - premium;  // 价格低于执行价时，收益线性增加
+                if (price <= strikePrice) {
+                    pnl = -premium;
+                } else {
+                    pnl = price - strikePrice - premium;
+                }
             }
             data.push({ underlyingPrice: price, pnl });
         }
         return data;
     };
 
-    const payoffData = generatePayoffData();
+    const data = generatePayoffData();
+    const beforeStrike = data.filter(d => d.underlyingPrice < strikePrice);
+    const afterStrike = data.filter(d => d.underlyingPrice >= strikePrice);
 
     return (
-        <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={payoffData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <ResponsiveContainer width="100%" height={300}>
+            <LineChart margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                 <XAxis 
                     dataKey="underlyingPrice" 
-                    tickFormatter={(value) => `$${value.toFixed(2)}`}
-                    stroke="#666"
+                    type="number"
+                    domain={['auto', 'auto']}
                 />
                 <YAxis 
-                    tickFormatter={(value) => `$${value.toFixed(2)}`}
-                    stroke="#666"
-                />
-                <Tooltip 
-                    formatter={(value: number) => [`$${value.toFixed(2)}`, 'P&L']}
-                    labelFormatter={(label) => `Price: $${Number(label).toFixed(2)}`}
-                    contentStyle={{ backgroundColor: '#333', border: 'none' }}
-                    itemStyle={{ color: '#fff' }}
+                    type="number"
+                    domain={['auto', 'auto']}
                 />
                 <Line 
-                    type="monotone" 
-                    dataKey="pnl" 
-                    stroke="#ff7300" 
+                    data={beforeStrike}
+                    type="linear"
+                    dataKey="pnl"
+                    stroke="blue"
                     dot={false}
                     strokeWidth={2}
                 />
-                <ReferenceLine x={strikePrice} stroke="gray" strokeDasharray="3 3" label={{ value: 'Strike', fill: '#666' }} />
-                <ReferenceLine x={currentPrice} stroke="blue" strokeDasharray="3 3" label={{ value: 'Current', fill: '#666' }} />
-                <ReferenceLine y={0} stroke="#666" />
-                <ReferenceLine y={-premium} stroke="red" strokeDasharray="3 3" label={{ value: 'Premium', fill: '#666' }} />
+                <Line 
+                    data={afterStrike}
+                    type="linear"
+                    dataKey="pnl"
+                    stroke="red"
+                    dot={false}
+                    strokeWidth={2}
+                />
+                <ReferenceLine x={strikePrice} stroke="gray" strokeDasharray="3 3" />
+                <ReferenceLine x={currentPrice} stroke="gray" strokeDasharray="3 3" />
+                <ReferenceLine y={0} stroke="black" />
+                <ReferenceLine y={-premium} stroke="gray" strokeDasharray="3 3" />
             </LineChart>
         </ResponsiveContainer>
     );

@@ -39,8 +39,8 @@ const mockWarrantData = {
         { time: '13:00', price: 12.50 },
     ],
     bidAskData: [
-        { type: 'Bid', price: 12.40, quantity: 50 , percentage: 51.81},
-        { type: 'Ask', price: 12.60, quantity: 40, percentage: 48.19 },
+        { type: 'Bid' as const, price: 12.40, quantity: 50, percentage: 51.81 },
+        { type: 'Ask' as const, price: 12.60, quantity: 40, percentage: 48.19 },
     ],
     payoffData: [
         { underlyingPrice: 8, pnl: -1 },
@@ -106,10 +106,7 @@ interface BidAskSectionProps {
   bidAskData: BidAskData[];
 }
 
-interface PayoffSectionProps {
-  payoffData: PayoffDataPoint[];
-  strike: number;
-}
+interface PayoffSectionProps {}
 
 // Update the styled component to include custom props
 interface BidAskBarProps {
@@ -250,52 +247,53 @@ const BidAskSection: React.FC<BidAskSectionProps> = ({ bidAskData }) => {
     const bid = bidAskData.find(item => item.type === 'Bid');
     const ask = bidAskData.find(item => item.type === 'Ask');
 
+    if (!bid || !ask) return null;
 
-  return (
-    <Box mb={2}>
-      <Typography variant="h6" mb={1}>
-        Bid and Ask
-      </Typography>
-      <BidAskContainer>
-        <BidAskBarWrapper>
-        <BidAskBar type="Bid" percentage={bid.percentage} >
-              {bid.percentage}%
-        </BidAskBar>
-            <BidAskBar type="Ask" percentage={ask.percentage}  >
-                {ask.percentage}%
-        </BidAskBar>
-        </BidAskBarWrapper>
-
-
-          <BidAskInfoRow>
-              <BidAskItem>
-                  Bid
-              </BidAskItem>
-              <BidAskItem>
-                  {bid.quantity}
-              </BidAskItem>
-
-              <BidAskItem>
-                  {bid.price}  {ask.price}
-              </BidAskItem>
-              <BidAskItem>
-                 {ask.quantity}
-               </BidAskItem>
-
-              <BidAskItem>
-                  Ask
-                </BidAskItem>
-
-        </BidAskInfoRow>
+    return (
+        <Box mb={2}>
+          <Typography variant="h6" mb={1}>
+            Bid and Ask
+          </Typography>
+          <BidAskContainer>
+            <BidAskBarWrapper>
+            <BidAskBar type="Bid" percentage={bid.percentage} >
+                  {bid.percentage}%
+            </BidAskBar>
+                <BidAskBar type="Ask" percentage={ask.percentage}  >
+                    {ask.percentage}%
+            </BidAskBar>
+            </BidAskBarWrapper>
 
 
-      </BidAskContainer>
-    </Box>
-  );
+              <BidAskInfoRow>
+                  <BidAskItem>
+                      Bid
+                  </BidAskItem>
+                  <BidAskItem>
+                      {bid.quantity}
+                  </BidAskItem>
+
+                  <BidAskItem>
+                      {bid.price}  {ask.price}
+                  </BidAskItem>
+                  <BidAskItem>
+                     {ask.quantity}
+                   </BidAskItem>
+
+                  <BidAskItem>
+                      Ask
+                    </BidAskItem>
+
+              </BidAskInfoRow>
+
+
+            </BidAskContainer>
+          </Box>
+    );
 };
 
 
-const PayoffSection: React.FC<PayoffSectionProps> = () => {
+const PayoffSection: React.FC = () => {
     return (
         <Box mb={2}>
             <Typography variant="h6" mb={1}>Payoff at Expiry</Typography>
