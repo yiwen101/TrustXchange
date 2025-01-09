@@ -40,7 +40,7 @@ public class GmpInfoController {
         if (!payloadHashUpper.equals(gmpInfoPayloadHashUpper)) {
             return new CheckGmpInfoResponse(false);
         }
-        if (gmpInfo.getIsReceived()) {
+        if (!gmpInfo.getIsReceived()) {
             gmpInfo.setIsReceived(true);
             gmpInfoRepository.save(gmpInfo);
         }
