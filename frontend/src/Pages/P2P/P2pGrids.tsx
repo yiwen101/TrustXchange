@@ -79,7 +79,7 @@ const P2pCardGrid: React.FC = () => {
         (showOnlyMe === "true" && (borrower === myName || lender === myName)) ||
         (showOnlyMe === "false" && borrower !== myName && lender !== myName)) &&
       (requestTypeFilter === "borrow/lend" ||
-       type.toLowerCase().includes(requestTypeFilter.toLowerCase())) &&
+       !type.toLowerCase().includes(requestTypeFilter.toLowerCase())) &&
       (statusFilter === "any" ||
         (statusFilter === "Not Filled/Partial Filled" && (status === "Not Filled" || status === "Partial Filled")) ||
         status.toLowerCase().includes(statusFilter.toLowerCase())) &&
