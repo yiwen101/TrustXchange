@@ -80,6 +80,7 @@ export const OptionPayoffChart: React.FC<OptionPayoffChartProps> = ({
                 <YAxis 
                     type="number"
                     domain={[-optionPrice-1 , (dataMax: number) => Math.max(dataMax, 0)]}
+                    tickFormatter={(value) => value.toFixed(2)}
                 />
                 <Line 
                     data={profitData}
