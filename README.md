@@ -3,7 +3,8 @@
 ## Quick start
 To run the application, user will first need to deploy the smart contract themselves as owner. 
 
-In short, you need to execute the deployment script for the gatewayImpl and all contract you want to intereact with, and optionally verify them, and update the backend and frontend consts file with your contract address and multisig address
+In short, you need to execute the deployment script for the gatewayImpl(so you are the "auth" user), then with your deployed gatewayImpl address as constructor arguement, deploy all contract you want to intereact with (and optionally verify them), and update the backend and frontend const file with your contract address and multisig address.
+
 
 For detail of deployment, refer to readMe in the Defi folder.
 
