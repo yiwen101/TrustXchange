@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, IconButton, Box, Typography } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { OptionPayoffChart } from '../../components/OptionPayoffChart';
+import { OptionPayoffChart } from './OptionPayoffChart';
 import { useOptionParams } from '../../hooks/useOptionParams';
 
 const OptionDetail: React.FC = () => {
@@ -26,7 +26,7 @@ const OptionDetail: React.FC = () => {
             <OptionPayoffChart 
                 strikePrice={strikePrice}
                 currentPrice={29}
-                premium={1.0}
+                optionPrice={1}
                 optionType={optionType}
             />
         </Container>

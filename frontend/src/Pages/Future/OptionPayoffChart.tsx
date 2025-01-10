@@ -11,43 +11,36 @@ import {
 interface OptionPayoffChartProps {
     strikePrice: number;
     currentPrice: number;
-    premium: number;
+    optionPrice: number;
     optionType: 'Call' | 'Put';
 }
 
 export const OptionPayoffChart: React.FC<OptionPayoffChartProps> = ({
     strikePrice,
     currentPrice,
-    premium,
+    optionPrice,
     optionType
 }) => {
-    const generatePayoffData = () => {
+    console.log(strikePrice, currentPrice, optionPrice, optionType);
+    const generatePayoffData = (currentPrice:number,strikePrice:number,optionPrice:number) => {
         const data = [];
-        // 使用传入的 strikePrice 来确定范围
-        const minPrice = strikePrice * 0.8;
-        const maxPrice = strikePrice * 1.2;
+        const minPrice = 0;
+        const maxPrice = currentPrice * 2;
         
-        for (let price = minPrice; price <= maxPrice; price += strikePrice * 0.01) {
+        for (let price = minPrice; price <= maxPrice; price +=  0.1) {
             let pnl = 0;
             if (optionType === 'Put') {
-                if (price >= strikePrice) {
-                    pnl = -premium;  // 使用传入的 premium 作为固定损失
-                } else {
-                    pnl = strikePrice - price - premium;  // 使用传入的 strikePrice 和 premium
-                }
+                pnl = Math.max(strikePrice - price, 0) - optionPrice;
             } else {
-                if (price <= strikePrice) {
-                    pnl = -premium;
-                } else {
-                    pnl = price - strikePrice - premium;
-                }
+                pnl = Math.max(price - strikePrice, 0) - optionPrice;
             }
             data.push({ underlyingPrice: price, pnl });
         }
         return data;
     };
 
-    const data = generatePayoffData();
+    const data = generatePayoffData(currentPrice, strikePrice, optionPrice);
+    console.log(data);
     const beforeStrike = data.filter(d => d.underlyingPrice < strikePrice);
     const afterStrike = data.filter(d => d.underlyingPrice >= strikePrice);
 
@@ -82,7 +75,7 @@ export const OptionPayoffChart: React.FC<OptionPayoffChartProps> = ({
                 <ReferenceLine x={strikePrice} stroke="gray" strokeDasharray="3 3" />
                 <ReferenceLine x={currentPrice} stroke="gray" strokeDasharray="3 3" />
                 <ReferenceLine y={0} stroke="black" />
-                <ReferenceLine y={-premium} stroke="gray" strokeDasharray="3 3" />
+                <ReferenceLine y={-optionPrice} stroke="gray" strokeDasharray="3 3" />
             </LineChart>
         </ResponsiveContainer>
     );

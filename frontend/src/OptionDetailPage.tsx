@@ -18,7 +18,7 @@ import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { OptionPayoffChart } from './components/OptionPayoffChart';
+import { OptionPayoffChart } from './Pages/Future/OptionPayoffChart';
 import { useOptionParams } from './hooks/useOptionParams';
 import { useNavigate } from 'react-router-dom';
 import { useXrpPriceValue } from './hooks/usePriceState';
@@ -308,7 +308,7 @@ const PayoffSection: React.FC<PayoffSectionProps> = ({ currentPrice }) => {
             <OptionPayoffChart 
                 strikePrice={strikePrice}
                 currentPrice={currentPrice}
-                premium={1.0}
+                optionPrice={1}
                 optionType={optionType}
             />
         </Box>
