@@ -47,17 +47,20 @@ export const OptionPayoffChart: React.FC<OptionPayoffChartProps> = ({
         return generatePayoffData(strikePrice,optionPrice, minPrice, maxPrice);
     }
 
+    const getPnl = (strikePrice:number,optionPrice:number, price:number) => {
+        if (optionType === 'Put') {
+            return Math.max(strikePrice - price, 0) - optionPrice;
+        } else {
+            return Math.max(price - strikePrice, 0) - optionPrice;
+        }
+    };
     const generatePayoffData = (strikePrice:number,optionPrice:number, from:number, to:number) => {
         const data = [];
-        for (let price = from; price <= to; price +=  0.1) {
-            let pnl = 0;
-            if (optionType === 'Put') {
-                pnl = Math.max(strikePrice - price, 0) - optionPrice;
-            } else {
-                pnl = Math.max(price - strikePrice, 0) - optionPrice;
-            }
+        for (let price = from; price <= to; price +=  0.05) {
+            const pnl = getPnl(strikePrice, optionPrice, price);
             data.push({ underlyingPrice: price, pnl });
         }
+        data.push({ underlyingPrice: to, pnl: getPnl(strikePrice, optionPrice, to) });
         return data;
     }
 
