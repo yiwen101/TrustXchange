@@ -21,13 +21,35 @@ export const OptionPayoffChart: React.FC<OptionPayoffChartProps> = ({
     optionPrice,
     optionType
 }) => {
-    console.log(strikePrice, currentPrice, optionPrice, optionType);
-    const generatePayoffData = (currentPrice:number,strikePrice:number,optionPrice:number) => {
-        const data = [];
-        const minPrice = 0;
-        const maxPrice = currentPrice * 2;
+    const calculateZeroPoint = (currentPrice:number,strikePrice:number,optionPrice:number) => {
+        return optionType === 'Put' ? strikePrice - optionPrice :strikePrice + optionPrice;
+    };
+    
+    const generatePositivePayoffData = (currentPrice:number,strikePrice:number,optionPrice:number) => {
+        const zeroPint = calculateZeroPoint(currentPrice, strikePrice, optionPrice);
+        const minPrice =  optionType === 'Put' ? 0 : zeroPint;
+        const maxPrice = optionType === 'Put' ? zeroPint : currentPrice * 2;
         
-        for (let price = minPrice; price <= maxPrice; price +=  0.1) {
+        return generatePayoffData(strikePrice,optionPrice, minPrice, maxPrice);
+    }
+
+    const generateMiddleSegmentData = (currentPrice:number,strikePrice:number,optionPrice:number) => {
+        const zeroPint = calculateZeroPoint(currentPrice, strikePrice, optionPrice);
+        const minPrice =  Math.min(zeroPint, strikePrice);
+        const maxPrice = Math.max(zeroPint, strikePrice);
+        
+        return generatePayoffData(strikePrice,optionPrice, minPrice, maxPrice);
+    }
+    const generateLossData = (currentPrice:number,strikePrice:number,optionPrice:number) => {
+        const minPrice =  optionType === 'Put' ? strikePrice : 0;
+        const maxPrice = optionType === 'Put' ? currentPrice * 2 : strikePrice;
+        
+        return generatePayoffData(strikePrice,optionPrice, minPrice, maxPrice);
+    }
+
+    const generatePayoffData = (strikePrice:number,optionPrice:number, from:number, to:number) => {
+        const data = [];
+        for (let price = from; price <= to; price +=  0.1) {
             let pnl = 0;
             if (optionType === 'Put') {
                 pnl = Math.max(strikePrice - price, 0) - optionPrice;
@@ -37,16 +59,16 @@ export const OptionPayoffChart: React.FC<OptionPayoffChartProps> = ({
             data.push({ underlyingPrice: price, pnl });
         }
         return data;
-    };
+    }
 
-    const data = generatePayoffData(currentPrice, strikePrice, optionPrice);
-    console.log(data);
-    const beforeStrike = data.filter(d => d.underlyingPrice < strikePrice);
-    const afterStrike = data.filter(d => d.underlyingPrice >= strikePrice);
+    const profitData = generatePositivePayoffData(currentPrice, strikePrice, optionPrice);
+    const middleData = generateMiddleSegmentData(currentPrice, strikePrice, optionPrice);
+    const lossData = generateLossData(currentPrice, strikePrice, optionPrice);
+    const data = [...profitData, ...middleData, ...lossData];
 
     return (
         <ResponsiveContainer width="100%" height={300}>
-            <LineChart margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+            <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                 <XAxis 
                     dataKey="underlyingPrice" 
                     type="number"
@@ -54,10 +76,10 @@ export const OptionPayoffChart: React.FC<OptionPayoffChartProps> = ({
                 />
                 <YAxis 
                     type="number"
-                    domain={['auto', 'auto']}
+                    domain={[-optionPrice-1 , (dataMax: number) => Math.max(dataMax, 0)]}
                 />
                 <Line 
-                    data={beforeStrike}
+                    data={profitData}
                     type="linear"
                     dataKey="pnl"
                     stroke="blue"
@@ -65,18 +87,23 @@ export const OptionPayoffChart: React.FC<OptionPayoffChartProps> = ({
                     strokeWidth={2}
                 />
                 <Line 
-                    data={afterStrike}
+                    data={middleData}
                     type="linear"
                     dataKey="pnl"
                     stroke="red"
                     dot={false}
                     strokeWidth={2}
                 />
-                <ReferenceLine x={strikePrice} stroke="gray" strokeDasharray="3 3" />
-                <ReferenceLine x={currentPrice} stroke="gray" strokeDasharray="3 3" />
+                <Line 
+                    data={lossData}
+                    type="linear"
+                    dataKey="pnl"
+                    stroke="red"
+                    dot={false}
+                    strokeWidth={2}
+                />
                 <ReferenceLine y={0} stroke="black" />
-                <ReferenceLine y={-optionPrice} stroke="gray" strokeDasharray="3 3" />
             </LineChart>
         </ResponsiveContainer>
     );
-}; 
+};
