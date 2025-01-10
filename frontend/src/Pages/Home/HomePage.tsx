@@ -55,15 +55,14 @@ const HomePage: React.FC = () => {
   ];
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      {/* Hero Section */}
+    <Box>
       <Box
         sx={{
           background: 'linear-gradient(135deg, #1a237e 0%, #311b92 100%)',
           color: 'white',
           py: 8,
           textAlign: 'center',
-          borderRadius: '0 0 20px 20px'
+          
         }}
       >
         <Container maxWidth="md">
