@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, IconButton, Box, Typography } from '@mui/material';
+import { Container, IconButton, Typography } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { OptionPayoffChart } from './OptionPayoffChart';
 import { useOptionParams } from '../../hooks/useOptionParams';

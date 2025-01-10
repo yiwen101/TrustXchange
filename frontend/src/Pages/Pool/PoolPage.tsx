@@ -120,49 +120,6 @@ const PoolPage = () => {
             boxShadow: '0 4px 24px rgba(0, 0, 0, 0.05)'
           }}
         >
-          {/* Stats Row */}
-          <Stack direction="row" spacing={3} justifyContent="space-between" mb={4}>
-            <Box>
-              <Typography 
-                variant="h3" 
-                sx={{ 
-                  fontWeight: 700, 
-                  color: '#1976d2',
-                  fontSize: '2.5rem',
-                  lineHeight: 1.2
-                }}
-              >
-                3.47%
-              </Typography>
-              <Typography 
-                variant="body2" 
-                color="text.secondary"
-                sx={{ mt: 0.5 }}
-              >
-                Annual Yield
-              </Typography>
-            </Box>
-            <Box>
-              <Typography 
-                variant="h3" 
-                sx={{ 
-                  fontWeight: 700, 
-                  color: '#1976d2',
-                  fontSize: '2.5rem',
-                  lineHeight: 1.2
-                }}
-              >
-                $530M
-              </Typography>
-              <Typography 
-                variant="body2" 
-                color="text.secondary"
-                sx={{ mt: 0.5 }}
-              >
-                Total Liquidity
-              </Typography>
-            </Box>
-          </Stack>
 
           {/* Pie Chart */}
           <Box sx={{ mb: 4 }}>

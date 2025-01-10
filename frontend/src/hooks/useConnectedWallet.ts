@@ -46,6 +46,7 @@ export const useConnectedWalletActions = () => {
     const setWalletAMMStatus = useSetRecoilState(walletAMMState);
     const threadPool = useThreadPool(8);
     const {onLogin, onLogout} = usePoolLendingActions();
+    const {onLoginP2p, onLogoutP2p} = usePoolLendingActions();
 
     const fetchBalances = async (wallet: Wallet) => {
         try {
@@ -84,14 +85,15 @@ export const useConnectedWalletActions = () => {
             threadPool.run(async () => {
                 await fetchBalances(wallet!);
             });
-
-            
             threadPool.run(async () => {
                 const userAmmInfo = await xrp_api.get_user_usd_xrp_amm_contribution(wallet!);
                 setWalletAMMStatus(userAmmInfo);
             });
             threadPool.run(async () => {
                 onLogin(wallet!.classicAddress);
+            });
+            threadPool.run(async () => {
+                onLoginP2p(wallet!.classicAddress);
             });
         } catch (error) {
             console.error("Failed to connect wallet:", error);
@@ -110,6 +112,7 @@ export const useConnectedWalletActions = () => {
         setBalances({ usd: 0, xrp: 0 });
         setWalletAMMStatus(null);
         onLogout();
+        onLogoutP2p();
     }
 
     const getTruncatedAddress = () => {

@@ -5,63 +5,35 @@ import {
     Grid,
     Box,
     Button,
-    Paper,
-    Card,
-    CardContent,
-    Divider,
-    Alert,
     Stack,
+    useTheme,
 } from '@mui/material';
-import { styled } from '@mui/material/styles';
 import { usePoolLendingActions, usePoolLendingValues } from '../../hooks/usePoolLendingState';
 import { useConnectedWalletValues } from '../../hooks/useConnectedWallet';
 
-// Styled TextField for the contribution amount
-const StyledContributeTextField = styled(TextField)(({ theme }) => ({
-    '& .MuiInputBase-input': {
-        fontSize: '2rem',
-        fontWeight: 700,
-        padding: theme.spacing(2, 1),
-        textAlign: "center"
-    },
-    '& .MuiInputLabel-root': {
-        fontSize: '1.3rem',
-        fontWeight: 600,
-        color: theme.palette.primary.main,
-    }
-}));
-
 function LiquidityForm() {
+    const theme = useTheme();
     const { connectedWallet } = useConnectedWalletValues();
-    const { handleContribute, handleWithdraw, handleClaimReward, } = usePoolLendingActions();
+    const { handleContribute, handleWithdraw, handleClaimReward } = usePoolLendingActions();
     const { contributor } = usePoolLendingValues();
     const [contributeAmount, setContributeAmount] = useState('');
     const [withdrawAmount, setWithdrawAmount] = useState('');
 
-    const [error, setError] = useState<string | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-
+    /*
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
-        setError(null);
-        setSuccessMessage(null)
         const usdAmountFloat = parseFloat(contributeAmount);
         if (isNaN(usdAmountFloat) || usdAmountFloat <= 0) {
-            setError('Please enter a valid contribution amount.');
             return;
         }
          const usdAmountInt = Math.round(usdAmountFloat);
 
-        try {
+
              if(connectedWallet){
-                await handleContribute(connectedWallet!,usdAmountInt, connectedWallet.address);
-                setSuccessMessage('Contribution successful!');
+                await handleContribute(connectedWallet!,usdAmountInt, connectedWallet.address)
                  setContributeAmount('');
             }
-          } catch (error:any) {
-              setError(error?.message || 'Failed to contribute.');
-        }
+          
 
     };
 
@@ -100,13 +72,13 @@ function LiquidityForm() {
             setError(error?.message || 'Failed to claim rewards.');
         }
     };
+    */
 
     useEffect(() => {
       if(connectedWallet){
         //  fetchContributorData(connectedWallet.address);
       }
     }, [connectedWallet]);
-
 
     return (
         <Box>
@@ -116,12 +88,12 @@ function LiquidityForm() {
                     mb: 4,
                     p: 3,
                     borderRadius: 2,
-                    bgcolor: 'rgba(30, 34, 66, 0.6)',
+                    bgcolor: theme.palette.background.paper,
                     border: '1px solid',
-                    borderColor: 'rgba(255, 255, 255, 0.1)'
+                    borderColor: theme.palette.divider
                 }}
             >
-                <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#fff' }}>
+                <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: theme.palette.text.primary }}>
                     Contribute Amount (USD)
                 </Typography>
                 <Stack direction="row" spacing={2} alignItems="flex-start">
@@ -132,20 +104,20 @@ function LiquidityForm() {
                         size="medium"
                         sx={{
                             '& .MuiOutlinedInput-root': {
-                                bgcolor: 'rgba(30, 34, 66, 0.9)',
-                                color: '#fff',
+                                bgcolor: theme.palette.background.default,
+                                color: theme.palette.text.primary,
                                 '& fieldset': {
-                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderColor: theme.palette.divider,
                                 },
                                 '&:hover fieldset': {
-                                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                                    borderColor: theme.palette.text.secondary,
                                 },
                                 '&.Mui-focused fieldset': {
-                                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                                    borderColor: theme.palette.primary.main,
                                 }
                             },
                             '& .MuiOutlinedInput-input::placeholder': {
-                                color: 'rgba(255, 255, 255, 0.5)'
+                                color: theme.palette.text.disabled
                             }
                         }}
                     />
@@ -154,9 +126,9 @@ function LiquidityForm() {
                         sx={{
                             height: '56px',
                             px: 4,
-                            bgcolor: '#2962FF',
+                            bgcolor: theme.palette.primary.main,
                             '&:hover': {
-                                bgcolor: '#1939B7'
+                                bgcolor: theme.palette.primary.dark
                             }
                         }}
                     >
@@ -170,29 +142,29 @@ function LiquidityForm() {
                 sx={{ 
                     p: 3,
                     borderRadius: 2,
-                    bgcolor: 'rgba(30, 34, 66, 0.6)',
+                    bgcolor: theme.palette.background.paper,
                     border: '1px solid',
-                    borderColor: 'rgba(255, 255, 255, 0.1)'
+                    borderColor: theme.palette.divider
                 }}
             >
-                <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#fff' }}>
+                <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: theme.palette.text.primary }}>
                     Manage Liquidity Contribution
                 </Typography>
                 
                 <Grid container spacing={3} sx={{ mb: 3 }}>
                     <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }} gutterBottom>
+                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary }} gutterBottom>
                             Contributed Amount
                         </Typography>
-                        <Typography variant="h5" sx={{ fontWeight: 600, color: '#fff' }}>
+                        <Typography variant="h5" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
                             ${contributor ? contributor.contributionBalance : '0'}
                         </Typography>
                     </Grid>
                     <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }} gutterBottom>
+                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary }} gutterBottom>
                             Claimable Reward
                         </Typography>
-                        <Typography variant="h5" sx={{ fontWeight: 600, color: '#fff' }}>
+                        <Typography variant="h5" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
                             ${contributor ? contributor.confirmedRewards : '0'}
                         </Typography>
                     </Grid>
@@ -206,20 +178,20 @@ function LiquidityForm() {
                         sx={{
                             flex: 1,
                             '& .MuiOutlinedInput-root': {
-                                bgcolor: 'rgba(30, 34, 66, 0.9)',
-                                color: '#fff',
+                                bgcolor: theme.palette.background.default,
+                                color: theme.palette.text.primary,
                                 '& fieldset': {
-                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderColor: theme.palette.divider,
                                 },
                                 '&:hover fieldset': {
-                                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                                    borderColor: theme.palette.text.secondary,
                                 },
                                 '&.Mui-focused fieldset': {
-                                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                                    borderColor: theme.palette.primary.main,
                                 }
                             },
                             '& .MuiOutlinedInput-input::placeholder': {
-                                color: 'rgba(255, 255, 255, 0.5)'
+                                color: theme.palette.text.disabled
                             }
                         }}
                     />
@@ -227,11 +199,11 @@ function LiquidityForm() {
                         variant="outlined"
                         sx={{
                             px: 3,
-                            borderColor: 'rgba(255, 255, 255, 0.3)',
-                            color: '#fff',
+                            borderColor: theme.palette.divider,
+                            color: theme.palette.text.primary,
                             '&:hover': {
-                                borderColor: 'rgba(255, 255, 255, 0.5)',
-                                bgcolor: 'rgba(255, 255, 255, 0.05)'
+                                borderColor: theme.palette.text.secondary,
+                                bgcolor: theme.palette.action.hover
                             }
                         }}
                     >
@@ -241,9 +213,9 @@ function LiquidityForm() {
                         variant="contained"
                         sx={{
                             px: 3,
-                            bgcolor: '#2962FF',
+                            bgcolor: theme.palette.primary.main,
                             '&:hover': {
-                                bgcolor: '#1939B7'
+                                bgcolor: theme.palette.primary.dark
                             }
                         }}
                     >

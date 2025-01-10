@@ -7,7 +7,6 @@ import {
   Card, 
   CardContent,
   Container,
-  useTheme
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
@@ -19,7 +18,6 @@ import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const theme = useTheme();
 
   const features = [
     {
