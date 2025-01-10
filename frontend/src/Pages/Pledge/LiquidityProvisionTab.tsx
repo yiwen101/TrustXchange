@@ -10,6 +10,7 @@ import {
     CardContent,
     Divider,
     Alert,
+    Stack,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { usePoolLendingActions, usePoolLendingValues } from '../../hooks/usePoolLendingState';
@@ -108,81 +109,148 @@ function LiquidityForm() {
 
 
     return (
-        <Box component="form" sx={{ p: 2 }} onSubmit={handleSubmit}>
-            {error && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                    {error}
-                </Alert>
-            )}
-
-           {successMessage && (
-                <Alert severity="success" sx={{ mb: 2 }}>
-                    {successMessage}
-                </Alert>
-            )}
-            <Grid container spacing={3} justifyContent="center">
-                {/* Contribution Amount */}
-                <Grid item xs={12} md={8} lg={6} >
-                    <StyledContributeTextField
-                        label="Contribute Amount (USD)"
-                        value={contributeAmount}
-                         onChange={(e) => e.target.value ? setContributeAmount(e.target.value) : setContributeAmount('')}
+        <Box>
+            {/* Contribute Section */}
+            <Box 
+                sx={{ 
+                    mb: 4,
+                    p: 3,
+                    borderRadius: 2,
+                    bgcolor: 'rgba(30, 34, 66, 0.6)',
+                    border: '1px solid',
+                    borderColor: 'rgba(255, 255, 255, 0.1)'
+                }}
+            >
+                <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#fff' }}>
+                    Contribute Amount (USD)
+                </Typography>
+                <Stack direction="row" spacing={2} alignItems="flex-start">
+                    <TextField
                         fullWidth
-                        type="number"
-                        required
+                        placeholder="Enter amount"
+                        variant="outlined"
+                        size="medium"
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                bgcolor: 'rgba(30, 34, 66, 0.9)',
+                                color: '#fff',
+                                '& fieldset': {
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                },
+                                '&:hover fieldset': {
+                                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                                },
+                                '&.Mui-focused fieldset': {
+                                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                                }
+                            },
+                            '& .MuiOutlinedInput-input::placeholder': {
+                                color: 'rgba(255, 255, 255, 0.5)'
+                            }
+                        }}
                     />
-                </Grid>
-                <Button variant="contained" color="primary" type="submit" sx={{ marginTop: 2 }}>
-                    Submit
-                </Button>
-            </Grid>
+                    <Button
+                        variant="contained"
+                        sx={{
+                            height: '56px',
+                            px: 4,
+                            bgcolor: '#2962FF',
+                            '&:hover': {
+                                bgcolor: '#1939B7'
+                            }
+                        }}
+                    >
+                        Submit
+                    </Button>
+                </Stack>
+            </Box>
 
-            {/* Divider */}
-            <Divider sx={{ marginTop: 4, marginBottom: 2 }} />
-
-            {/* Manage Existing Contribution Section */}
-            <Card sx={{ marginTop: 3 }} >
-                <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                        Manage Liquidity Contribution
-                    </Typography>
-                    <Grid container spacing={2} alignItems="center">
-                        <Grid item xs={12} sm={4}>
-                            <Typography variant="body2">Contributed Amount:</Typography>
-                            <Typography variant="h6">
-                                ${contributor ? contributor.contributionBalance : '0'}
-                            </Typography>
-                        </Grid>
-                         <Grid item xs={12} sm={4}>
-                             <Typography variant="body2">Claimable Reward:</Typography>
-                            <Typography variant="h6">
-                               ${contributor ? contributor.confirmedRewards : '0'}
-                            </Typography>
-                        </Grid>
-
-                        <Grid item xs={12} sm={12} textAlign={"right"} marginTop={1}>
-                             <Box component="form"  onSubmit={handleWithdrawSubmit} display={"inline"}>
-                              <TextField
-                                    label="Withdraw Amount (USD)"
-                                    value={withdrawAmount}
-                                    onChange={(e) => e.target.value ? setWithdrawAmount(e.target.value) : setWithdrawAmount('')}
-                                    type="number"
-                                    required
-                                    sx={{maxWidth: "150px", marginRight: "10px"}}
-                                />
-                                 <Button variant="outlined" color="primary" type="submit" sx={{ marginRight: 1 }}>
-                                    Withdraw
-                                </Button>
-                             </Box>
-
-                            <Button variant="contained" color="primary" onClick={handleClaimRewards}>
-                                Claim Rewards
-                            </Button>
-                        </Grid>
+            {/* Manage Liquidity Section */}
+            <Box 
+                sx={{ 
+                    p: 3,
+                    borderRadius: 2,
+                    bgcolor: 'rgba(30, 34, 66, 0.6)',
+                    border: '1px solid',
+                    borderColor: 'rgba(255, 255, 255, 0.1)'
+                }}
+            >
+                <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#fff' }}>
+                    Manage Liquidity Contribution
+                </Typography>
+                
+                <Grid container spacing={3} sx={{ mb: 3 }}>
+                    <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }} gutterBottom>
+                            Contributed Amount
+                        </Typography>
+                        <Typography variant="h5" sx={{ fontWeight: 600, color: '#fff' }}>
+                            ${contributor ? contributor.contributionBalance : '0'}
+                        </Typography>
                     </Grid>
-                </CardContent>
-            </Card>
+                    <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }} gutterBottom>
+                            Claimable Reward
+                        </Typography>
+                        <Typography variant="h5" sx={{ fontWeight: 600, color: '#fff' }}>
+                            ${contributor ? contributor.confirmedRewards : '0'}
+                        </Typography>
+                    </Grid>
+                </Grid>
 
+                <Stack direction="row" spacing={2}>
+                    <TextField
+                        placeholder="Withdraw Amount"
+                        variant="outlined"
+                        size="medium"
+                        sx={{
+                            flex: 1,
+                            '& .MuiOutlinedInput-root': {
+                                bgcolor: 'rgba(30, 34, 66, 0.9)',
+                                color: '#fff',
+                                '& fieldset': {
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                },
+                                '&:hover fieldset': {
+                                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                                },
+                                '&.Mui-focused fieldset': {
+                                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                                }
+                            },
+                            '& .MuiOutlinedInput-input::placeholder': {
+                                color: 'rgba(255, 255, 255, 0.5)'
+                            }
+                        }}
+                    />
+                    <Button
+                        variant="outlined"
+                        sx={{
+                            px: 3,
+                            borderColor: 'rgba(255, 255, 255, 0.3)',
+                            color: '#fff',
+                            '&:hover': {
+                                borderColor: 'rgba(255, 255, 255, 0.5)',
+                                bgcolor: 'rgba(255, 255, 255, 0.05)'
+                            }
+                        }}
+                    >
+                        Withdraw
+                    </Button>
+                    <Button
+                        variant="contained"
+                        sx={{
+                            px: 3,
+                            bgcolor: '#2962FF',
+                            '&:hover': {
+                                bgcolor: '#1939B7'
+                            }
+                        }}
+                    >
+                        Claim Rewards
+                    </Button>
+                </Stack>
+            </Box>
         </Box>
     );
 }

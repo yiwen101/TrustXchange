@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import { Client, Wallet } from 'xrpl';
 import { establish_usdc_trust_line, send_usd_to } from './usd_transection';
-import { testnet_url } from '../../const';
+import { testnet_url, currencyCode } from '../../const';
 
 export function load_wallet_from_file(fileName: string): Wallet|undefined {
     if (!fs.existsSync(fileName)) {
@@ -84,3 +84,43 @@ export async function fund_wallet(wallet: Wallet, amountStr: string = '1000'): P
         await client.disconnect()
     }
 }
+
+export const getXRPBalance = async (wallet: Wallet): Promise<number> => {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+        const response = await client.request({
+            command: 'account_info',
+            account: wallet.classicAddress,
+            ledger_index: 'validated',
+        });
+        return parseFloat(response.result.account_data.Balance) / 1e6;
+    } catch (error) {
+        console.error('Error fetching XRP balance:', error);
+        return 0;
+    } finally {
+        await client.disconnect();
+    }
+};
+
+export const getUSDBalance = async (wallet: Wallet): Promise<number> => {
+    const client = new Client(testnet_url);
+    try {
+        await client.connect();
+        const response = await client.request({
+            command: 'account_lines',
+            account: wallet.classicAddress,
+            ledger_index: 'validated',
+        });
+
+        const usdLine = response.result.lines.find(
+            (line: any) => line.currency === currencyCode
+        );
+        return usdLine ? parseFloat(usdLine.balance) : 0;
+    } catch (error) {
+        console.error('Error fetching USD balance:', error);
+        return 0;
+    } finally {
+        await client.disconnect();
+    }
+};
