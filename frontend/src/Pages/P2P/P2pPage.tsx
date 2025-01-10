@@ -13,12 +13,6 @@ type RequestType = P2pBorrowingRequest | P2pLendingRequest;
 
 const P2pPage: React.FC = () => {
     const { allRequests } = useP2pValues();
-    const { fetchAllRequests } = useP2pActions();
-  
-    useEffect(() => {
-      fetchAllRequests();
-    }, [fetchAllRequests]);
-  
     const [activeTab, setActiveTab] = useState(0);
     const handleChange = (event: React.SyntheticEvent, newValue: number) => {
       setActiveTab(newValue);
