@@ -4,9 +4,6 @@ import React from 'react';
 import { Box, Button, Stack } from '@mui/material';
 
 const dates = [
-  '27 Dec 2024',
-  '03 Jan 2025',
-  '10 Jan 2025',
   '17 Jan 2025',
   '24 Jan 2025',
   '31 Jan 2025',
@@ -14,16 +11,20 @@ const dates = [
   '14 Feb 2025',
   '21 Feb 2025',
   '28 Feb 2025',
-  '27 Dec 2024',
-  '03 Jan 2025',
-  '10 Jan 2025',
-  '17 Jan 2025',
-  '24 Jan 2025',
-  '31 Jan 2025',
-  '07 Feb 2025',
-  '14 Feb 2025',
-  '21 Feb 2025',
-  '28 Feb 2025',
+  '07 Mar 2025',
+  '14 Mar 2025',
+  '21 Mar 2025',
+  '28 Mar 2025',
+  '04 Apr 2025',
+  '11 Apr 2025',
+  '18 Apr 2025',
+  '25 Apr 2025',
+  '02 May 2025',
+  '09 May 2025',
+  '16 May 2025',
+  '23 May 2025',
+  '30 May 2025',
+  '06 Jun 2025',
 ];
 
 const SlidingDates: React.FC = () => {
@@ -35,18 +36,19 @@ const SlidingDates: React.FC = () => {
         overflowX: 'auto',
         whiteSpace: 'nowrap',
         py: 2,
+        backgroundColor: '#f6f6f6', // Light grey background
         '&::-webkit-scrollbar': {
           height: '8px',
         },
         '&::-webkit-scrollbar-track': {
-          background: 'rgba(255, 255, 255, 0.05)',
+          background: '#e6e6e6', // Light grey scrollbar track
           borderRadius: '4px',
         },
         '&::-webkit-scrollbar-thumb': {
-          background: 'rgba(255, 255, 255, 0.2)',
+          background: '#bdbdbd', // Light grey scrollbar thumb
           borderRadius: '4px',
           '&:hover': {
-            background: 'rgba(255, 255, 255, 0.3)',
+            background: '#9e9e9e', // Darker grey on hover
           },
         },
       }}
@@ -68,12 +70,12 @@ const SlidingDates: React.FC = () => {
               minWidth: 'auto',
               px: 2,
               py: 1,
-              color: selectedDate === date ? '#fff' : 'rgba(255, 255, 255, 0.7)',
-              bgcolor: selectedDate === date ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+              color: selectedDate === date ? '#000' : '#757575', // Darker grey for selected, light grey for others
+              bgcolor: selectedDate === date ? '#f0f0f0' : 'transparent', // Light grey background for selected
               '&:hover': {
                 bgcolor: selectedDate === date 
-                  ? 'rgba(255, 255, 255, 0.15)' 
-                  : 'rgba(255, 255, 255, 0.05)'
+                  ? '#d5d5d5' 
+                  : '#f0f0f0' // Slightly darker grey on hover
               },
               fontSize: '0.875rem',
               fontWeight: selectedDate === date ? 600 : 400,
