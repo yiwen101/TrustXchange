@@ -41,9 +41,6 @@ function WebsiteNavbar() {
           <Button color="inherit" component={Link} to="/wallet">
             Wallet
           </Button>
-          <Button color="inherit" component={Link} to="/dev">
-            Dev
-          </Button>
         </Box>
         {connectionStatus === "disconnected" && <ConnectWalletButton />}
         {connectionStatus === "connecting" && <ConnectingWallet />}
