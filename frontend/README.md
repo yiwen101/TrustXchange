@@ -1,3 +1,25 @@
+# Quick start:
+First, update the "const.ts" file for your customized backend url, contract address, and event issuer info. We did not put it in .env as these information are not meant to be kept as secrete. However, for production, please do not put sensitive information in const.
+
+The run 
+``` shell
+npm install
+```
+
+The run
+``` shell
+npm run b
+```
+or you may also optionally do 
+```shell
+chmod +x shell/browser.sh
+```
+then
+``` shell
+npm run browser
+```
+
+## Introduction
 vite react app with recoil for state management
 
 api are interned for methods to communicate with blockchain and backend

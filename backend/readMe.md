@@ -4,18 +4,7 @@ This backend will be a stub for axelar network, monitor sigaccount and notify ga
 
 It also serves the role of storing and perform computation heavy works and provide user with information.
 
-If you repeatly see
-/*
-XrplError: The latest ledger sequence 3385496 is greater than the transaction's LastLedgerSequence (3385495).
-Preliminary result: temBAD_SIGNER
-    at /Users/softmark/Desktop/ripple/Temp/scripts/node_modules/xrpl/dist/npm/sugar/submit.js:45:19
-    at Generator.next (<anonymous>)
-    at fulfilled (/Users/softmark/Desktop/ripple/Temp/scripts/node_modules/xrpl/dist/npm/sugar/submit.js:5:58) {
-  data: undefined
-}
-*/
-
-It is not due to time out or network issue. It means something wrong with your transection  such that the "autofill" method failed. Modify code instead.
+To set up, first do
 
 `createdb truxtXchange_db`
 if failed, do 
@@ -25,7 +14,21 @@ postgres=# CREATE ROLE <you laptop logged in user name> WITH LOGIN SUPERUSER;
 \q
 ```
 
-to drop all table created, first connect via
+Then, update your database connection info (eg: user name, password ) in the src/main/resources/application.properties file. 
+There is an application.properties.sample file for your convenience. DO NOT COMMIT your application.properties.
+
+If your frontend does not run on "http://localhost:5173", modify the trustXchange/config/WebConfig.java accordingly
+
+Then, to start the server, do
+run 
+``` shell
+mvn spring-boot::run
+```
+Flyway should automatically execute the sql migration files in main/resources/db folder.
+
+
+
+in case you want to drop all table created, first connect via
 ```shell
 psql -U <your user name> -d truxtXchange_db
 ```
@@ -65,3 +68,5 @@ BEGIN
 END;
 $$;
 ```
+
+
