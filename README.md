@@ -1,7 +1,7 @@
 # TrustXchange
 
 ## Quick start
-To run the application, user will first need to deploy the smart contract themselves as owner. 
+To run the application, user will first need to deploy the gatewayImpl contract themselves as owner, then deploy contracts with gateway address. 
 
 In short, you need to execute the deployment script for the gatewayImpl(so you are the "auth" user), then with your deployed gatewayImpl address as constructor arguement, deploy all contract you want to intereact with (and optionally verify them), and update the backend and frontend const file with your contract address and multisig address.
 
