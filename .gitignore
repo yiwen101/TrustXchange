@@ -1,4 +1,4 @@
-
+*/.*
 */node_modules
 .env
 /xrp-loc-project/build
